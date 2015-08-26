@@ -1,7 +1,11 @@
 # genifer5C
 Genifer 5 prototype written in C
 
-Compile with:
+Dependencies:
+
+- SDL2 (Simple DirectMedia Layer v2, for graphics plot)
+
+You may use the NetBeans IDE, with C/C++ extensions.  Or compile from command line:
 
     gcc main.c back-prop.c graphics.c Q-learning.c -std=c99 -lm -lSDL2 -o genifer
 
