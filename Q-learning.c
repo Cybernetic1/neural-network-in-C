@@ -170,7 +170,7 @@ double maxQ(double K[])
     while (norm(gradQ) > Epsilon);
 
     free(K2);
-    return Q; // returns Q value
+    return 0.0f; // returns Q value
     }
 
 // (Part 2) Q-learning:

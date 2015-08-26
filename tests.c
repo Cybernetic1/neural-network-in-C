@@ -1,8 +1,15 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "RNN.h"
+
+extern void create_NN(NNET *, int, int *);
+extern void forward_prop(NNET *, int, double *);
 
 #define LastLayer (Net->layers[numLayers - 1])
 
 // Randomly generate an RNN, watch it operate on K and see how K moves
+
+extern NNET *Net;
 
 void test_K_wandering() {
 	Net = (NNET *) malloc(sizeof (NNET));

@@ -7,7 +7,7 @@
 
 extern void create_NN(NNET *, int, int *);
 extern void Q_learn(double *, double *, double, double);
-extern double *Q_act(double *, double *);
+extern void Q_act(double *, double *);
 extern void forward_prop(NNET *, int, double *);
 extern double calc_error(NNET *, double []);
 extern void back_prop(NNET *);
@@ -67,24 +67,33 @@ void read_trainers()
     fclose(fp4);
     }
 
+//************************** get rewards ***************************//
+double get_reward()
+    {
+    // Check if "output" bit of K is set
+    // If yes, the "output word" inside K is printed.
+    // Users may reward Genifer's response but there is the issue of *delay*.
+    
+    }
+
 //************************** main algorithm ***********************//
 // Main loop:
-// 		----- RNN part -----
-//		Input is copied into K.
-//		Desired output is K*.
-//		Do forward propagation (recurrently) a few times.
-//		Output is K'.  Error is K'-K*.
-//		Use back-prop to reduce this error.
-//		----- RL part -----
-//		Use Q value to choose an optimal action, taking K' to K''.
-//		Invoke Q-learning, using the reward to update Q
+// 	----- RNN part -----
+//	Input is copied into K.
+//	Desired output is K*.
+//	Do forward propagation (recurrently) a few times.
+//	Output is K'.  Error is K'-K*.
+//	Use back-prop to reduce this error.
+//	----- RL part -----
+//	Use Q value to choose an optimal action, taking K' to K''.
+//	Invoke Q-learning, using the reward to update Q
 // Repeat
 
 NNET *Net;
 
-#define LastLayer (numLayers - 1)
+#define LastLayer (Net->layers[numLayers - 1])
 
-int train()
+void main_loop()
     {
     Net = (NNET *) malloc(sizeof (NNET));
     int numLayers = 4;
@@ -92,7 +101,6 @@ int train()
     //the last layer -- output layer
     // int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
     int neuronsOfLayer[4] = {10, 14, 13, 10};
-    double *K2;
 
     //read training data and testing data from file
     read_trainers();
@@ -117,9 +125,13 @@ int train()
         exit(1);
         }
 
+    double *K2 = (double *) malloc(sizeof(double) * dim_K);
+
     do // Loop over all epochs
         {
         // double squareErrorSum = 0;
+
+        // ----- RNN part -----
 
         // Loop over all training data
         for (int i = 0; i < DATASIZE; ++i)
@@ -129,8 +141,8 @@ int train()
                 K[k] = trainingIN[i][k];
 
             // Let RNN act on K n times (TO-DO: is this really meaningful?)
-            #define RECURRENCE 10
-            for (int j = 0; j < RECURRENCE; j++)
+            #define Recurrence 10
+            for (int j = 0; j < Recurrence; j++)
                 {
                 forward_prop(Net, dim_K, K);
 
@@ -139,23 +151,23 @@ int train()
 
                 // copy output to input
                 for (int k = 0; k < dim_K; ++k)
-                    K[k] = Net->layers[LastLayer].neurons[k].output;
+                    K[k] = LastLayer.neurons[k].output;
                 }
             }
 
         // ----- RL part -----
 
         // Use Q value to choose an optimal action, taking K to K2.
-        Q_act(K, K2);
+        Q_act(K, K2);       // this changes K2
 
         // Invoke Q-learning, using the reward to update Q
-        double R = 0.0; // dummy, TO-DO
-        double oldQ = 0.0; // dummy, TO-DO
+        double R = 0.0;         // reward is gotten from the state transition
+        double oldQ = 0.0;      // ?
         Q_learn(K, K2, R, oldQ);
 
+        // ------ calculate error -------
+
         // error[maxlen] = sqrt(squareErrorSum / DATASIZE);
-        //test network
-        // printf(		  "%d  \t %lf\t %lf\n", epoch, 0.0f);
         printf("%03d:", epoch);
         for (int i = 0; i < dim_K; ++i)
             printf(" %lf", K[i]);
@@ -174,10 +186,9 @@ int train()
     free(Net);
     extern NNET *Qnet;
     free(Qnet);
+    free(K2);
 
     plot_rectangles(gfx); //keep the window open
-
-    return 0;
     }
 
 
