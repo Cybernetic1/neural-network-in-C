@@ -32,19 +32,19 @@ extern void back_prop(NNET *);
 NNET *Qnet;
 
 void init_Qlearn()
-    {
-    int numLayers = 3;
-    //the first layer -- input layer
-    //the last layer -- output layer
-    // int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
-    int neuronsOfLayer[3] = {20, 20, 1};
+	{
+	int numLayers = 3;
+	//the first layer -- input layer
+	//the last layer -- output layer
+	// int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
+	int neuronsOfLayer[3] = {20, 20, 1};
 
-    Qnet = (NNET*) malloc(sizeof (NNET));
-    //create neural network for backpropagation
-    create_NN(Qnet, numLayers, neuronsOfLayer);
+	Qnet = (NNET*) malloc(sizeof (NNET));
+	//create neural network for backpropagation
+	create_NN(Qnet, numLayers, neuronsOfLayer);
 
-    // SDL_Renderer *gfx = newWindow();		// create graphics window
-    }
+	// SDL_Renderer *gfx = newWindow();		// create graphics window
+	}
 
 //************************** Q-learning ***********************//
 // Algorithm:
@@ -63,31 +63,32 @@ void init_Qlearn()
 // Finds Q value by forward-propagation
 
 double Q(double K[], double K2[])
-    {
-    // For input, we need to combine K1 and K2 into a single vector
-    double K12[dim_K * 2];
-    for (int k = 0; k < dim_K; ++k)
-        {
-        K12[k] = K[k];
-        K12[k + dim_K] = K2[k];
-        }
+	{
+	// For input, we need to combine K1 and K2 into a single vector
+	double K12[dim_K * 2];
+	for (int k = 0; k < dim_K; ++k)
+		{
+		K12[k] = K[k];
+		K12[k + dim_K] = K2[k];
+		}
 
-    // forward_prop(Qnet, dim_K * 2, K12);
+	// forward_prop(Qnet, dim_K * 2, K12);
 
-    #define numLayers 3
-    #define LastLayer (Qnet->layers[numLayers - 1])
-    // The last layer has only 1 neuron, which outputs the Q value:
-    return LastLayer.neurons[0].output;
-    }
+	#define numLayers 3
+	#define LastLayer (Qnet->layers[numLayers - 1])
+	// The last layer has only 1 neuron, which outputs the Q value:
+	return LastLayer.neurons[0].output;
+	}
 
 // returns the Euclidean norm (absolute value, or size) of the gradient vector
+
 double norm(double grad[])
-    {
-    double r;
-    for (int k = 0; k < dim_K; ++k)
-        r += (grad[k] * grad[k]);
-    return sqrt(r);
-    }
+	{
+	double r;
+	for (int k = 0; k < dim_K; ++k)
+		r += (grad[k] * grad[k]);
+	return sqrt(r);
+	}
 
 // (Part 1) Q-acting:
 // Find K2 that maximizes Q(K,K2).  Q is a real number.
@@ -96,82 +97,84 @@ double norm(double grad[])
 //			∂Q/∂K2 ≈ { Q(K2 + δ) - Q(K2 - δ) } /2δ
 // TO-DO: Perhaps with multiple random restarts
 // Note: function changes the components of K2.
+
 void Q_act(double K[], double K2[])
-    {
-    double gradQ[dim_K]; // the gradient vector ∇Q = [∂Q/∂K2]
+	{
+	double gradQ[dim_K]; // the gradient vector ∇Q = [∂Q/∂K2]
 
-    do // While change is smaller than threshold
-        {
-        // Start with a random K2
-        for (int k = 0; k < dim_K; ++k)
-            K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0;        // in [+2,-2]
+	do // While change is smaller than threshold
+		{
+		// Start with a random K2
+		for (int k = 0; k < dim_K; ++k)
+			K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0; // in [+2,-2]
 
-        // Find the steepest direction [∂Q/∂K2], using numerical differentiation.
-        #define delta	0.01f
-        for (int k = 0; k < dim_K; ++k)
-            {
-            // Create 2 copies of K2, whose k-th component is added / subtracted with δ
-            double K2plus[dim_K], K2minus[dim_K];
-            for (int k2 = 0; k2 < dim_K; ++k2)
-                K2plus[k2] = K2minus[k2] = K2[k2];
-            K2plus[k] += delta;
-            K2minus[k] -= delta;
+		// Find the steepest direction [∂Q/∂K2], using numerical differentiation.
+		#define delta	0.01f
+		for (int k = 0; k < dim_K; ++k)
+			{
+			// Create 2 copies of K2, whose k-th component is added / subtracted with δ
+			double K2plus[dim_K], K2minus[dim_K];
+			for (int k2 = 0; k2 < dim_K; ++k2)
+				K2plus[k2] = K2minus[k2] = K2[k2];
+			K2plus[k] += delta;
+			K2minus[k] -= delta;
 
-            gradQ[k] = (Q(K, K2plus) - Q(K, K2minus)) / 2 / delta;
-            }
+			gradQ[k] = (Q(K, K2plus) - Q(K, K2minus)) / 2 / delta;
+			}
 
-        // Move a little along the gradient direction: K2 += -λ ∇Q
-        // (There seems to be a negative sign in the above formula)
-        #define Lambda	0.01f
-        for (int k = 0; k < dim_K; ++k)
-            K2[k] += (-Lambda * gradQ[k]);
-        }
-        #define Epsilon 0.01f
-        while (norm(gradQ) > Epsilon);
+		// Move a little along the gradient direction: K2 += -λ ∇Q
+		// (There seems to be a negative sign in the above formula)
+		#define Lambda	0.01f
+		for (int k = 0; k < dim_K; ++k)
+			K2[k] += (-Lambda * gradQ[k]);
+		}
+		#define Epsilon 0.01f
+		while (norm(gradQ) > Epsilon);
 
-    // Return with optimal K2 value
-    }
+	// Return with optimal K2 value
+	}
 
 // Find maximum Q(K,K') value at state K, by varying K'.
 // Method: gradient descent, using numerical differentiation to find the gradient [∂Q/∂K'].
 // Algorithm is similar to above.
+
 double maxQ(double K[])
-    {
-    double gradQ[dim_K]; // the gradient vector ∇Q = [∂Q/∂K2]
-    double *K2 = (double *) malloc(sizeof(double) * dim_K);
+	{
+	double gradQ[dim_K]; // the gradient vector ∇Q = [∂Q/∂K2]
+	double *K2 = (double *) malloc(sizeof (double) * dim_K);
 
-    do // While change is smaller than threshold
-        {
-        // Start with a random K2
-        for (int k = 0; k < dim_K; ++k)
-            K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0;        // in [+2,-2]
+	do // While change is smaller than threshold
+		{
+		// Start with a random K2
+		for (int k = 0; k < dim_K; ++k)
+			K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0; // in [+2,-2]
 
-        // Find the steepest direction [∂Q/∂K2], using numerical differentiation.
-        #define delta	0.01f
-        for (int k = 0; k < dim_K; ++k)
-            {
-            // Create 2 copies of K2, whose k-th component is added / subtracted with δ
-            double K2plus[dim_K], K2minus[dim_K];
-            for (int k2 = 0; k2 < dim_K; ++k2)
-                K2plus[k2] = K2minus[k2] = K2[k2];
-            K2plus[k] += delta;
-            K2minus[k] -= delta;
+		// Find the steepest direction [∂Q/∂K2], using numerical differentiation.
+		#define delta	0.01f
+		for (int k = 0; k < dim_K; ++k)
+			{
+			// Create 2 copies of K2, whose k-th component is added / subtracted with δ
+			double K2plus[dim_K], K2minus[dim_K];
+			for (int k2 = 0; k2 < dim_K; ++k2)
+				K2plus[k2] = K2minus[k2] = K2[k2];
+			K2plus[k] += delta;
+			K2minus[k] -= delta;
 
-            gradQ[k] = (Q(K, K2plus) - Q(K, K2minus)) / 2 / delta;
-            }
+			gradQ[k] = (Q(K, K2plus) - Q(K, K2minus)) / 2 / delta;
+			}
 
-        // Move a little along the gradient direction: K2 += -λ ∇Q
-        // (There seems to be a negative sign in the above formula)
-        #define Lambda	0.01f
-        for (int k = 0; k < dim_K; ++k)
-            K2[k] += (-Lambda * gradQ[k]);
-        }
-    #define Epsilon 0.01f
-    while (norm(gradQ) > Epsilon);
+		// Move a little along the gradient direction: K2 += -λ ∇Q
+		// (There seems to be a negative sign in the above formula)
+		#define Lambda	0.01f
+		for (int k = 0; k < dim_K; ++k)
+			K2[k] += (-Lambda * gradQ[k]);
+		}
+		#define Epsilon 0.01f
+		while (norm(gradQ) > Epsilon);
 
-    free(K2);
-    return 0.0f; // returns Q value
-    }
+	free(K2);
+	return 0.0f; // returns Q value
+	}
 
 // (Part 2) Q-learning:
 // Invoke ordinary back-prop to learn Q.
@@ -182,20 +185,20 @@ double maxQ(double K[])
 // is ΔQ.
 
 void Q_learn(double K1[], double K2[], double R, double oldQ)
-    {
-    #define Gamma	0.05
-    #define Eta		0.1
+	{
+	#define Gamma	0.05
+	#define Eta		0.1
 
-    // Calculate ΔQ = η { R + γ max_a Q(K2,a) }
-    double dQ = Eta * (R + Gamma * maxQ(K2));
+	// Calculate ΔQ = η { R + γ max_a Q(K2,a) }
+	double dQ = Eta * (R + Gamma * maxQ(K2));
 
-    // Adjust old Q value
-    oldQ += dQ;
-    // Use dQ as the error for back-prop
-    #define LastLayer (Qnet->layers[numLayers - 1])
-    LastLayer.neurons[0].error = dQ;
+	// Adjust old Q value
+	oldQ += dQ;
+	// Use dQ as the error for back-prop
+	#define LastLayer (Qnet->layers[numLayers - 1])
+	LastLayer.neurons[0].error = dQ;
 
-    // Invoke back-prop a few times (perhaps this would make the learning effect stronger?)
-    for (int i = 0; i < 5; ++i)
-        back_prop(Qnet);
-    }
+	// Invoke back-prop a few times (perhaps this would make the learning effect stronger?)
+	for (int i = 0; i < 5; ++i)
+		back_prop(Qnet);
+	}
