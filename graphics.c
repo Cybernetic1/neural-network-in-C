@@ -82,8 +82,8 @@ void rect(int x, int y, int w, int h, float r, float g, float b)
 
 void draw_NN(NNET *net)
 	{
-	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
-	SDL_RenderClear(gfx);		//Clear screen
+	//SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
+	//SDL_RenderClear(gfx);		//Clear screen
 
 	int bwh = 20; /* neuron block width,height*/
 
@@ -125,7 +125,9 @@ int plot_K()
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 
 	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
-	SDL_RenderClear(gfx);		//Clear screen
+	SDL_Rect fillRect = {TopX - 20, 0, 13 * 30, 400};
+	SDL_RenderFillRect(gfx, &fillRect);
+	// SDL_RenderClear(gfx);		//Clear screen
 
 	// Draw base line
 	#define Width 30
@@ -138,7 +140,7 @@ int plot_K()
 		line(k * Width,		 Amplitude * K[k - 1],
 			(k + 1) * Width, Amplitude * K[k]);
 
-	SDL_RenderPresent(gfx);
+	// SDL_RenderPresent(gfx);
 	// SDL_Delay(70 /* milliseconds */);
 
 	// Read keyboard state, if "Q" is pressed, return 1
@@ -147,6 +149,17 @@ int plot_K()
 		return 1;
 	else
 		return 0;
+	}
+
+void draw_trainer(double val)
+	{
+	int y = (int) (Amplitude * val);
+
+	SDL_SetRenderDrawColor(gfx, 0xFF, 0xDD, 0xDD, 0xFF);
+	SDL_Rect fillRect = {TopX - 15, y + TopY, 5, 3};
+	SDL_RenderFillRect(gfx, &fillRect);
+	SDL_RenderPresent(gfx);
+	SDL_Delay(70 /* milliseconds */);
 	}
 
 //************************* old code below, just for testing ************************/

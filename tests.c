@@ -10,6 +10,7 @@ extern void init_graphics();
 extern void pause_graphics();
 extern int plot_K();
 extern void draw_NN(NNET *net);
+extern void draw_trainer(double);
 
 extern double K[];
 extern NNET *Net;
@@ -164,7 +165,7 @@ void sine_wave_test2()
 		{
 		sum_error2 = 0.0f;
 
-		#define N 120		// loop from 0 to 2π in N divisions
+		#define N 60		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N; j++) 
 			{
 			forward_prop(Net, dim_K, K);
@@ -191,7 +192,8 @@ void sine_wave_test2()
 			
 			if (quit = plot_K())
 				break;
-			
+
+			draw_trainer(K_star);
 			draw_NN(Net);
 			}
 
