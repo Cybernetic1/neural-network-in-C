@@ -161,11 +161,11 @@ void sine_wave_test2()
 	for (int k = 0; k < dim_K; ++k)
 		K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
 	
-	for (int i = 0; i < 50; ++i)
+	for (int i = 0; 1; ++i)
 		{
 		sum_error2 = 0.0f;
 
-		#define N 60		// loop from 0 to 2π in N divisions
+		#define N 10		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N; j++) 
 			{
 			forward_prop(Net, dim_K, K);
