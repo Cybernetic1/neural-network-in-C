@@ -112,8 +112,10 @@ void line(int x1, double y1, int x2, double y2)
 
 // Show components of K vector as a line graph
 extern double K[];
-void plot_K()
+int plot_K()
 	{
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
+
 	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
 	SDL_RenderClear(gfx);		//Clear screen
 
@@ -130,6 +132,13 @@ void plot_K()
 
 	SDL_RenderPresent(gfx);
 	SDL_Delay(70 /* milliseconds */);
+
+	// Read keyboard state, if "Q" is pressed, return 1
+	SDL_PumpEvents();
+    if (keys[SDL_SCANCODE_Q])
+		return 1;
+	else
+		return 0;
 	}
 
 void test_rectangles()	// old code, just for testing

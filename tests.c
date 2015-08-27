@@ -8,7 +8,7 @@ extern void forward_prop(NNET *, int, double *);
 extern void back_prop(NNET *);
 extern void init_graphics();
 extern void pause_graphics();
-extern void plot_K();
+extern int plot_K();
 
 extern double K[];
 extern NNET *Net;
@@ -26,6 +26,8 @@ void K_wandering_test()
 
 	init_graphics();
 
+	printf("Press 'Q' to quit\n");
+	
 	for (int j = 0; j < 10000; j++) // max number of iterations
 		{
 		forward_prop(Net, dim_K, K);
@@ -43,7 +45,8 @@ void K_wandering_test()
 			d += (diff * diff);
 			}
 		
-		plot_K();
+		if (plot_K())
+			break;
 		
 		// printf("\n");
 		if (d < 0.000001)
@@ -53,7 +56,7 @@ void K_wandering_test()
 			}
 		}
 	
-	pause_graphics();
+	// pause_graphics();
 	free(Net);
 	}
 
