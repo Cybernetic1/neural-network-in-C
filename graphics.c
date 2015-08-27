@@ -3,6 +3,83 @@
 
 #include "RNN.h"
 
+SDL_Renderer *gfx_NN;
+SDL_Window *win_NN;
+
+#define NN_box_width 600
+#define NN_box_height 600
+
+#define f2i(v) ((int)(256.0f * v))		// for converting color values
+
+void start_NN_plot(void)
+	{
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_NN = SDL_CreateWindow("?", 100, 600, NN_box_width, NN_box_height, SDL_WINDOW_SHOWN);
+	if (win_NN == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_NN = SDL_CreateRenderer(win_NN, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_NN == NULL)
+		{
+		SDL_DestroyWindow(win_NN);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+	}
+
+void plot_NN(NNET *net)
+	{
+	SDL_SetRenderDrawColor(gfx_NN, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_NN);		//Clear screen
+
+	#define Volume 20.0f
+	#define NeuronWidth 20
+
+	#define numLayers (net->numLayers)
+	for (int l = 0; l < numLayers; l++)
+		{
+		// set color
+		float r = ((float) l ) / numLayers;
+		float b = 1.0f - ((float) l ) / numLayers;
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x80, f2i(b), 0x80);
+
+		int nn = net->layers[l].numNeurons;
+
+		// draw baseline
+		#define X_step ((NN_box_width - 20 - nn * NeuronWidth) / (numLayers - 1))
+		int baseline_x = 10 + l * X_step;
+		#define Y_step ((NN_box_height - (int) Volume * 14) / (numLayers - 1))
+		int baseline_y = (int) Volume * 7 + l * Y_step;
+		SDL_RenderDrawLine(gfx_NN, baseline_x, baseline_y, \
+			baseline_x + nn * NeuronWidth, baseline_y);
+
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x80, f2i(b), 0x60);
+		
+		for (int n = 0; n < nn; n++)
+			{
+			NEURON neuron = net->layers[l].neurons[n];
+			double output = neuron.output;
+
+			int basepoint_x = baseline_x + NeuronWidth * n;
+			SDL_RenderDrawLine(gfx_NN, basepoint_x, baseline_y, \
+				basepoint_x, baseline_y - output * Volume);
+			}
+		}
+
+	SDL_RenderPresent(gfx_NN);
+	}
+
 SDL_Renderer *gfx;
 SDL_Window *win;
 
@@ -76,7 +153,6 @@ void rectI(int x, int y, int w, int h, int r, int g, int b)
 
 void rect(int x, int y, int w, int h, float r, float g, float b)
 	{
-	#define f2i(v) ((int)(256.0f * v))
 	rectI(x, y, w, h, f2i(r), f2i(g), f2i(b));
 	}
 
@@ -100,7 +176,7 @@ void draw_NN(NNET *net)
 			if (r < -1) r = -1;
 
 			float g = output > 0 ? output : 0;
-			if (r < +1) r = +1;
+			if (g < +1) g = +1;
 
 			float b = neuron.input;
 

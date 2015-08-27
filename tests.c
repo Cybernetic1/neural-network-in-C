@@ -9,6 +9,8 @@ extern void back_prop(NNET *);
 extern void init_graphics();
 extern void pause_graphics();
 extern int plot_K();
+extern void start_NN_plot(void);
+extern void plot_NN(NNET *net);
 extern void draw_NN(NNET *net);
 extern void draw_trainer(double);
 
@@ -65,6 +67,9 @@ void K_wandering_test()
 
 // Train RNN to reproduce a sine wave time-series
 // Train the 0-th component of K to move as sine wave
+// This version uses the time-step *differences* to train K
+// In other words, K moves like the sine wave, but K's magnitude is free to vary and
+// will be different every time this test is called.
 void sine_wave_test()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
@@ -143,11 +148,12 @@ void sine_wave_test()
 
 // Train RNN to reproduce a sine wave time-series
 // Train the 0-th component of K to move as sine wave
+// This version uses the actual value of sine to train K
 void sine_wave_test2()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 4;
-	int neuronsOfLayer[4] = {10, 15, 15, 10}; // first = input layer, last = output layer
+	int numLayers = 3;
+	int neuronsOfLayer[3] = {10, 15, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
@@ -155,6 +161,7 @@ void sine_wave_test2()
 	#define Pi 3.141592654f
 
 	init_graphics();
+	start_NN_plot();
 	printf("Press 'Q' to quit\n\n");
 	
 	// Initialize K vector
@@ -165,14 +172,14 @@ void sine_wave_test2()
 		{
 		sum_error2 = 0.0f;
 
-		#define N 20		// loop from 0 to 2π in N divisions
-		for (int j = 0; j < N; j++) 
+		#define N2 20		// loop from 0 to 2π in N divisions
+		for (int j = 0; j < N2; j++) 
 			{
 			forward_prop(Net, dim_K, K);
 
-			// Desired valued
+			// Desired value
 			#define Amplitude2 1.0f
-			double K_star = Amplitude2 * ( sin(2 * Pi * j / N) );
+			double K_star = Amplitude2 * ( sin(2 * Pi * j / N2) );
 
 			// Difference between actual outcome and desired value:
 			double error = LastLayer.neurons[0].output - K_star;
@@ -195,6 +202,7 @@ void sine_wave_test2()
 
 			draw_trainer(K_star);
 			draw_NN(Net);
+			plot_NN(Net);
 			}
 
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);
