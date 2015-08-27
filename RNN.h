@@ -24,6 +24,4 @@ typedef struct NNET
     LAYER *layers;
 	} NNET; //neural network
 
-#define dim_K 10			// dimension of cognitive state vector K
-
-double K[dim_K];
+#define dim_K	10

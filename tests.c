@@ -6,10 +6,14 @@
 extern void create_NN(NNET *, int, int *);
 extern void forward_prop(NNET *, int, double *);
 extern void back_prop(NNET *);
+extern void init_graphics();
+extern void pause_graphics();
+extern void plot_K();
+
+extern double K[];
+extern NNET *Net;
 
 #define LastLayer (Net->layers[numLayers - 1])
-
-extern NNET *Net;
 
 // Randomly generate an RNN, watch it operate on K and see how K moves
 void K_wandering_test()
@@ -20,11 +24,13 @@ void K_wandering_test()
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 
+	init_graphics();
+
 	for (int j = 0; j < 10000; j++) // max number of iterations
 		{
 		forward_prop(Net, dim_K, K);
 
-		printf("%02d", j);
+		// printf("%02d", j);
 		double d = 0.0;
 
 		// copy output to input
@@ -32,17 +38,22 @@ void K_wandering_test()
 			{
 			K2[k] = K[k];
 			K[k] = LastLayer.neurons[k].output;
-			printf(", %0.4lf", K[k]);
+			// printf(", %0.4lf", K[k]);
 			double diff = (K2[k] - K[k]);
 			d += (diff * diff);
 			}
-		printf("\n");
+		
+		plot_K();
+		
+		// printf("\n");
 		if (d < 0.000001)
 			{
 			fprintf(stderr, "terminated after %d cycles,\t delta = %lf\n", j, d);
 			break;
 			}
 		}
+	
+	pause_graphics();
 	free(Net);
 	}
 

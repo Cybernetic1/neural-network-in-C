@@ -4,14 +4,18 @@
 
 #include "RNN.h"
 
+#define dim_K 10			// dimension of cognitive state vector K
+double K[dim_K];
+
 extern void create_NN(NNET *, int, int *);
 extern void Q_learn(double *, double *, double, double);
 extern void Q_act(double *, double *);
 extern void forward_prop(NNET *, int, double *);
 extern double calc_error(NNET *, double []);
 extern void back_prop(NNET *);
-extern void drawNetwork(NNET *, SDL_Renderer*);
-extern void plot_rectangles(SDL_Renderer*);
+extern void drawNetwork(NNET *);
+extern void pause_graphics();
+extern void init_graphics();
 
 //************************** training data ***********************//
 // Each entry of training data consists of a K input value and a desired K
@@ -121,8 +125,7 @@ void main_loop()
 	int maxlen = 0;
 	int epoch = 1;
 
-	extern SDL_Renderer * newWindow(void);
-	SDL_Renderer *gfx = newWindow(); // create graphics window
+	init_graphics();
 
 	//output data to a file
 	FILE *fout;
@@ -183,7 +186,7 @@ void main_loop()
 		maxlen++;
 		epoch++;
 
-		drawNetwork(Net, gfx);
+		drawNetwork(Net);
 		SDL_Delay(1000 /* milliseconds */);
 
 		}
@@ -195,7 +198,7 @@ void main_loop()
 	free(Qnet);
 	free(K2);
 
-	plot_rectangles(gfx); //keep the window open
+	pause_graphics();	//keep the window open
 	}
 
 
@@ -205,11 +208,11 @@ int main(int argc, char** argv)
 	{
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	// extern void K_wandering_test();
-	// K_wandering_test();
+	extern void K_wandering_test();
+	K_wandering_test();
 	
-	extern void sine_wave_test();
-	sine_wave_test();
+	// extern void sine_wave_test();
+	// sine_wave_test();
 
 	return 0;
 	}
