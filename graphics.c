@@ -139,7 +139,7 @@ int plot_K()
 			(k + 1) * Width, Amplitude * K[k]);
 
 	SDL_RenderPresent(gfx);
-	SDL_Delay(70 /* milliseconds */);
+	// SDL_Delay(70 /* milliseconds */);
 
 	// Read keyboard state, if "Q" is pressed, return 1
 	SDL_PumpEvents();

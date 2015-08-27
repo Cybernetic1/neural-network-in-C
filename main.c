@@ -216,11 +216,14 @@ int main(int argc, char** argv)
 
 	switch (WhichTest)
 		{
-		case 1:
+		case 0:
 			K_wandering_test();
 			return 0;
-		case 2:
+		case 1:
 			sine_wave_test();
+			return 0;
+		case 2:
+			sine_wave_test2();
 			return 0;
 		}
 	}
