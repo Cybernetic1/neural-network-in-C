@@ -3,13 +3,21 @@
 
 #include "RNN.h"
 
-SDL_Renderer *gfx_NN;
+SDL_Renderer *gfx_NN;					// For YKY's NN visualizer
 SDL_Window *win_NN;
+
+SDL_Renderer *gfx_NN2;					// For Seh's NN visualizer
+SDL_Window *win_NN2;
+
+SDL_Renderer *gfx_K;					// For K-vector visualizer
+SDL_Window *win_K;
+
+#define f2i(v) ((int)(256.0f * v))		// for converting color values
+
+// *************************** YKY's NN visualizer *************************************
 
 #define NN_box_width 600
 #define NN_box_height 600
-
-#define f2i(v) ((int)(256.0f * v))		// for converting color values
 
 void start_NN_plot(void)
 	{
@@ -80,10 +88,12 @@ void plot_NN(NNET *net)
 	SDL_RenderPresent(gfx_NN);
 	}
 
-SDL_Renderer *gfx;
-SDL_Window *win;
+// *************************** Seh's NN visualizer *************************************
 
-void init_graphics(void)
+#define NN2_box_width 150
+#define NN2_box_height 400
+
+void start_NN2_plot(void)
 	{
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -92,63 +102,29 @@ void init_graphics(void)
 		return;
 		}
 
-	win = SDL_CreateWindow("?", 400, 150, 600, 400, SDL_WINDOW_SHOWN);
-	if (win == NULL)
+	win_NN2 = SDL_CreateWindow("?", 800, 650, NN2_box_width, NN2_box_height, SDL_WINDOW_SHOWN);
+	if (win_NN2 == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
 		SDL_Quit();
 		return;
 		}
 
-	gfx = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (gfx == NULL)
+	gfx_NN2 = SDL_CreateRenderer(win_NN2, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_NN2 == NULL)
 		{
-		SDL_DestroyWindow(win);
+		SDL_DestroyWindow(win_NN2);
 		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
 		SDL_Quit();
 		return;
 		}
 	}
 
-void pause_graphics()
-	{
-	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
-	bool quit = NULL;
-	SDL_Event e;
-
-	//Update screen
-	SDL_RenderPresent(gfx);
-
-	//While application is running
-	while (!quit)
-		{
-		//Handle events on queue
-		while (SDL_PollEvent(&e) != 0)
-			{
-			//User requests quit
-			if (e.type == SDL_QUIT)			// This seems to be close-window event
-				quit = true;
-			if (keys[SDL_SCANCODE_Q])		// press 'Q' to quit
-				quit = true;
-			}
-		}
-	SDL_DestroyRenderer(gfx);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-	}
-
-void quit_graphics()
-	{
-	SDL_DestroyRenderer(gfx);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-	}
-
 void rectI(int x, int y, int w, int h, int r, int g, int b)
 	{
 	SDL_Rect fillRect = {x, y, w, h};
-	SDL_SetRenderDrawColor(gfx, r, g, b, 0xFF);
-	SDL_RenderFillRect(gfx, &fillRect);
+	SDL_SetRenderDrawColor(gfx_NN2, r, g, b, 0xFF);
+	SDL_RenderFillRect(gfx_NN2, &fillRect);
 	}
 
 void rect(int x, int y, int w, int h, float r, float g, float b)
@@ -156,14 +132,16 @@ void rect(int x, int y, int w, int h, float r, float g, float b)
 	rectI(x, y, w, h, f2i(r), f2i(g), f2i(b));
 	}
 
-void draw_NN(NNET *net)
+void plot_NN2(NNET *net)
 	{
-	//SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
-	//SDL_RenderClear(gfx);		//Clear screen
+	SDL_SetRenderDrawColor(gfx_NN2, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_NN2);		//Clear screen
 
 	int bwh = 20; /* neuron block width,height*/
-
 	#define numLayers (net->numLayers)
+	#define L_margin ((NN2_box_width - numLayers * bwh) / 2)
+	#define T_margin ((NN2_box_height - nn * bwh) / 2)
+	
 	for (int l = 0; l < numLayers; l++)
 		{
 		int nn = net->layers[l].numNeurons;
@@ -180,18 +158,50 @@ void draw_NN(NNET *net)
 
 			float b = neuron.input;
 
-			rect(l*bwh, n*bwh, bwh, bwh, r, g, b);
+			rect(L_margin + l*bwh, T_margin + n*bwh, bwh, bwh, r, g, b);
 			}
 		}
 
-	SDL_RenderPresent(gfx);
+	SDL_RenderPresent(gfx_NN2);
+	}
+
+//******************************* K vector visualizer ******************************
+
+#define K_box_width 600
+#define K_box_height 300
+
+void start_K_plot(void)
+	{
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_K = SDL_CreateWindow("?", 400, 200, K_box_width, K_box_height, SDL_WINDOW_SHOWN);
+	if (win_K == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_K = SDL_CreateRenderer(win_K, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_K == NULL)
+		{
+		SDL_DestroyWindow(win_K);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
 	}
 
 void line(int x1, double y1, int x2, double y2)
 	{
-	#define TopX 150
-	#define TopY 200
-	SDL_RenderDrawLine(gfx, x1 + TopX, (int) y1 + TopY, x2 + TopX, (int) y2 + TopY);
+	#define TopX 20
+	#define TopY (K_box_height / 2)
+	SDL_RenderDrawLine(gfx_K, x1 + TopX, (int) y1 + TopY, x2 + TopX, (int) y2 + TopY);
 	}
 
 // Show components of K vector as a line graph
@@ -201,23 +211,21 @@ int plot_K()
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 
 	//Clear screen
-	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
-	SDL_Rect fillRect = {TopX - 20, 0, 13 * 30, 400};
-	SDL_RenderFillRect(gfx, &fillRect);
-	// SDL_RenderClear(gfx);
+	SDL_SetRenderDrawColor(gfx_K, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_K);
 
 	// Draw base line
-	#define Width 30
-	SDL_SetRenderDrawColor(gfx, 0xFF, 0x00, 0x00, 0xFF);
-	line(0, 0, 12 * Width, 0);
+	#define K_Width ((K_box_width - TopX * 2) / dim_K)
+	SDL_SetRenderDrawColor(gfx_K, 0xFF, 0x00, 0x00, 0xFF);
+	SDL_RenderDrawLine(gfx_K, 0, TopY, K_box_width, TopY);
 
-	SDL_SetRenderDrawColor(gfx, 0x1E, 0xD3, 0xEB, 0xFF);
+	SDL_SetRenderDrawColor(gfx_K, 0x1E, 0xD3, 0xEB, 0xFF);
 	#define Amplitude 20.0f
 	for (int k = 1; k < dim_K; ++k)
-		line(k * Width,		 Amplitude * K[k - 1],
-			(k + 1) * Width, Amplitude * K[k]);
+		line(k * K_Width,		 Amplitude * K[k - 1],
+			(k + 1) * K_Width, Amplitude * K[k]);
 
-	// SDL_RenderPresent(gfx);
+	SDL_RenderPresent(gfx_K);
 	// SDL_Delay(70 /* milliseconds */);
 
 	// Read keyboard state, if "Q" is pressed, return 1
@@ -228,18 +236,64 @@ int plot_K()
 		return 0;
 	}
 
-void draw_trainer(double val)
+void plot_trainer(double val)
 	{
 	int y = (int) (Amplitude * val);
 
-	SDL_SetRenderDrawColor(gfx, 0xEB, 0xCC, 0x1E, 0xFF);
-	SDL_Rect fillRect = {TopX - 5, y + TopY, 5, -y};
-	SDL_RenderFillRect(gfx, &fillRect);
-	SDL_RenderPresent(gfx);
+	SDL_SetRenderDrawColor(gfx_K, 0xEB, 0xCC, 0x1E, 0xFF);
+	SDL_Rect fillRect = {TopX, y + TopY, 5, -y};
+	SDL_RenderFillRect(gfx_K, &fillRect);
+	SDL_RenderPresent(gfx_K);
 	SDL_Delay(70 /* milliseconds */);
 	}
 
-//************************* old code below, just for testing ************************/
+void pause_graphics()
+	{
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
+	bool quit = NULL;
+	SDL_Event e;
+
+	//Update screen
+	SDL_RenderPresent(gfx_K);
+
+	//While application is running
+	while (!quit)
+		{
+		//Handle events on queue
+		while (SDL_PollEvent(&e) != 0)
+			{
+			//User requests quit
+			if (e.type == SDL_QUIT)			// This seems to be close-window event
+				quit = true;
+			if (keys[SDL_SCANCODE_Q])		// press 'Q' to quit
+				quit = true;
+			}
+		}
+	SDL_DestroyRenderer(gfx_NN);
+	SDL_DestroyRenderer(gfx_NN2);
+	SDL_DestroyRenderer(gfx_K);
+
+	SDL_DestroyWindow(win_NN);
+	SDL_DestroyWindow(win_NN2);
+	SDL_DestroyWindow(win_K);
+
+	SDL_Quit();
+	}
+
+void quit_graphics()
+	{
+	SDL_DestroyRenderer(gfx_NN);
+	SDL_DestroyRenderer(gfx_NN2);
+	SDL_DestroyRenderer(gfx_K);
+
+	SDL_DestroyWindow(win_NN);
+	SDL_DestroyWindow(win_NN2);
+	SDL_DestroyWindow(win_K);
+
+	SDL_Quit();
+	}
+
+/* ************************ old code below, just for testing ************************
 
 void test_rectangles()	// old code
 	{
@@ -362,3 +416,4 @@ int test_SDL()		// old code, just to test if it works
 	return 0;
 	}
 
+*/

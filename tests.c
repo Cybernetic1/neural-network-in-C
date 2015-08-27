@@ -6,13 +6,14 @@
 extern void create_NN(NNET *, int, int *);
 extern void forward_prop(NNET *, int, double *);
 extern void back_prop(NNET *);
-extern void init_graphics();
 extern void pause_graphics();
-extern int plot_K();
 extern void start_NN_plot(void);
+extern void start_NN2_plot(void);
+extern void start_K_plot(void);
 extern void plot_NN(NNET *net);
-extern void draw_NN(NNET *net);
-extern void draw_trainer(double);
+extern void plot_NN2(NNET *net);
+extern int plot_K();
+extern void plot_trainer(double);
 
 extern double K[];
 extern NNET *Net;
@@ -29,7 +30,7 @@ void K_wandering_test()
 	double K2[dim_K];
 	int quit = 0;
 	
-	init_graphics();
+	start_K_plot();
 	printf("Press 'Q' to quit\n\n");
 	
 	for (int j = 0; j < 10000; j++) // max number of iterations
@@ -81,7 +82,7 @@ void sine_wave_test()
 	double sum_error2;
 	#define Pi 3.141592654f
 
-	init_graphics();
+	start_K_plot();
 	printf("Press 'Q' to quit\n\n");
 	
 	// Initialize K vector
@@ -152,16 +153,17 @@ void sine_wave_test()
 void sine_wave_test2()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 3;
-	int neuronsOfLayer[3] = {10, 15, 10}; // first = input layer, last = output layer
+	int numLayers = 4;
+	int neuronsOfLayer[4] = {10, 13, 15, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
 	#define Pi 3.141592654f
 
-	init_graphics();
 	start_NN_plot();
+	start_NN2_plot();
+	start_K_plot();
 	printf("Press 'Q' to quit\n\n");
 	
 	// Initialize K vector
@@ -200,8 +202,8 @@ void sine_wave_test2()
 			if (quit = plot_K())
 				break;
 
-			draw_trainer(K_star);
-			draw_NN(Net);
+			plot_trainer(K_star);
+			plot_NN2(Net);
 			plot_NN(Net);
 			}
 

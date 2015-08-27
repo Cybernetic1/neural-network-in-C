@@ -13,9 +13,10 @@ extern void Q_act(double *, double *);
 extern void forward_prop(NNET *, int, double *);
 extern double calc_error(NNET *, double []);
 extern void back_prop(NNET *);
-extern void draw_NN(NNET *net);
+extern void plot_NN(NNET *net);
 extern void pause_graphics();
-extern void init_graphics();
+extern void start_NN_plot();
+extern void start_K_plot();
 
 //************************** training data ***********************//
 // Each entry of training data consists of a K input value and a desired K
@@ -126,7 +127,8 @@ void main_loop()
 	int maxlen = 0;
 	int epoch = 1;
 
-	init_graphics();
+	start_NN_plot();
+	start_K_plot();
 
 	//output data to a file
 	FILE *fout;
@@ -187,7 +189,7 @@ void main_loop()
 		maxlen++;
 		epoch++;
 
-		draw_NN(Net);
+		plot_NN(Net);
 		SDL_Delay(1000 /* milliseconds */);
 
 		}
