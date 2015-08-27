@@ -76,17 +76,18 @@ void read_trainers()
 // Users may reward Genifer's response but there is the problem of *delays*.  At this 
 // stage, to simplify things, we pause processing for users to give *immediate* response.
 // If no output word is printed, reward would be 0 (which defaults to a discount cost).
+
 double get_reward(double K[])
 	{
-	double R = -0.01f;				// default value
-	
-	if (0)	// Genifer outputs word?
+	double R = -0.01f; // default value
+
+	if (0) // Genifer outputs word?
 		// Wait for user / supervisor response
 		;
 
 	return R;
 	}
-			
+
 //************************** main algorithm ***********************//
 // Main loop:
 // 	----- RNN part -----
@@ -171,8 +172,8 @@ void main_loop()
 		Q_act(K, K2); // this changes K2
 
 		// Invoke Q-learning, using the reward to update Q
-		double R = get_reward(K2);	// reward is gotten from the state transition
-		double oldQ = 0.0;			// ? TO-DO
+		double R = get_reward(K2); // reward is gotten from the state transition
+		double oldQ = 0.0; // ? TO-DO
 		Q_learn(K, K2, R, oldQ);
 
 		// ------ calculate error -------
@@ -198,7 +199,7 @@ void main_loop()
 	free(Qnet);
 	free(K2);
 
-	pause_graphics();	//keep the window open
+	pause_graphics(); //keep the window open
 	}
 
 
@@ -208,11 +209,17 @@ int main(int argc, char** argv)
 	{
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	// extern void K_wandering_test();
-	// K_wandering_test();
-	
-	extern void sine_wave_test();
-	sine_wave_test();
+	#define WhichTest 2
 
-	return 0;
+	switch (WhichTest)
+		{
+		case 1:
+			extern void K_wandering_test();
+			K_wandering_test();
+			return 0;
+		case 2:
+			extern void sine_wave_test();
+			sine_wave_test();
+			return 0;
+		}
 	}
