@@ -68,15 +68,21 @@ void read_trainers()
 
 //************************** get rewards ***************************//
 
-double get_reward()
+// Check if "output" bit of K is set;  If yes, the "output word" inside K is printed.
+// Users may reward Genifer's response but there is the problem of *delays*.  At this 
+// stage, to simplify things, we pause processing for users to give *immediate* response.
+// If no output word is printed, reward would be 0 (which defaults to a discount cost).
+double get_reward(double K[])
 	{
-	// Check if "output" bit of K is set;  If yes, the "output word" inside K is printed.
-	// Users may reward Genifer's response but there is the problem of *delays*.  At this 
-	// stage, to simplify things, we pause processing for users to give *immediate* response.
-	// If no output word is printed, reward would be 0 (which defaults to a discount cost).
-	return 0.0f;
-	}
+	double R = -0.01f;				// default value
+	
+	if (0)	// Genifer outputs word?
+		// Wait for user / supervisor response
+		;
 
+	return R;
+	}
+			
 //************************** main algorithm ***********************//
 // Main loop:
 // 	----- RNN part -----
@@ -162,23 +168,23 @@ void main_loop()
 		Q_act(K, K2); // this changes K2
 
 		// Invoke Q-learning, using the reward to update Q
-		double R = get_reward();	// reward is gotten from the state transition
-		double oldQ = 0.0;			// ?
+		double R = get_reward(K2);	// reward is gotten from the state transition
+		double oldQ = 0.0;			// ? TO-DO
 		Q_learn(K, K2, R, oldQ);
 
 		// ------ calculate error -------
 
 		// error[maxlen] = sqrt(squareErrorSum / DATASIZE);
-		printf("%03d:", epoch);
+		printf("%03d", epoch);
 		for (int i = 0; i < dim_K; ++i)
-			printf(" %lf", K[i]);
+			printf(", %lf", K[i]);
 		printf("\n");
 		// fprintf(fout, "%d", epoch);
 		maxlen++;
 		epoch++;
 
 		drawNetwork(Net, gfx);
-		SDL_Delay(1000 /* milliseconds*/);
+		SDL_Delay(1000 /* milliseconds */);
 
 		}
 	while (maxlen < MAX_EPOCHS);
@@ -199,8 +205,11 @@ int main(int argc, char** argv)
 	{
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	extern void test_K_wandering();
-	test_K_wandering();
+	// extern void K_wandering_test();
+	// K_wandering_test();
+	
+	extern void sine_wave_test();
+	sine_wave_test();
 
 	return 0;
 	}

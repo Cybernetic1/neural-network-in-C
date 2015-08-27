@@ -72,7 +72,7 @@ double Q(double K[], double K2[])
 		K12[k + dim_K] = K2[k];
 		}
 
-	// forward_prop(Qnet, dim_K * 2, K12);
+	forward_prop(Qnet, dim_K * 2, K12);
 
 	#define numLayers 3
 	#define LastLayer (Qnet->layers[numLayers - 1])
