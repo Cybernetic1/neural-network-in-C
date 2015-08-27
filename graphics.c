@@ -15,7 +15,7 @@ void init_graphics(void)
 		return;
 		}
 
-	win = SDL_CreateWindow("?", 10, 300, 600, 400, SDL_WINDOW_SHOWN);
+	win = SDL_CreateWindow("?", 400, 150, 600, 400, SDL_WINDOW_SHOWN);
 	if (win == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -35,6 +35,7 @@ void init_graphics(void)
 
 void pause_graphics()
 	{
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 	bool quit = NULL;
 	SDL_Event e;
 
@@ -48,12 +49,19 @@ void pause_graphics()
 		while (SDL_PollEvent(&e) != 0)
 			{
 			//User requests quit
-			if (e.type == SDL_QUIT)
-				{
+			if (e.type == SDL_QUIT)			// This seems to be close-window event
 				quit = true;
-				}
+			if (keys[SDL_SCANCODE_Q])		// press 'Q' to quit
+				quit = true;
 			}
 		}
+	SDL_DestroyRenderer(gfx);
+	SDL_DestroyWindow(win);
+	SDL_Quit();
+	}
+
+void quit_graphics()
+	{
 	SDL_DestroyRenderer(gfx);
 	SDL_DestroyWindow(win);
 	SDL_Quit();
@@ -141,7 +149,9 @@ int plot_K()
 		return 0;
 	}
 
-void test_rectangles()	// old code, just for testing
+//************************* old code below, just for testing ************************/
+
+void test_rectangles()	// old code
 	{
 	bool quit = NULL;
 	SDL_Event e;

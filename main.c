@@ -208,11 +208,11 @@ int main(int argc, char** argv)
 	{
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	extern void K_wandering_test();
-	K_wandering_test();
+	// extern void K_wandering_test();
+	// K_wandering_test();
 	
-	// extern void sine_wave_test();
-	// sine_wave_test();
+	extern void sine_wave_test();
+	sine_wave_test();
 
 	return 0;
 	}

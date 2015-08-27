@@ -23,10 +23,10 @@ void K_wandering_test()
 	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
-
+	int quit = 0;
+	
 	init_graphics();
-
-	printf("Press 'Q' to quit\n");
+	printf("Press 'Q' to quit\n\n");
 	
 	for (int j = 0; j < 10000; j++) // max number of iterations
 		{
@@ -45,7 +45,7 @@ void K_wandering_test()
 			d += (diff * diff);
 			}
 		
-		if (plot_K())
+		if (quit = plot_K())
 			break;
 		
 		// printf("\n");
@@ -56,7 +56,8 @@ void K_wandering_test()
 			}
 		}
 	
-	// pause_graphics();
+	if (!quit)
+		pause_graphics();
 	free(Net);
 	}
 
@@ -69,10 +70,12 @@ void sine_wave_test()
 	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
-
-	#define Pi 3.141592654f
-	
+	int quit;
 	double sum_error2;
+	#define Pi 3.141592654f
+
+	init_graphics();
+	printf("Press 'Q' to quit\n\n");
 	
 	// Initialize K vector
 	for (int k = 0; k < dim_K; ++k)
@@ -89,7 +92,8 @@ void sine_wave_test()
 
 			// The difference between K[0] and K'[0] should be equal to [sin(θ+dθ) - sinθ]
 			// where θ = 2π j/60.
-			double dK_star = ( sin(2*Pi * (j+1) / N) - sin(2*Pi * j / N) );
+			#define Amplitude 2.0f
+			double dK_star = Amplitude * ( sin(2*Pi * (j+1) / N) - sin(2*Pi * j / N) );
 
 			// Calculate actual difference between K[0] and K'[0]:
 			double dK = LastLayer.neurons[0].output - K[0];
@@ -114,12 +118,23 @@ void sine_wave_test()
 				K[k] = LastLayer.neurons[k].output;
 
 			sum_error2 += (error * error);		// record sum of squared errors
+			
+			if (quit = plot_K())
+				break;
 			}
 
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);
-
+		if (isnan(sum_error2))
+			break;
+		
 		if (sum_error2 < 0.01)
 			break;
+		
+		if (quit)
+			break;
 		}
+	
+	if (!quit)
+		pause_graphics();
 	free(Net);
 	}
