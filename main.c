@@ -207,18 +207,19 @@ void main_loop()
 
 int main(int argc, char** argv)
 	{
-	printf("*** Welcome to Genifer 5.3 ***\n\n");
+	extern void K_wandering_test();
+	extern void sine_wave_test();
 
+	printf("*** Welcome to Genifer 5.3 ***\n\n");
+	
 	#define WhichTest 2
 
 	switch (WhichTest)
 		{
 		case 1:
-			extern void K_wandering_test();
 			K_wandering_test();
 			return 0;
 		case 2:
-			extern void sine_wave_test();
 			sine_wave_test();
 			return 0;
 		}
