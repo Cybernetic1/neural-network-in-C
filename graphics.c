@@ -124,17 +124,18 @@ int plot_K()
 	{
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 
+	//Clear screen
 	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
 	SDL_Rect fillRect = {TopX - 20, 0, 13 * 30, 400};
 	SDL_RenderFillRect(gfx, &fillRect);
-	// SDL_RenderClear(gfx);		//Clear screen
+	// SDL_RenderClear(gfx);
 
 	// Draw base line
 	#define Width 30
-	SDL_SetRenderDrawColor(gfx, 0xFF, 0, 0, 0xFF);
+	SDL_SetRenderDrawColor(gfx, 0xFF, 0x00, 0x00, 0xFF);
 	line(0, 0, 12 * Width, 0);
 
-	SDL_SetRenderDrawColor(gfx, 0, 0xFF, 0, 0xFF);
+	SDL_SetRenderDrawColor(gfx, 0x1E, 0xD3, 0xEB, 0xFF);
 	#define Amplitude 20.0f
 	for (int k = 1; k < dim_K; ++k)
 		line(k * Width,		 Amplitude * K[k - 1],
@@ -155,8 +156,8 @@ void draw_trainer(double val)
 	{
 	int y = (int) (Amplitude * val);
 
-	SDL_SetRenderDrawColor(gfx, 0xFF, 0xDD, 0xDD, 0xFF);
-	SDL_Rect fillRect = {TopX - 15, y + TopY, 5, 3};
+	SDL_SetRenderDrawColor(gfx, 0xEB, 0xCC, 0x1E, 0xFF);
+	SDL_Rect fillRect = {TopX - 5, y + TopY, 5, -y};
 	SDL_RenderFillRect(gfx, &fillRect);
 	SDL_RenderPresent(gfx);
 	SDL_Delay(70 /* milliseconds */);

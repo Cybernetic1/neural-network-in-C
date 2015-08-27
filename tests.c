@@ -146,8 +146,8 @@ void sine_wave_test()
 void sine_wave_test2()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 3;
-	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
+	int numLayers = 4;
+	int neuronsOfLayer[4] = {10, 15, 15, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
@@ -165,7 +165,7 @@ void sine_wave_test2()
 		{
 		sum_error2 = 0.0f;
 
-		#define N 10		// loop from 0 to 2π in N divisions
+		#define N 20		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N; j++) 
 			{
 			forward_prop(Net, dim_K, K);
