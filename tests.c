@@ -9,6 +9,7 @@ extern void back_prop(NNET *);
 extern void init_graphics();
 extern void pause_graphics();
 extern int plot_K();
+extern void draw_NN(NNET *net);
 
 extern double K[];
 extern NNET *Net;
@@ -169,8 +170,8 @@ void sine_wave_test2()
 			forward_prop(Net, dim_K, K);
 
 			// Desired valued
-			#define Amplitude 1.0f
-			double K_star = Amplitude * ( sin(2 * Pi * j / N) );
+			#define Amplitude2 1.0f
+			double K_star = Amplitude2 * ( sin(2 * Pi * j / N) );
 
 			// Difference between actual outcome and desired value:
 			double error = LastLayer.neurons[0].output - K_star;
@@ -190,6 +191,8 @@ void sine_wave_test2()
 			
 			if (quit = plot_K())
 				break;
+			
+			draw_NN(Net);
 			}
 
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);

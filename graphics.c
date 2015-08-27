@@ -80,7 +80,7 @@ void rect(int x, int y, int w, int h, float r, float g, float b)
 	rectI(x, y, w, h, f2i(r), f2i(g), f2i(b));
 	}
 
-void drawNetwork(NNET *net)
+void draw_NN(NNET *net)
 	{
 	SDL_SetRenderDrawColor(gfx, 0, 0, 0, 0xFF);
 	SDL_RenderClear(gfx);		//Clear screen
@@ -113,7 +113,7 @@ void drawNetwork(NNET *net)
 
 void line(int x1, double y1, int x2, double y2)
 	{
-	#define TopX 50
+	#define TopX 150
 	#define TopY 200
 	SDL_RenderDrawLine(gfx, x1 + TopX, (int) y1 + TopY, x2 + TopX, (int) y2 + TopY);
 	}
