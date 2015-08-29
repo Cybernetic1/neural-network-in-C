@@ -12,7 +12,7 @@ extern void start_NN2_plot(void);
 extern void start_K_plot(void);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
-extern int plot_K();
+extern int plot_K(int);
 extern void plot_trainer(double);
 
 extern double K[];
@@ -49,8 +49,8 @@ void K_wandering_test()
 			double diff = (K2[k] - K[k]);
 			d += (diff * diff);
 			}
-		
-		if (quit = plot_K())
+
+		if (quit = plot_K(100))		// delay in milliseconds
 			break;
 		
 		// printf("\n");
@@ -60,7 +60,7 @@ void K_wandering_test()
 			break;
 			}
 		}
-	
+
 	if (!quit)
 		pause_graphics();
 	free(Net);
@@ -74,14 +74,16 @@ void K_wandering_test()
 void sine_wave_test()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 3;
-	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
+	int numLayers = 4;
+	int neuronsOfLayer[4] = {10, 15, 15, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
 	#define Pi 3.141592654f
 
+	start_NN_plot();
+	start_NNW_plot();
 	start_K_plot();
 	printf("Press 'Q' to quit\n\n");
 	
@@ -89,13 +91,14 @@ void sine_wave_test()
 	for (int k = 0; k < dim_K; ++k)
 		K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
 	
-	for (int i = 0; i < 50; ++i)
+	for (int i = 0; 1; ++i)
 		{
 		sum_error2 = 0.0f;
 
-		#define N 120		// loop from 0 to 2π in N divisions
+		#define N 10		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N; j++) 
 			{
+			// Allow multiple forward propagations
 			forward_prop(Net, dim_K, K);
 
 			// The difference between K[0] and K'[0] should be equal to [sin(θ+dθ) - sinθ]
@@ -127,8 +130,12 @@ void sine_wave_test()
 
 			sum_error2 += (error * error);		// record sum of squared errors
 			
-			if (quit = plot_K())
+			if (quit = plot_K(0))
 				break;
+
+			plot_trainer(dK_star / 5.0 * N);
+			plot_NNW(Net);
+			plot_NN(Net);
 			}
 
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);
@@ -150,11 +157,14 @@ void sine_wave_test()
 // Train RNN to reproduce a sine wave time-series
 // Train the 0-th component of K to move as sine wave
 // This version uses the actual value of sine to train K
+// New idea: allow RNN to act *multiple* times within each step of the sine wave.
+// This will stretch the time scale arbitrarily so the "sine" shape will be lost, but
+// I think this kind of learning is more suitable for this RNN model's capability.
 void sine_wave_test2()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
 	int numLayers = 4;
-	int neuronsOfLayer[4] = {10, 13, 15, 10}; // first = input layer, last = output layer
+	int neuronsOfLayer[4] = {10, 16, 16, 10}; // first = input layer, last = output layer
 	create_NN(Net, numLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
@@ -174,7 +184,7 @@ void sine_wave_test2()
 		{
 		sum_error2 = 0.0f;
 
-		#define N2 20		// loop from 0 to 2π in N divisions
+		#define N2 60		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N2; j++) 
 			{
 			forward_prop(Net, dim_K, K);
@@ -192,14 +202,14 @@ void sine_wave_test2()
 				LastLayer.neurons[k].error = 0.0f;
 
 			back_prop(Net);
-			
+
 			// copy output to input
 			for (int k = 0; k < dim_K; ++k)
 				K[k] = LastLayer.neurons[k].output;
 
 			sum_error2 += (error * error);		// record sum of squared errors
 			
-			if (quit = plot_K())
+			if (quit = plot_K(0))
 				break;
 
 			plot_trainer(K_star);

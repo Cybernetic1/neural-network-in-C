@@ -6,15 +6,12 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
-#include <time.h>
+// #include <time.h>
 
 #include "RNN.h"
 
-// #define DATASIZE 800		// size of training data and test data
 #define ETA 0.01			// learning rate
 #define BIASOUTPUT 1		// output for bias. It's always 1.
-#define MAX_EPOCHS 20		// maximum epochs
-#define RECURRENCE 10		// RNN acts on K n times
 
 //********sigmoid function and randomWeight generator********************//
 

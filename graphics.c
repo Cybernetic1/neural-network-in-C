@@ -3,6 +3,9 @@
 
 #include "RNN.h"
 
+SDL_Renderer *gfx_NNW;					// For YKY's NN visualizer
+SDL_Window *win_NNW;
+
 SDL_Renderer *gfx_NN;					// For YKY's NN visualizer
 SDL_Window *win_NN;
 
@@ -14,10 +17,94 @@ SDL_Window *win_K;
 
 #define f2i(v) ((int)(256.0f * v))		// for converting color values
 
+// *************************** YKY's NN weights visualizer ********************************
+
+#define NNW_box_width 900
+#define NNW_box_height 400
+
+void start_NNW_plot(void)
+	{
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_NNW = SDL_CreateWindow("NN weights", 80, 1200, NNW_box_width, NNW_box_height, SDL_WINDOW_SHOWN);
+	if (win_NN == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_NNW = SDL_CreateRenderer(win_NNW, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_NNW == NULL)
+		{
+		SDL_DestroyWindow(win_NNW);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+	}
+
+void plot_NNW(NNET *net)
+	{
+	SDL_SetRenderDrawColor(gfx_NNW, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_NNW);		//Clear screen
+	
+	SDL_SetRenderDrawBlendMode(gfx_NNW, SDL_BLENDMODE_BLEND);
+
+	#define Volume 20.0f
+
+	#define numLayers (net->numLayers)
+	for (int l = 1; l < numLayers; l++)		// Note: layer 0 has no weights
+		{
+		double gain = 1.0f;
+		// increase amplitude for hidden layers
+		if (l > 0 && l < numLayers - 1)
+			gain = 5.0f;
+		else
+			gain = 1.0f;
+
+		// set color
+		float r = ((float) l ) / numLayers;
+		float b = 1.0f - ((float) l ) / numLayers;
+		SDL_SetRenderDrawColor(gfx_NNW, f2i(r), 0x50, f2i(b), 0xFF);
+
+		int nn = net->layers[l].numNeurons;
+
+		int neuronWidth = (NNW_box_width - 20 - 50) / (nn - 1);
+
+		// draw baseline
+		#define Y_step ((NNW_box_height - (int) Volume * 10) / (numLayers - 2))
+		int baseline_y = (int) Volume * 5 + (l - 1) * Y_step;
+		SDL_RenderDrawLine(gfx_NNW, 10, baseline_y, \
+			neuronWidth * (nn - 1) + 10 + 50, baseline_y);
+
+		SDL_SetRenderDrawColor(gfx_NNW, f2i(r), 0x50, f2i(b), 0x80);
+		
+		for (int n = 0; n < nn; n++)		// for each neuron on layer l
+			{
+			for (int m = 0; m < net->layers[l - 1].numNeurons; ++m)		// for each weight
+				{
+				double weight = Volume * net->layers[l].neurons[n].weights[m];
+			
+				int basepoint_x = 10 + neuronWidth * n + m * 2;
+				SDL_RenderDrawLine(gfx_NNW, basepoint_x, baseline_y, \
+					basepoint_x, baseline_y - weight);
+				}
+			}
+		}
+
+	SDL_RenderPresent(gfx_NNW);
+	}
+
 // *************************** YKY's NN visualizer *************************************
 
 #define NN_box_width 600
-#define NN_box_height 600
+#define NN_box_height 400
 
 void start_NN_plot(void)
 	{
@@ -28,7 +115,7 @@ void start_NN_plot(void)
 		return;
 		}
 
-	win_NN = SDL_CreateWindow("?", 100, 600, NN_box_width, NN_box_height, SDL_WINDOW_SHOWN);
+	win_NN = SDL_CreateWindow("NN activity", 100, 600, NN_box_width, NN_box_height, SDL_WINDOW_SHOWN);
 	if (win_NN == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -52,15 +139,71 @@ void plot_NN(NNET *net)
 	SDL_RenderClear(gfx_NN);		//Clear screen
 
 	#define Volume 20.0f
+
+	#define numLayers (net->numLayers)
+	for (int l = 0; l < numLayers - 1; l++)
+		{
+		double gain = 1.0f;
+		// increase amplitude for hidden layers
+		if (l > 0 && l < numLayers - 1)
+			gain = 5.0f;
+		else
+			gain = 1.0f;
+
+		// set color
+		float r = ((float) l ) / numLayers;
+		float b = 1.0f - ((float) l ) / numLayers;
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x40, f2i(b), 0xFF);
+
+		int nn = net->layers[l].numNeurons;
+
+		int neuronWidth = (NN_box_width - 20) / (nn - 1);
+		
+		// draw baseline
+		#define Y_step ((NN_box_height - (int) Volume * 10) / (numLayers - 2))
+		int baseline_y = (int) Volume * 5 + l * Y_step;
+		SDL_RenderDrawLine(gfx_NN, 10, baseline_y, \
+			neuronWidth * (nn - 1) + 10, baseline_y);
+
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x70, f2i(b), 0xFF);
+		
+		for (int n = 1; n < nn; n++)
+			{
+			double output0 = Volume * gain * net->layers[l].neurons[n - 1].output;
+			double output1 = Volume * gain * net->layers[l].neurons[n].output;
+			
+			int basepoint_x = 10 + neuronWidth * n;
+			SDL_RenderDrawLine(gfx_NN, basepoint_x - neuronWidth, baseline_y - output0, \
+				basepoint_x, baseline_y - output1);
+			}
+		}
+
+	SDL_RenderPresent(gfx_NN);
+	}
+
+// Older version with vertical lines, suitable for many layers
+void plot_NN_old(NNET *net)
+	{
+	SDL_SetRenderDrawColor(gfx_NN, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_NN);		//Clear screen
+
+	#define Volume 20.0f
 	#define NeuronWidth 20
 
 	#define numLayers (net->numLayers)
 	for (int l = 0; l < numLayers; l++)
 		{
+		double gain = 1.0f;
+		// increase amplitude for hidden layers
+		if (l > 0 && l < numLayers - 1)
+			gain = 5.0f;
+		else
+			gain = 1.0f;
+
 		// set color
 		float r = ((float) l ) / numLayers;
 		float b = 1.0f - ((float) l ) / numLayers;
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x80, f2i(b), 0x80);
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x60, f2i(b), 0xFF);
 
 		int nn = net->layers[l].numNeurons;
 
@@ -72,13 +215,12 @@ void plot_NN(NNET *net)
 		SDL_RenderDrawLine(gfx_NN, baseline_x, baseline_y, \
 			baseline_x + nn * NeuronWidth, baseline_y);
 
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x80, f2i(b), 0x60);
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0xB0, f2i(b), 0xFF);
 		
 		for (int n = 0; n < nn; n++)
 			{
-			NEURON neuron = net->layers[l].neurons[n];
-			double output = neuron.output;
-
+			double output = gain * net->layers[l].neurons[n].output;
+			
 			int basepoint_x = baseline_x + NeuronWidth * n;
 			SDL_RenderDrawLine(gfx_NN, basepoint_x, baseline_y, \
 				basepoint_x, baseline_y - output * Volume);
@@ -102,7 +244,7 @@ void start_NN2_plot(void)
 		return;
 		}
 
-	win_NN2 = SDL_CreateWindow("?", 800, 650, NN2_box_width, NN2_box_height, SDL_WINDOW_SHOWN);
+	win_NN2 = SDL_CreateWindow("NN activity", 800, 650, NN2_box_width, NN2_box_height, SDL_WINDOW_SHOWN);
 	if (win_NN2 == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -139,10 +281,10 @@ void plot_NN2(NNET *net)
 
 	int bwh = 20; /* neuron block width,height*/
 	#define numLayers (net->numLayers)
-	#define L_margin ((NN2_box_width - numLayers * bwh) / 2)
+	#define L_margin ((NN2_box_width - (numLayers - 1) * bwh) / 2)
 	#define T_margin ((NN2_box_height - nn * bwh) / 2)
 	
-	for (int l = 0; l < numLayers; l++)
+	for (int l = 0; l < numLayers - 1; l++)
 		{
 		int nn = net->layers[l].numNeurons;
 		for (int n = 0; n < nn; n++)
@@ -179,7 +321,7 @@ void start_K_plot(void)
 		return;
 		}
 
-	win_K = SDL_CreateWindow("?", 400, 200, K_box_width, K_box_height, SDL_WINDOW_SHOWN);
+	win_K = SDL_CreateWindow("K vector", 400, 200, K_box_width, K_box_height, SDL_WINDOW_SHOWN);
 	if (win_K == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -206,7 +348,7 @@ void line(int x1, double y1, int x2, double y2)
 
 // Show components of K vector as a line graph
 extern double K[];
-int plot_K()
+int plot_K(int delay)
 	{
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 
@@ -226,7 +368,7 @@ int plot_K()
 			(k + 1) * K_Width, Amplitude * K[k]);
 
 	SDL_RenderPresent(gfx_K);
-	// SDL_Delay(70 /* milliseconds */);
+	SDL_Delay(delay);
 
 	// Read keyboard state, if "Q" is pressed, return 1
 	SDL_PumpEvents();
