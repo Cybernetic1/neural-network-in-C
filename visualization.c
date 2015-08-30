@@ -19,7 +19,7 @@ SDL_Window *win_NN2;
 SDL_Renderer *gfx_K;					// For K-vector visualizer
 SDL_Window *win_K;
 
-#define f2i(v) ((int)(256.0f * v))		// for converting color values
+#define f2i(v) ((int)(255.0f * v))		// for converting color values
 
 // **************************** YKY's 2D output visualizer ******************************
 
@@ -74,11 +74,12 @@ void plot_output(NNET *net)
 			double output = net->layers[net->numLayers - 1].neurons[0].output;
 
 			// Set color
-			float r = output < 0.5f ? 1.0f - output*2 : 0.0f;
-			if (r < 0.0f) r = 0.0f;
-			float g = output > 0.5f ? (output - 0.5f)*2 : 0.0f;
-			if (g > +1.0f) g = +1.0f;
-			SDL_SetRenderDrawColor(gfx_Out, f2i(r), f2i(g), 0x00, 0xFF);
+			int b = 0x00;
+			float r = output <= 0.5f ? -2 * output + 1.0f : 0.0f;
+			if (r > 1.0f || r < 0.0f) b = 0xFF;
+			float g = output >= 0.5f ? (output - 0.5f) * 2 : 0.0f;
+			if (g > 1.0f || g < 0.0f) b = 0xFF;
+			SDL_SetRenderDrawColor(gfx_Out, f2i(r), f2i(g), b, 0xFF);
 
 			// Plot little square
 			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
@@ -445,14 +446,14 @@ int plot_K(int delay)
 
 	// Draw base line
 	#define K_Width ((K_box_width - TopX * 2) / dim_K)
-	SDL_SetRenderDrawColor(gfx_K, 0xFF, 0x00, 0x00, 0xFF);
+	SDL_SetRenderDrawColor(gfx_K, 0xFF, 0x00, 0x00, 0xFF);		// red line
 	SDL_RenderDrawLine(gfx_K, 0, TopY, K_box_width, TopY);
 
-	SDL_SetRenderDrawColor(gfx_K, 0x1E, 0xD3, 0xEB, 0xFF);
+	SDL_SetRenderDrawColor(gfx_K, 0x1E, 0xD3, 0xEB, 0xFF);		// blue smurf blue
 	#define Amplitude 20.0f
 	for (int k = 1; k < dim_K; ++k)
-		line(k * K_Width,		 Amplitude * K[k - 1],
-			(k + 1) * K_Width, Amplitude * K[k]);
+		line(k * K_Width,		 -Amplitude * K[k - 1],
+			(k + 1) * K_Width, -Amplitude * K[k]);
 
 	SDL_RenderPresent(gfx_K);
 	SDL_Delay(delay);
@@ -536,128 +537,3 @@ void quit_graphics()
 
 	SDL_Quit();
 	}
-
-/* ************************ old code below, just for testing ************************
-
-void test_rectangles()	// old code
-	{
-	bool quit = NULL;
-	SDL_Event e;
-
-	//While application is running
-	while (!quit)
-		{
-		//Handle events on queue
-		while (SDL_PollEvent(&e) != 0)
-			{
-			//User requests quit
-			if (e.type == SDL_QUIT)
-				{
-				quit = true;
-				}
-			//Render red filled quad
-			#define SCREEN_WIDTH 800
-			#define SCREEN_HEIGHT 900
-			SDL_Rect fillRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-			SDL_SetRenderDrawColor(gfx, 0xFF, 0x00, 0x00, 0xFF);
-			SDL_RenderFillRect(gfx, &fillRect);
-			}
-
-		//Clear screen
-		SDL_SetRenderDrawColor(gfx, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderClear(gfx);
-
-		//Render red filled quad
-		SDL_Rect fillRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-		SDL_SetRenderDrawColor(gfx, 0xFF, 0x00, 0x00, 0xFF);
-		SDL_RenderFillRect(gfx, &fillRect);
-
-		//Render green outlined quad
-		SDL_Rect outlineRect = {SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3};
-		SDL_SetRenderDrawColor(gfx, 0x00, 0xFF, 0x00, 0xFF);
-		SDL_RenderDrawRect(gfx, &outlineRect);
-
-		//Draw blue horizontal line
-		SDL_SetRenderDrawColor(gfx, 0x00, 0x00, 0xFF, 0xFF);
-		SDL_RenderDrawLine(gfx, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
-
-		//Draw vertical line of purple dots
-		SDL_SetRenderDrawColor(gfx, 0x44, 0x00, 0x44, 0xFF);
-		for (int i = 0; i < SCREEN_HEIGHT; i += 4)
-			{
-			SDL_RenderDrawPoint(gfx, SCREEN_WIDTH / 2, i);
-			}
-
-		//Update screen
-		SDL_RenderPresent(gfx);
-		}
-	}
-
-int test_SDL()		// old code, just to test if it works
-	{
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
-		{
-		printf("SDL_Init Error: %s \n", SDL_GetError());
-		return 1;
-		}
-
-	win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
-	if (win == NULL)
-		{
-		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
-		SDL_Quit();
-		return 1;
-		}
-
-	gfx = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (gfx == NULL)
-		{
-		SDL_DestroyWindow(win);
-		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
-		SDL_Quit();
-		return 1;
-		}
-
-	SDL_Surface *bmp = SDL_LoadBMP("hello.bmp");
-	if (bmp == NULL)
-		{
-		SDL_DestroyRenderer(gfx);
-		SDL_DestroyWindow(win);
-		printf("SDL_LoadBMP Error: %s \n", SDL_GetError());
-		SDL_Quit();
-		return 1;
-		}
-
-	SDL_Texture *tex = SDL_CreateTextureFromSurface(gfx, bmp);
-	SDL_FreeSurface(bmp);
-	if (tex == NULL)
-		{
-		SDL_DestroyRenderer(gfx);
-		SDL_DestroyWindow(win);
-		printf("SDL_CreateTextureFromSurface Error: %s \n", SDL_GetError());
-		SDL_Quit();
-		return 1;
-		}
-
-	//A sleepy rendering loop, wait for 3 seconds and render and present the screen each time
-	for (int i = 0; i < 3; ++i)
-		{
-		//First clear the renderer
-		SDL_RenderClear(gfx);
-		//Draw the texture
-		SDL_RenderCopy(gfx, tex, NULL, NULL);
-		//Update the screen
-		SDL_RenderPresent(gfx);
-		//Take a quick break after all that hard work
-		SDL_Delay(1000);
-		}
-
-	SDL_DestroyTexture(tex);
-	SDL_DestroyRenderer(gfx);
-	SDL_DestroyWindow(win);
-	SDL_Quit();
-
-	return 0;
-	}
-
-*/

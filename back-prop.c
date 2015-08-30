@@ -9,7 +9,7 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "RNN.h"
 
-#define Eta 0.05f			// learning rate
+#define Eta 0.005f			// learning rate
 #define BIASOUTPUT 0.0f		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
@@ -79,7 +79,8 @@ void forward_prop(NNET *net, int dim_V, double V[])
 				if (k == 0)
 					v += net->layers[i].neurons[j].weights[k] * BIASOUTPUT;
 				else
-					v += net->layers[i].neurons[j].weights[k] * net->layers[i - 1].neurons[k - 1].output;
+					v += net->layers[i].neurons[j].weights[k] *
+						net->layers[i - 1].neurons[k - 1].output;
 				}
 
 			// For the last layer, skip the sigmoid function

@@ -247,7 +247,7 @@ void sine_wave_test2()
 // trials, then compare their ratio.
 void classic_BP_test()
 	{
-	int neuronsOfLayer[3] = {2, 5, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[3] = {2, 6, 1}; // first = input layer, last = output layer
 	Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
 
@@ -345,12 +345,11 @@ void classic_BP_test()
 
 			plot_W(Net);
 			plot_NN(Net);
-			plot_output(Net);
 			plot_trainer(0);		// required to clear the window
-			
 			if (quit = plot_K(0))
 				break;
-
+			plot_output(Net);
+			
 			if (isnan(ratio))
 				break;
 			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
