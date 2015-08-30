@@ -279,22 +279,27 @@ void classic_BP_test()
 		single_err = 0.0f;
 		for (int k = 0; k < 2; ++k)
 			{
-			double K_star = K[k];		// identity function
-
+			#define Ideal K[k]			/* identity function */
+			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
+			// ^ = binary XOR
+			// double K_star = (double) (f2b(K[0]) ^ f2b(K[1]) ^ f2b(K[2]) ^ f2b(K[3]));
+			// #define Ideal ((double) (f2b(K[k]) ^ f2b(K[2]) ^ f2b(K[3])));
+			
 			// Difference between actual outcome and desired value:
-			double error = LastLayer.neurons[k].output - K_star;
+			double error = LastLayer.neurons[k].output - Ideal;
 			LastLayer.neurons[k].error = error;		// record this for back-prop
 
 			single_err += (error * error);		// record sum of squared errors
 			}
 
-		// update the sums of error (it may be easier to understand by referring to the
-		// next block)
+		// update error arrays cyclically
+		// (This is easier to understand by referring to the next block of code)
 		sum_err2 -= errors2[tail];
 		sum_err2 += errors1[tail];
 		sum_err1 -= errors1[tail];
 		sum_err1 += single_err;
-
+		//printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
+		
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
 		errors1[tail] = single_err;
@@ -304,6 +309,31 @@ void classic_BP_test()
 
 		back_prop(Net);
 
+		// Testing set
+		double test_err = 0.0f;
+		for (int i = 0; i < 20; ++i)
+			{
+			// Create random K vector
+			for (int k = 0; k < 4; ++k)
+				K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
+
+			forward_prop(Net, 4, K);
+
+			// Desired value = K_star
+			single_err = 0.0f;
+			for (int k = 0; k < 2; ++k)
+				{
+				// Difference between actual outcome and desired value:
+				double error = LastLayer.neurons[k].output - Ideal;
+				LastLayer.neurons[k].error = error;		// record this for back-prop
+
+				single_err += (error * error);		// record sum of squared errors
+				}
+			test_err += single_err;
+			}
+		test_err /= 20.0f;
+		printf("random test error = %lf\n", test_err);
+		
 		if ((i % 1) == 0)			// display status periodically
 			{
 			plot_W(Net);
@@ -317,7 +347,8 @@ void classic_BP_test()
 
 			if (isnan(ratio))
 				break;
-			if (ratio - 0.5f < 0.01)	// ratio == 0.5 means stationary
+			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
+			if (test_err < 0.1)
 				break;
 			if (quit)
 				break;
@@ -325,6 +356,7 @@ void classic_BP_test()
 		}
 
 	beep();
+	
 	if (!quit)
 		pause_graphics();
 	else

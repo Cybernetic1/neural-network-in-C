@@ -17,7 +17,7 @@
 
 double sigmoid(double v)
 	{
-	return 1.0f / (1.0f + exp(-v)) - 0.5f;
+	return 1.0f / (1.0f + exp(-v)); // - 0.5f;
 	}
 
 double randomWeight() // generate random weight between [+2,-2]
