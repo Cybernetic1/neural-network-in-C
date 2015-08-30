@@ -12,9 +12,11 @@ extern void start_NN_plot(void);
 extern void start_NN2_plot(void);
 extern void start_W_plot(void);
 extern void start_K_plot(void);
+extern void start_output_plot(void);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
+extern void plot_output(NNET *net);
 extern int plot_K(int);
 extern void plot_trainer(double);
 extern void beep(void);
@@ -23,15 +25,15 @@ extern double sigmoid(double);
 extern double K[];
 extern NNET *Net;
 
-#define LastLayer (Net->layers[numLayers - 1])
+#define LastLayer (Net->layers[NumLayers - 1])
+#define NumLayers (sizeof(neuronsOfLayer) / sizeof(int))
 
 // Randomly generate an RNN, watch it operate on K and see how K moves
 void K_wandering_test()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 3;
 	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
-	create_NN(Net, numLayers, neuronsOfLayer);
+	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit = 0;
 	
@@ -79,9 +81,8 @@ void K_wandering_test()
 void sine_wave_test()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	#define numLayers	4
-	int neuronsOfLayer[numLayers] = {10, 12, 12, 10}; // first = input layer, last = output layer
-	create_NN(Net, numLayers, neuronsOfLayer);
+	int neuronsOfLayer[4] = {10, 12, 12, 10}; // first = input layer, last = output layer
+	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
@@ -170,9 +171,8 @@ void sine_wave_test()
 void sine_wave_test2()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	#define numLayers	4
 	int neuronsOfLayer[4] = {10, 16, 16, 10}; // first = input layer, last = output layer
-	create_NN(Net, numLayers, neuronsOfLayer);
+	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
@@ -247,10 +247,9 @@ void sine_wave_test2()
 // trials, then compare their ratio.
 void classic_BP_test()
 	{
-	#define numLayers	3
-	int neuronsOfLayer[numLayers] = {4, 3, 2}; // first = input layer, last = output layer
+	int neuronsOfLayer[3] = {2, 5, 1}; // first = input layer, last = output layer
 	Net = (NNET *) malloc(sizeof (NNET));
-	create_NN(Net, numLayers, neuronsOfLayer);
+	create_NN(Net, NumLayers, neuronsOfLayer);
 
 	int quit;
 	#define N	100			// how many errors to record for averaging
@@ -265,28 +264,32 @@ void classic_BP_test()
 	start_NN_plot();
 	start_W_plot();
 	start_K_plot();
+	start_output_plot();
 	printf("Press 'Q' to quit\n\n");
 	
 	for (int i = 0; 1; ++i)
 		{
 		// Create random K vector
-		for (int k = 0; k < 4; ++k)
-			K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
+		for (int k = 0; k < 2; ++k)
+			K[k] = (rand() / (float) RAND_MAX) * 1.0;
+		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
 
 		forward_prop(Net, 4, K);
 
 		// Desired value = K_star
 		single_err = 0.0f;
-		for (int k = 0; k < 2; ++k)
+		for (int k = 0; k < 1; ++k)
 			{
-			#define Ideal K[k]			/* identity function */
+			// #define Ideal K[k]			/* identity function */
 			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
 			// ^ = binary XOR
-			// double K_star = (double) (f2b(K[0]) ^ f2b(K[1]) ^ f2b(K[2]) ^ f2b(K[3]));
-			// #define Ideal ((double) (f2b(K[k]) ^ f2b(K[2]) ^ f2b(K[3])));
+			// #define Ideal ((double) (f2b(K[0]) ^ f2b(K[1]) ^ f2b(K[2]) ^ f2b(K[3])))
+			// #define Ideal ((double) (f2b(K[k]) ^ f2b(K[2]) ^ f2b(K[3])))
+			double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
+			// printf("*** ideal = %lf\n", ideal);
 			
 			// Difference between actual outcome and desired value:
-			double error = LastLayer.neurons[k].output - Ideal;
+			double error = ideal - LastLayer.neurons[k].output;
 			LastLayer.neurons[k].error = error;		// record this for back-prop
 
 			single_err += (error * error);		// record sum of squared errors
@@ -298,7 +301,7 @@ void classic_BP_test()
 		sum_err2 += errors1[tail];
 		sum_err1 -= errors1[tail];
 		sum_err1 += single_err;
-		//printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
+		printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
 		
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
@@ -314,18 +317,19 @@ void classic_BP_test()
 		for (int i = 0; i < 20; ++i)
 			{
 			// Create random K vector
-			for (int k = 0; k < 4; ++k)
-				K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
-
-			forward_prop(Net, 4, K);
+			for (int k = 0; k < 2; ++k)
+				K[k] = ((double) rand() / (double) RAND_MAX);
+			
+			forward_prop(Net, 2, K);
 
 			// Desired value = K_star
 			single_err = 0.0f;
-			for (int k = 0; k < 2; ++k)
+			for (int k = 0; k < 1; ++k)
 				{
+				double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
+
 				// Difference between actual outcome and desired value:
-				double error = LastLayer.neurons[k].output - Ideal;
-				LastLayer.neurons[k].error = error;		// record this for back-prop
+				double error = ideal - LastLayer.neurons[k].output;
 
 				single_err += (error * error);		// record sum of squared errors
 				}
@@ -336,19 +340,21 @@ void classic_BP_test()
 		
 		if ((i % 1) == 0)			// display status periodically
 			{
-			plot_W(Net);
-			plot_NN(Net);
-			plot_trainer(0);		// required to clear the window
-			if (quit = plot_K(0))
-				break;
-
 			double ratio = sum_err1 / (sum_err1 + sum_err2);
 			printf("iteration: %05d, error ratio: %lf\n", i, ratio);
+
+			plot_W(Net);
+			plot_NN(Net);
+			plot_output(Net);
+			plot_trainer(0);		// required to clear the window
+			
+			if (quit = plot_K(0))
+				break;
 
 			if (isnan(ratio))
 				break;
 			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
-			if (test_err < 0.1)
+			if (test_err < 0.01)
 				break;
 			if (quit)
 				break;
@@ -368,9 +374,8 @@ void classic_BP_test()
 void forward_test()
 	{
 	Net = (NNET *) malloc(sizeof (NNET));
-	#define numLayers	4
-	int neuronsOfLayer[numLayers] = {4, 3, 3, 2}; // first = input layer, last = output layer
-	create_NN(Net, numLayers, neuronsOfLayer);
+	int neuronsOfLayer[4] = {4, 3, 3, 2}; // first = input layer, last = output layer
+	create_NN(Net, NumLayers, neuronsOfLayer);
 	double sum_error2;
 
 	start_NN_plot();
@@ -381,7 +386,7 @@ void forward_test()
 	printf("the test's own calculation, with 100 randomized inputs.\n\n");
 	
 	// Set all weights to 1
-	for (int l = 1; l < numLayers; l++)		// for each layer
+	for (int l = 1; l < NumLayers; l++)		// for each layer
 		for (int n = 0; n < neuronsOfLayer[l]; n++)		// for each neuron
 			for (int k = 0; k <= neuronsOfLayer[l - 1]; k++)	// for each weight
 				Net->layers[l].neurons[n].weights[k] = 1.0f;
@@ -399,7 +404,7 @@ void forward_test()
 		forward_prop(Net, 4, K);
 
 		// Expected output value:
-		double K_star = 3.0f * sigmoid(3.0f * sigmoid(sum) + 1.0f) + 1.0f;
+		double K_star = sigmoid(3.0f * sigmoid(3.0f * sigmoid(sum) + 1.0f) + 1.0f);
 		
 		// Calculate error
 		sum_error2 = 0.0f;

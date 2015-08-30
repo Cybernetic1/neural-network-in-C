@@ -4,6 +4,9 @@
 
 #include "RNN.h"
 
+SDL_Renderer *gfx_Out;					// For YKY's output visualizer
+SDL_Window *win_Out;
+
 SDL_Renderer *gfx_W;					// For YKY's weights visualizer
 SDL_Window *win_W;
 
@@ -17,6 +20,75 @@ SDL_Renderer *gfx_K;					// For K-vector visualizer
 SDL_Window *win_K;
 
 #define f2i(v) ((int)(256.0f * v))		// for converting color values
+
+// **************************** YKY's 2D output visualizer ******************************
+
+#define Out_box_width 500
+#define Out_box_height 500
+
+void start_output_plot(void)
+	{
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_Out = SDL_CreateWindow("Output", 500, 500, Out_box_width, Out_box_height, SDL_WINDOW_SHOWN);
+	if (win_Out == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_Out = SDL_CreateRenderer(win_Out, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_Out == NULL)
+		{
+		SDL_DestroyWindow(win_Out);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+	}
+
+void plot_output(NNET *net)
+	{
+	SDL_SetRenderDrawColor(gfx_Out, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_Out);		//Clear screen
+
+	#define GridPoints 30
+	#define Square_width	((Out_box_width - 20) / GridPoints)
+	
+	// For each grid point:
+	for (int i = 0; i < GridPoints; ++i)
+		for (int j = 0; j < GridPoints; ++j)
+			{
+			extern double K[];
+			K[0] = ((double) i) / (GridPoints - 1);
+			K[1] = ((double) j) / (GridPoints - 1);
+
+			extern void forward_prop(NNET*, int, double []);
+			forward_prop(net, 2, K);			// get output
+			double output = net->layers[net->numLayers - 1].neurons[0].output;
+
+			// Set color
+			float r = output < 0.5f ? 1.0f - output*2 : 0.0f;
+			if (r < 0.0f) r = 0.0f;
+			float g = output > 0.5f ? (output - 0.5f)*2 : 0.0f;
+			if (g > +1.0f) g = +1.0f;
+			SDL_SetRenderDrawColor(gfx_Out, f2i(r), f2i(g), 0x00, 0xFF);
+
+			// Plot little square
+			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
+					Square_width - 1, Square_width - 1};
+			SDL_RenderFillRect(gfx_Out, &fillRect);
+			}
+
+	SDL_RenderPresent(gfx_Out);
+	}
+
 
 // *************************** YKY's weights visualizer ********************************
 
@@ -72,7 +144,7 @@ void plot_W(NNET *net)
 		// set color
 		float r = ((float) l ) / (numLayers - 1);
 		float b = 1.0f - ((float) l ) / (numLayers - 1);
-		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF);
+		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF);		// blue
 
 		int nn = net->layers[l].numNeurons;
 
@@ -84,13 +156,14 @@ void plot_W(NNET *net)
 		SDL_RenderDrawLine(gfx_W, 10, baseline_y, \
 			W_box_width - 10, baseline_y);
 
-		SDL_SetRenderDrawColor(gfx_W, 0xFF, 0x00, 0x00, 0xFF);
+		SDL_SetRenderDrawColor(gfx_W, 0xFF, 0x00, 0x00, 0xFF);		// red
 		
 		for (int n = 0; n < nn; n++)		// for each neuron on layer l
 			{
+			int numWeights = net->layers[l - 1].numNeurons + 1;		// always >= 2
 			int basepoint_x = 10 + neuronWidth * n;
-			int numWeights = net->layers[l - 1].numNeurons + 1;
 			int gap = (neuronWidth - 10) / (numWeights - 1);
+
 			for (int m = 1; m < numWeights; ++m)		// for each weight
 				{
 				double weight0 = Gain * net->layers[l].neurons[n].weights[m - 1];
@@ -153,35 +226,47 @@ void plot_NN(NNET *net)
 		double gain = 1.0f;
 		// increase amplitude for hidden layers
 		if (l > 0 && l < numLayers - 1)
-			gain = 5.0f;
+			gain = 4.0f;
 		else
-			gain = 1.0f;
+			gain = 2.0f;
+
+		// draw baselines (blue = base level, faint blue = 1.0 level)
+		#define Y_step2 ((NN_box_height - (int) Volume * 4) / (numLayers - 1))
+		int baseline_y = (int) Volume * 2 + l * Y_step2;
+		SDL_SetRenderDrawColor(gfx_NN, 0x00, 0x00, 0xFF, 0xFF);		// blue
+		SDL_RenderDrawLine(gfx_NN, 10, baseline_y, \
+			NN_box_width - 10, baseline_y);
+		SDL_SetRenderDrawColor(gfx_NN, 0x00, 0x00, 0xFF, 0x80);		// faint blue
+		SDL_RenderDrawLine(gfx_NN, 10, baseline_y - (int) Volume * gain, \
+			NN_box_width - 10, baseline_y - (int) Volume * gain);
 
 		// set color
-		float r = ((float) l ) / (numLayers);
-		float b = 1.0f - ((float) l ) / (numLayers);
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x50, f2i(b), 0xFF);
+		// float r = ((float) l ) / (numLayers);
+		// float b = 1.0f - ((float) l ) / (numLayers);
+		SDL_SetRenderDrawColor(gfx_NN, 0xFF, 0x00, 0x00, 0xFF);		// red
 
 		int nn = net->layers[l].numNeurons;
-
-		int neuronWidth = (NN_box_width - 20) / (nn - 1);
-		
-		// draw baseline
-		#define Y_step2 ((NN_box_height - (int) Volume * 6) / (numLayers - 1))
-		int baseline_y = (int) Volume * 3 + l * Y_step2;
-		SDL_RenderDrawLine(gfx_NN, 10, baseline_y, \
-			neuronWidth * (nn - 1) + 10, baseline_y);
-
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x70, f2i(b), 0x80);
-		
-		for (int n = 1; n < nn; n++)		// for each neuron
+		if (nn == 1)	// only 1 neuron in the layer
 			{
-			double output0 = Volume * gain * net->layers[l].neurons[n - 1].output;
-			double output1 = Volume * gain * net->layers[l].neurons[n].output;
-			
-			int basepoint_x = 10 + neuronWidth * n;
-			SDL_RenderDrawLine(gfx_NN, basepoint_x - neuronWidth, baseline_y - output0, \
-				basepoint_x, baseline_y - output1);
+			double output = Volume * gain * net->layers[l].neurons[0].output;
+
+			int basepoint_x = NN_box_width / 2;
+			SDL_RenderDrawLine(gfx_NN, basepoint_x, baseline_y, \
+					basepoint_x, baseline_y - output);
+			}
+		else			// > 1 neurons in the layer
+			{
+			int neuronWidth = (NN_box_width - 20) / (nn - 1);
+		
+			for (int n = 1; n < nn; n++)		// for each neuron
+				{
+				double output0 = Volume * gain * net->layers[l].neurons[n - 1].output;
+				double output1 = Volume * gain * net->layers[l].neurons[n].output;
+
+				int basepoint_x = 10 + neuronWidth * n;
+				SDL_RenderDrawLine(gfx_NN, basepoint_x - neuronWidth, baseline_y - output0, \
+					basepoint_x, baseline_y - output1);
+				}
 			}
 		}
 

@@ -16,9 +16,9 @@
       <itemPath>Chinese-test.c</itemPath>
       <itemPath>Q-learning.c</itemPath>
       <itemPath>back-prop.c</itemPath>
-      <itemPath>graphics.c</itemPath>
       <itemPath>main.c</itemPath>
       <itemPath>tests.c</itemPath>
+      <itemPath>visualization.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -56,11 +56,11 @@
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="graphics.c" ex="false" tool="0" flavor2="0">
-      </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="tests.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -91,11 +91,11 @@
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="graphics.c" ex="false" tool="0" flavor2="0">
-      </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="tests.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
   </confs>

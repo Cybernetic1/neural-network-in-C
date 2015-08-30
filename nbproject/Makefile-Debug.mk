@@ -38,9 +38,9 @@ OBJECTFILES= \
 	${OBJECTDIR}/Chinese-test.o \
 	${OBJECTDIR}/Q-learning.o \
 	${OBJECTDIR}/back-prop.o \
-	${OBJECTDIR}/graphics.o \
 	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/tests.o
+	${OBJECTDIR}/tests.o \
+	${OBJECTDIR}/visualization.o
 
 
 # C Compiler Flags
@@ -82,11 +82,6 @@ ${OBJECTDIR}/back-prop.o: back-prop.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/back-prop.o back-prop.c
 
-${OBJECTDIR}/graphics.o: graphics.c 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} "$@.d"
-	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/graphics.o graphics.c
-
 ${OBJECTDIR}/main.o: main.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -96,6 +91,11 @@ ${OBJECTDIR}/tests.o: tests.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tests.o tests.c
+
+${OBJECTDIR}/visualization.o: visualization.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/visualization.o visualization.c
 
 # Subprojects
 .build-subprojects:

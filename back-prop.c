@@ -6,33 +6,28 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
-// #include <time.h>
-
+#include <time.h>		// time as random seed in create_NN()
 #include "RNN.h"
 
-#define Eta 0.05			// learning rate
-#define BIASOUTPUT 1.0f		// output for bias. It's always 1.
+#define Eta 0.05f			// learning rate
+#define BIASOUTPUT 0.0f		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
 
 double sigmoid(double v)
 	{
-	return 1.0f / (1.0f + exp(-v)); // - 0.5f;
+	return 1.0f / (1.0f + exp(-20*v)); // - 0.5f;
 	}
 
-double randomWeight() // generate random weight between [+2,-2]
+double randomWeight() // generate random weight between [+1,-1]
 	{
-	return (rand() / (float) RAND_MAX) * 2.0 - 1.0;
+	return (rand() / (float) RAND_MAX) * 2.0f - 1.0f;
 	}
 
-//****************************create neuron network*********************//
-
+//****************************create neural network*********************//
+// GIVEN: how many layers, and how many neurons in each layer
 void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 	{
-	//in order to create a neural network,
-	//we need know how many layers and how many neurons in each layer
-
-	int i, j, k;
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
@@ -44,18 +39,20 @@ void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 	net->layers[0].neurons = (NEURON *) malloc(neuronsOfLayer[0] * sizeof (NEURON));
 
 	//construct hidden layers
-	for (i = 1; i < numLayers; i++) //construct layers
+	for (int l = 1; l < numLayers; l++) //construct layers
 		{
-		net->layers[i].neurons = (NEURON *) malloc(neuronsOfLayer[i] * sizeof (NEURON));
-		net->layers[i].numNeurons = neuronsOfLayer[i];
-		for (j = 0; j < neuronsOfLayer[i]; j++) // construct each neuron in the layer
+		net->layers[l].neurons = (NEURON *) malloc(neuronsOfLayer[l] * sizeof (NEURON));
+		net->layers[l].numNeurons = neuronsOfLayer[l];
+		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
 			{
-			net->layers[i].neurons[j].weights = (double *) malloc((neuronsOfLayer[i - 1] + 1) * sizeof (double));
-			for (k = 0; k <= neuronsOfLayer[i - 1]; k++)
+			net->layers[l].neurons[n].weights =
+					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
 				{
 				//construct weights of neuron from previous layer neurons
-				net->layers[i].neurons[j].weights[k] = randomWeight(); //when k = 0, it's bias weight
-				//net->layers[i].neurons[j].weights[k] = 0;
+				//when k = 0, it's bias weight
+				net->layers[l].neurons[n].weights[i] = randomWeight();
+				//net->layers[i].neurons[j].weights[k] = 0.0f;
 				}
 			}
 		}
@@ -86,35 +83,12 @@ void forward_prop(NNET *net, int dim_V, double V[])
 				}
 
 			// For the last layer, skip the sigmoid function
-			if (i == net->numLayers - 1)
-				net->layers[i].neurons[j].output = v;
-			else
+			// if (i == net->numLayers - 1)
+			//	net->layers[i].neurons[j].output = v;
+			// else
 				net->layers[i].neurons[j].output = sigmoid(v);
 			}
 		}
-	}
-
-#define LastLayer (net->layers[numLayers - 1])
-
-// Calculate error between output of forward-prop and a given answer Y
-
-double calc_error(NNET *net, double Y[])
-	{
-	// calculate mean square error;
-	// desired value = K* = trainingOUT
-	double sumOfSquareError = 0;
-
-	int numLayers = net->numLayers;
-	// This means each output neuron corresponds to a classification label --YKY
-	for (int i = 0; i < LastLayer.numNeurons; i++)
-		{
-		//error = desired_value - output
-		double error = Y[i] - LastLayer.neurons[i].output;
-		LastLayer.neurons[i].error = error;
-		sumOfSquareError += error * error / 2;
-		}
-	double mse = sumOfSquareError / LastLayer.numNeurons;
-	return mse; //return the root of mean square error
 	}
 
 
@@ -139,56 +113,76 @@ double calc_error(NNET *net, double Y[])
 // Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
 // optimization problems.  The book "Talking Nets" interviewed some of these people.
 
-#define LastLayer (net->layers[numLayers - 1])
-
 void back_prop(NNET *net)
 	{
 	int numLayers = net->numLayers;
+	LAYER lastLayer = net->layers[numLayers - 1];
 
 	// calculate ∆ for output layer
-	for (int i = 0; i < LastLayer.numNeurons; i++)
+	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
-		double output = LastLayer.neurons[i].output;
-		double error = LastLayer.neurons[i].error;
+		double output = lastLayer.neurons[n].output;
+		double error = lastLayer.neurons[n].error;
 		//for output layer, ∆ = y∙(1-y)∙error
-		LastLayer.neurons[i].delta = output * (1 - output) * error;
+		lastLayer.neurons[n].delta = output * (1.0f - output) * error;
 		}
 
 	// calculate ∆ for hidden layers
-	for (int i = numLayers - 2; i > 0; i--)
+	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
 		{
-		for (int j = 0; j < net->layers[i].numNeurons; j++)
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
 			{
-			double output = net->layers[i].neurons[j].output;
+			double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
-			for (int k = 0; k < net->layers[i + 1].numNeurons; k++)
+			LAYER nextLayer = net->layers[l + 1];
+			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
 				{
-				sum += net->layers[i + 1].neurons[k].weights[j + 1] * net->layers[i + 1].neurons[k].delta;
+				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+						* nextLayer.neurons[i].delta;
 				}
-			net->layers[i].neurons[j].delta = output * (1 - output) * sum;
+			net->layers[l].neurons[n].delta = output * (1.0f - output) * sum;
 			}
 		}
 
-	// update weights
-	for (int i = 1; i < numLayers; i++)
+	// update all weights
+	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
 		{
-		for (int j = 0; j < net->layers[i].numNeurons; j++)
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
-			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
-				{
-				double inputForThisNeuron;
-				
-				if (k == 0)
-					inputForThisNeuron = 1.0f; //bias input
-				else
-					inputForThisNeuron = net->layers[i - 1].neurons[k - 1].output;
-
-				net->layers[i].neurons[j].weights[k] += Eta * net->layers[i].neurons[j].delta
-						* inputForThisNeuron;
+			net->layers[l].neurons[n].weights[0] += Eta * 
+					net->layers[l].neurons[n].delta * 0.0f;		// 1.0f = bias input
+			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
+				{	
+				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
+				net->layers[l].neurons[n].weights[i + 1] += Eta *
+						net->layers[l].neurons[n].delta * inputForThisNeuron;
 				}
 			}
 		}
 	}
+
+
+// Calculate error between output of forward-prop and a given answer Y
+double calc_error(NNET *net, double Y[])
+	{
+	// calculate mean square error
+	// desired value = Y = K* = trainingOUT
+	double sumOfSquareError = 0;
+
+	int numLayers = net->numLayers;
+	#define LastLayer (net->layers[numLayers - 1])
+	// This means each output neuron corresponds to a classification label --YKY
+	for (int i = 0; i < LastLayer.numNeurons; i++)
+		{
+		//error = desired_value - output
+		double error = Y[i] - LastLayer.neurons[i].output;
+		LastLayer.neurons[i].error = error;
+		sumOfSquareError += error * error / 2;
+		}
+	double mse = sumOfSquareError / LastLayer.numNeurons;
+	return mse; //return the root of mean square error
+	}
+
 
 //*************************calculate error average*************//
 // relative error = |average of second 10 errors : average of first 10 errors - 1|
