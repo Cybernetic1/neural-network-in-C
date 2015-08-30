@@ -212,6 +212,8 @@ int main(int argc, char** argv)
 	extern void K_wandering_test();
 	extern void sine_wave_test();
 	extern void sine_wave_test2();
+	extern void classic_BP_test();
+	extern void forward_test();
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 	
@@ -220,12 +222,18 @@ int main(int argc, char** argv)
 	switch (WhichTest)
 		{
 		case 0:
-			K_wandering_test();
+			forward_test();
 			return 0;
 		case 1:
-			sine_wave_test();
+			classic_BP_test();
 			return 0;
 		case 2:
+			K_wandering_test();
+			return 0;
+		case 3:
+			sine_wave_test();
+			return 0;
+		case 4:
 			sine_wave_test2();
 			return 0;
 		}

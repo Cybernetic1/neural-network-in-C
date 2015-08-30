@@ -1,10 +1,11 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 #include "RNN.h"
 
-SDL_Renderer *gfx_NNW;					// For YKY's NN visualizer
-SDL_Window *win_NNW;
+SDL_Renderer *gfx_W;					// For YKY's weights visualizer
+SDL_Window *win_W;
 
 SDL_Renderer *gfx_NN;					// For YKY's NN visualizer
 SDL_Window *win_NN;
@@ -17,12 +18,12 @@ SDL_Window *win_K;
 
 #define f2i(v) ((int)(256.0f * v))		// for converting color values
 
-// *************************** YKY's NN weights visualizer ********************************
+// *************************** YKY's weights visualizer ********************************
 
-#define NNW_box_width 900
-#define NNW_box_height 400
+#define W_box_width 900
+#define W_box_height 400
 
-void start_NNW_plot(void)
+void start_W_plot(void)
 	{
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -31,34 +32,34 @@ void start_NNW_plot(void)
 		return;
 		}
 
-	win_NNW = SDL_CreateWindow("NN weights", 80, 1200, NNW_box_width, NNW_box_height, SDL_WINDOW_SHOWN);
-	if (win_NN == NULL)
+	win_W = SDL_CreateWindow("NN weights", 80, 1200, W_box_width, W_box_height, SDL_WINDOW_SHOWN);
+	if (win_W == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
 		SDL_Quit();
 		return;
 		}
 
-	gfx_NNW = SDL_CreateRenderer(win_NNW, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	if (gfx_NNW == NULL)
+	gfx_W = SDL_CreateRenderer(win_W, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_W == NULL)
 		{
-		SDL_DestroyWindow(win_NNW);
+		SDL_DestroyWindow(win_W);
 		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
 		SDL_Quit();
 		return;
 		}
 	}
 
-void plot_NNW(NNET *net)
+void plot_W(NNET *net)
 	{
-	SDL_SetRenderDrawColor(gfx_NNW, 0, 0, 0, 0xFF);
-	SDL_RenderClear(gfx_NNW);		//Clear screen
+	SDL_SetRenderDrawColor(gfx_W, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_W);		//Clear screen
 	
-	SDL_SetRenderDrawBlendMode(gfx_NNW, SDL_BLENDMODE_BLEND);
-
-	#define Volume 20.0f
+	// SDL_SetRenderDrawBlendMode(gfx_W, SDL_BLENDMODE_BLEND);
 
 	#define numLayers (net->numLayers)
+	#define Y_step (W_box_height / numLayers)
+	#define Gain (Y_step / 2)
 	for (int l = 1; l < numLayers; l++)		// Note: layer 0 has no weights
 		{
 		double gain = 1.0f;
@@ -69,36 +70,40 @@ void plot_NNW(NNET *net)
 			gain = 1.0f;
 
 		// set color
-		float r = ((float) l ) / numLayers;
-		float b = 1.0f - ((float) l ) / numLayers;
-		SDL_SetRenderDrawColor(gfx_NNW, f2i(r), 0x50, f2i(b), 0xFF);
+		float r = ((float) l ) / (numLayers - 1);
+		float b = 1.0f - ((float) l ) / (numLayers - 1);
+		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF);
 
 		int nn = net->layers[l].numNeurons;
 
-		int neuronWidth = (NNW_box_width - 20 - 50) / (nn - 1);
+		int neuronWidth = (W_box_width - 20) / nn;
 
 		// draw baseline
-		#define Y_step ((NNW_box_height - (int) Volume * 10) / (numLayers - 2))
-		int baseline_y = (int) Volume * 5 + (l - 1) * Y_step;
-		SDL_RenderDrawLine(gfx_NNW, 10, baseline_y, \
-			neuronWidth * (nn - 1) + 10 + 50, baseline_y);
 
-		SDL_SetRenderDrawColor(gfx_NNW, f2i(r), 0x50, f2i(b), 0x80);
+		int baseline_y = l * Y_step;
+		SDL_RenderDrawLine(gfx_W, 10, baseline_y, \
+			W_box_width - 10, baseline_y);
+
+		SDL_SetRenderDrawColor(gfx_W, 0xFF, 0x00, 0x00, 0xFF);
 		
 		for (int n = 0; n < nn; n++)		// for each neuron on layer l
 			{
-			for (int m = 0; m < net->layers[l - 1].numNeurons; ++m)		// for each weight
+			int basepoint_x = 10 + neuronWidth * n;
+			int numWeights = net->layers[l - 1].numNeurons + 1;
+			int gap = (neuronWidth - 10) / (numWeights - 1);
+			for (int m = 1; m < numWeights; ++m)		// for each weight
 				{
-				double weight = Volume * net->layers[l].neurons[n].weights[m];
-			
-				int basepoint_x = 10 + neuronWidth * n + m * 2;
-				SDL_RenderDrawLine(gfx_NNW, basepoint_x, baseline_y, \
-					basepoint_x, baseline_y - weight);
+				double weight0 = Gain * net->layers[l].neurons[n].weights[m - 1];
+				double weight1 = Gain * net->layers[l].neurons[n].weights[m];
+				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * (m - 1),
+						baseline_y - weight0,
+						basepoint_x + 5 + gap * m,
+						baseline_y - weight1);
 				}
 			}
 		}
 
-	SDL_RenderPresent(gfx_NNW);
+	SDL_RenderPresent(gfx_W);
 	}
 
 // *************************** YKY's NN visualizer *************************************
@@ -115,7 +120,7 @@ void start_NN_plot(void)
 		return;
 		}
 
-	win_NN = SDL_CreateWindow("NN activity", 100, 600, NN_box_width, NN_box_height, SDL_WINDOW_SHOWN);
+	win_NN = SDL_CreateWindow("NN activity", 400, 600, NN_box_width, NN_box_height, SDL_WINDOW_SHOWN);
 	if (win_NN == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -138,10 +143,12 @@ void plot_NN(NNET *net)
 	SDL_SetRenderDrawColor(gfx_NN, 0, 0, 0, 0xFF);
 	SDL_RenderClear(gfx_NN);		//Clear screen
 
+	SDL_SetRenderDrawBlendMode(gfx_NN, SDL_BLENDMODE_BLEND);
+
 	#define Volume 20.0f
 
 	#define numLayers (net->numLayers)
-	for (int l = 0; l < numLayers - 1; l++)
+	for (int l = 0; l < numLayers; l++)
 		{
 		double gain = 1.0f;
 		// increase amplitude for hidden layers
@@ -151,23 +158,23 @@ void plot_NN(NNET *net)
 			gain = 1.0f;
 
 		// set color
-		float r = ((float) l ) / numLayers;
-		float b = 1.0f - ((float) l ) / numLayers;
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x40, f2i(b), 0xFF);
+		float r = ((float) l ) / (numLayers);
+		float b = 1.0f - ((float) l ) / (numLayers);
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x50, f2i(b), 0xFF);
 
 		int nn = net->layers[l].numNeurons;
 
 		int neuronWidth = (NN_box_width - 20) / (nn - 1);
 		
 		// draw baseline
-		#define Y_step ((NN_box_height - (int) Volume * 10) / (numLayers - 2))
-		int baseline_y = (int) Volume * 5 + l * Y_step;
+		#define Y_step2 ((NN_box_height - (int) Volume * 6) / (numLayers - 1))
+		int baseline_y = (int) Volume * 3 + l * Y_step2;
 		SDL_RenderDrawLine(gfx_NN, 10, baseline_y, \
 			neuronWidth * (nn - 1) + 10, baseline_y);
 
-		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x70, f2i(b), 0xFF);
+		SDL_SetRenderDrawColor(gfx_NN, f2i(r), 0x70, f2i(b), 0x80);
 		
-		for (int n = 1; n < nn; n++)
+		for (int n = 1; n < nn; n++)		// for each neuron
 			{
 			double output0 = Volume * gain * net->layers[l].neurons[n - 1].output;
 			double output1 = Volume * gain * net->layers[l].neurons[n].output;
@@ -210,8 +217,8 @@ void plot_NN_old(NNET *net)
 		// draw baseline
 		#define X_step ((NN_box_width - 20 - nn * NeuronWidth) / (numLayers - 1))
 		int baseline_x = 10 + l * X_step;
-		#define Y_step ((NN_box_height - (int) Volume * 14) / (numLayers - 1))
-		int baseline_y = (int) Volume * 7 + l * Y_step;
+		#define Y_step3 ((NN_box_height - (int) Volume * 14) / (numLayers - 1))
+		int baseline_y = (int) Volume * 7 + l * Y_step3;
 		SDL_RenderDrawLine(gfx_NN, baseline_x, baseline_y, \
 			baseline_x + nn * NeuronWidth, baseline_y);
 
@@ -314,8 +321,7 @@ void plot_NN2(NNET *net)
 
 void start_K_plot(void)
 	{
-
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0)
 		{
 		printf("SDL_Init Error: %s \n", SDL_GetError());
 		return;
@@ -352,10 +358,6 @@ int plot_K(int delay)
 	{
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
 
-	//Clear screen
-	SDL_SetRenderDrawColor(gfx_K, 0, 0, 0, 0xFF);
-	SDL_RenderClear(gfx_K);
-
 	// Draw base line
 	#define K_Width ((K_box_width - TopX * 2) / dim_K)
 	SDL_SetRenderDrawColor(gfx_K, 0xFF, 0x00, 0x00, 0xFF);
@@ -380,13 +382,16 @@ int plot_K(int delay)
 
 void plot_trainer(double val)
 	{
+	//Clear screen
+	SDL_SetRenderDrawColor(gfx_K, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_K);
+
 	int y = (int) (Amplitude * val);
 
 	SDL_SetRenderDrawColor(gfx_K, 0xEB, 0xCC, 0x1E, 0xFF);
 	SDL_Rect fillRect = {TopX, y + TopY, 5, -y};
 	SDL_RenderFillRect(gfx_K, &fillRect);
 	SDL_RenderPresent(gfx_K);
-	SDL_Delay(70 /* milliseconds */);
 	}
 
 void pause_graphics()
@@ -420,6 +425,18 @@ void pause_graphics()
 	SDL_DestroyWindow(win_K);
 
 	SDL_Quit();
+	}
+
+void beep()
+	{
+	Mix_Music *music;
+	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
+	music = Mix_LoadMUS("beep.wav");
+	Mix_PlayMusic(music, -1);
+	SDL_PauseAudio(0);
+	SDL_Delay(1000);
+	// fprintf(stderr, "Sound played\n");
+	Mix_FreeMusic(music);
 	}
 
 void quit_graphics()

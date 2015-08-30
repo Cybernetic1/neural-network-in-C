@@ -45,7 +45,7 @@
           <commandLine>-std=c99</commandLine>
         </cTool>
         <linkerTool>
-          <commandLine>-lm -lSDL2</commandLine>
+          <commandLine>-lm -lSDL2 -lSDL2_mixer</commandLine>
         </linkerTool>
       </compileType>
       <item path="Chinese-test.c" ex="false" tool="0" flavor2="0">

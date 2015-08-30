@@ -10,19 +10,19 @@
 
 #include "RNN.h"
 
-#define ETA 0.01			// learning rate
-#define BIASOUTPUT 1		// output for bias. It's always 1.
+#define Eta 0.05			// learning rate
+#define BIASOUTPUT 1.0f		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
 
 double sigmoid(double v)
 	{
-	return 1 / (1 + exp(-v)) - 0.5;
+	return 1.0f / (1.0f + exp(-v)) - 0.5f;
 	}
 
 double randomWeight() // generate random weight between [+2,-2]
 	{
-	return (rand() / (float) RAND_MAX) * 4.0 - 2.0;
+	return (rand() / (float) RAND_MAX) * 2.0 - 1.0;
 	}
 
 //****************************create neuron network*********************//
@@ -118,33 +118,50 @@ double calc_error(NNET *net, double Y[])
 	}
 
 
-//**************************backpropagation***********************//
+//****************************** back-propagation ***************************//
+// The error "delta" is propagated backwards starting from the output layer, hence the
+// name for this algorithm.
+
+// In the update formula, we need to adjust by "η ∙ input ∙ ∆", where η is the learning rate.
+// The value of		∆_j = σ'(summed input) Σ_i W_ji ∆_i
+// where σ is the sigmoid function, σ' is its derivative.  This formula is obtained directly
+// from differentiating the error E with respect to the weights W.
+
+// There is a neat trick for the calculation of σ':  σ'(x) = σ(x) (1−σ(x))
+// For its simple derivation you can see this post:
+// http://math.stackexchange.com/questions/78575/derivative-of-sigmoid-function-sigma-x-frac11e-x
+// Therefore in the code, we use "output * (1 - output)" for the value of "σ'(summed input)",
+// because output = σ(summed input), where summed_input_i = Σ_j W_ji input_j.
+
+// Some history:
+// It was in 1974-1986 that Paul Werbos, David Rumelhart, Geoffrey Hinton and Ronald Williams
+// discovered this algorithm for neural networks, although it has been described by
+// Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
+// optimization problems.  The book "Talking Nets" interviewed some of these people.
 
 #define LastLayer (net->layers[numLayers - 1])
 
 void back_prop(NNET *net)
 	{
-	//calculate delta
-	int i, j, k;
 	int numLayers = net->numLayers;
 
-	//calculate delta for output layer
-	for (i = 0; i < LastLayer.numNeurons; i++)
+	// calculate ∆ for output layer
+	for (int i = 0; i < LastLayer.numNeurons; i++)
 		{
 		double output = LastLayer.neurons[i].output;
 		double error = LastLayer.neurons[i].error;
-		//for output layer, delta = y(1-y)error
+		//for output layer, ∆ = y∙(1-y)∙error
 		LastLayer.neurons[i].delta = output * (1 - output) * error;
 		}
 
-	//calculate delta for hidden layers
-	for (i = numLayers - 2; i > 0; i--)
+	// calculate ∆ for hidden layers
+	for (int i = numLayers - 2; i > 0; i--)
 		{
-		for (j = 0; j < net->layers[i].numNeurons; j++)
+		for (int j = 0; j < net->layers[i].numNeurons; j++)
 			{
 			double output = net->layers[i].neurons[j].output;
-			double sum = 0;
-			for (k = 0; k < net->layers[i + 1].numNeurons; k++)
+			double sum = 0.0f;
+			for (int k = 0; k < net->layers[i + 1].numNeurons; k++)
 				{
 				sum += net->layers[i + 1].neurons[k].weights[j + 1] * net->layers[i + 1].neurons[k].delta;
 				}
@@ -152,20 +169,22 @@ void back_prop(NNET *net)
 			}
 		}
 
-	//update weights
-	for (i = 1; i < numLayers; i++)
+	// update weights
+	for (int i = 1; i < numLayers; i++)
 		{
-		for (j = 0; j < net->layers[i].numNeurons; j++)
+		for (int j = 0; j < net->layers[i].numNeurons; j++)
 			{
-			for (k = 0; k <= net->layers[i - 1].numNeurons; k++)
+			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
 				{
 				double inputForThisNeuron;
+				
 				if (k == 0)
-					inputForThisNeuron = 1; //bias input
+					inputForThisNeuron = 1.0f; //bias input
 				else
 					inputForThisNeuron = net->layers[i - 1].neurons[k - 1].output;
 
-				net->layers[i].neurons[j].weights[k] += ETA * net->layers[i].neurons[j].delta * inputForThisNeuron;
+				net->layers[i].neurons[j].weights[k] += Eta * net->layers[i].neurons[j].delta
+						* inputForThisNeuron;
 				}
 			}
 		}
