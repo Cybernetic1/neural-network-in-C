@@ -23,7 +23,6 @@ extern void beep(void);
 extern double sigmoid(double);
 
 extern double K[];
-extern NNET *Net;
 
 #define LastLayer (Net->layers[NumLayers - 1])
 #define NumLayers (sizeof(neuronsOfLayer) / sizeof(int))
@@ -31,7 +30,7 @@ extern NNET *Net;
 // Randomly generate an RNN, watch it operate on K and see how K moves
 void K_wandering_test()
 	{
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[3] = {10, 13, 10}; // first = input layer, last = output layer
 	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
@@ -80,7 +79,7 @@ void K_wandering_test()
 // will be different every time this test is called.
 void sine_wave_test()
 	{
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[4] = {10, 12, 12, 10}; // first = input layer, last = output layer
 	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
@@ -170,7 +169,7 @@ void sine_wave_test()
 // I think this kind of learning is more suitable for this RNN model's capability.
 void sine_wave_test2()
 	{
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[4] = {10, 16, 16, 10}; // first = input layer, last = output layer
 	create_NN(Net, NumLayers, neuronsOfLayer);
 	double K2[dim_K];
@@ -248,7 +247,7 @@ void sine_wave_test2()
 void classic_BP_test()
 	{
 	int neuronsOfLayer[3] = {2, 6, 1}; // first = input layer, last = output layer
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
 
 	int quit;
@@ -372,7 +371,7 @@ void classic_BP_test()
 // Test forward propagation
 void forward_test()
 	{
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[4] = {4, 3, 3, 2}; // first = input layer, last = output layer
 	create_NN(Net, NumLayers, neuronsOfLayer);
 	double sum_error2;

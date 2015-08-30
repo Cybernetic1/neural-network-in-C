@@ -102,13 +102,11 @@ double get_reward(double K[])
 //	Invoke Q-learning, using the reward to update Q
 // Repeat
 
-NNET *Net;
-
 #define LastLayer (Net->layers[numLayers - 1])
 
 void main_loop()
 	{
-	Net = (NNET *) malloc(sizeof (NNET));
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int numLayers = 4;
 	//the first layer -- input layer
 	//the last layer -- output layer
