@@ -215,7 +215,7 @@ int main(int argc, char** argv)
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 	
-	#define WhichTest 1
+	#define WhichTest	1
 
 	switch (WhichTest)
 		{
@@ -229,10 +229,10 @@ int main(int argc, char** argv)
 			K_wandering_test();
 			return 0;
 		case 3:
-			sine_wave_test();
+			sine_wave_test();				// train with differential values of sine
 			return 0;
 		case 4:
-			sine_wave_test2();
+			sine_wave_test2();				// train with absolute values of sine
 			return 0;
 		}
 	}

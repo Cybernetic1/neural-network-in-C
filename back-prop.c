@@ -9,19 +9,19 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "RNN.h"
 
-#define Eta 0.005f			// learning rate
-#define BIASOUTPUT 0.0f		// output for bias. It's always 1.
+#define Eta 0.01f			// learning rate
+#define BIASOUTPUT 0.5f		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
 
 double sigmoid(double v)
 	{
-	return 1.0f / (1.0f + exp(-20*v)); // - 0.5f;
+	return 1.0f / (1.0f + exp(-10.0f * v));
 	}
 
 double randomWeight() // generate random weight between [+1,-1]
 	{
-	return (rand() / (float) RAND_MAX) * 2.0f - 1.0f;
+	return (rand() / (float) RAND_MAX) * 1.0f - 0.5f;
 	}
 
 //****************************create neural network*********************//
@@ -84,6 +84,7 @@ void forward_prop(NNET *net, int dim_V, double V[])
 				}
 
 			// For the last layer, skip the sigmoid function
+			// Note: this idea seems to destroy back-prop convergence
 			// if (i == net->numLayers - 1)
 			//	net->layers[i].neurons[j].output = v;
 			// else
@@ -125,7 +126,7 @@ void back_prop(NNET *net)
 		double output = lastLayer.neurons[n].output;
 		double error = lastLayer.neurons[n].error;
 		//for output layer, ∆ = y∙(1-y)∙error
-		lastLayer.neurons[n].delta = output * (1.0f - output) * error;
+		lastLayer.neurons[n].delta = 10.0f * output * (1.0f - output) * error;
 		}
 
 	// calculate ∆ for hidden layers
@@ -141,7 +142,7 @@ void back_prop(NNET *net)
 				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
 						* nextLayer.neurons[i].delta;
 				}
-			net->layers[l].neurons[n].delta = output * (1.0f - output) * sum;
+			net->layers[l].neurons[n].delta = 10.0f * output * (1.0f - output) * sum;
 			}
 		}
 

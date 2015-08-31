@@ -4,6 +4,9 @@
 
 #include "RNN.h"
 
+SDL_Renderer *gfx_Ideal;				// For ideal output visualizer
+SDL_Window *win_Ideal;
+
 SDL_Renderer *gfx_Out;					// For YKY's output visualizer
 SDL_Window *win_Out;
 
@@ -20,6 +23,77 @@ SDL_Renderer *gfx_K;					// For K-vector visualizer
 SDL_Window *win_K;
 
 #define f2i(v) ((int)(255.0f * v))		// for converting color values
+
+// **************************** Trainer function visualizer *****************************
+
+#define Ideal_box_width 500
+#define Ideal_box_height 500
+
+void plot_ideal(void)
+	{
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_Ideal = SDL_CreateWindow("Ideal output", 10, 10, Ideal_box_width, Ideal_box_height, SDL_WINDOW_SHOWN);
+	if (win_Ideal == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_Ideal = SDL_CreateRenderer(win_Ideal, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_Ideal == NULL)
+		{
+		SDL_DestroyWindow(win_Ideal);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	SDL_SetRenderDrawColor(gfx_Out, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_Ideal);		//Clear screen
+
+	#define GridPoints 30
+	#define Square_width	((Ideal_box_width - 20) / GridPoints)
+	
+	// For each grid point:
+	for (int i = 0; i < GridPoints; ++i)
+		for (int j = 0; j < GridPoints; ++j)
+			{
+			double input[2];
+			input[0] = ((double) i) / (GridPoints - 1);
+			input[1] = ((double) j) / (GridPoints - 1);
+
+			extern void forward_prop(NNET*, int, double []);
+			// double ideal = 1.0f - (0.5f - input[0]) * (0.5f - input[1]);
+			// double ideal = input[0];				/* identity function */
+			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
+			double ideal = ((double) (f2b(input[0]) ^ f2b(input[1]))); // ^ f2b(K[2]) ^ f2b(K[3])))
+
+			if (ideal > 1.0f || ideal < 0.0f)
+				printf("error:  %fl, %fl = %fl\n", input[0], input[1], ideal);
+
+			int b = 0x00;
+			float r = ideal < 0.0f ? -ideal : 0.0f;
+			if (r > 1.0f || r < 0.0f) b = 0xFF;
+			float g = ideal >= 0.0f ? ideal : 0.0f;
+			if (g > 1.0f || g < 0.0f) b = 0xFF;
+			
+			SDL_SetRenderDrawColor(gfx_Ideal, f2i(r), f2i(g), b, 0xFF);
+
+			// Plot little square
+			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
+					Square_width - 1, Square_width - 1};
+			SDL_RenderFillRect(gfx_Ideal, &fillRect);
+			}
+
+	SDL_RenderPresent(gfx_Ideal);
+	}
+
 
 // **************************** YKY's 2D output visualizer ******************************
 
@@ -73,12 +147,19 @@ void plot_output(NNET *net)
 			forward_prop(net, 2, K);			// get output
 			double output = net->layers[net->numLayers - 1].neurons[0].output;
 
-			// Set color
+			/* Set color
 			int b = 0x00;
 			float r = output <= 0.5f ? -2 * output + 1.0f : 0.0f;
 			if (r > 1.0f || r < 0.0f) b = 0xFF;
 			float g = output >= 0.5f ? (output - 0.5f) * 2 : 0.0f;
+			if (g > 1.0f || g < 0.0f) b = 0xFF; */
+
+			int b = 0x00;
+			float r = output < 0.0f ? -output : 0.0f;
+			if (r > 1.0f || r < 0.0f) b = 0xFF;
+			float g = output > 0.0f ? output : 0.0f;
 			if (g > 1.0f || g < 0.0f) b = 0xFF;
+			
 			SDL_SetRenderDrawColor(gfx_Out, f2i(r), f2i(g), b, 0xFF);
 
 			// Plot little square
@@ -86,6 +167,21 @@ void plot_output(NNET *net)
 					Square_width - 1, Square_width - 1};
 			SDL_RenderFillRect(gfx_Out, &fillRect);
 			}
+
+	SDL_RenderPresent(gfx_Out);
+	}
+
+extern void plot_tester(double x, double y)
+	{
+	int i = (int) (x * (GridPoints - 1));
+	int j = (int) (y * (GridPoints - 1));
+	
+	SDL_SetRenderDrawColor(gfx_Out, 0x80, 0x50, 0xB0, 0xFF);
+
+	// Plot little square
+	SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
+			Square_width - 1, Square_width - 1};
+	SDL_RenderFillRect(gfx_Out, &fillRect);
 
 	SDL_RenderPresent(gfx_Out);
 	}
@@ -403,7 +499,7 @@ void plot_NN2(NNET *net)
 //******************************* K vector visualizer ******************************
 
 #define K_box_width 600
-#define K_box_height 300
+#define K_box_height 200
 
 void start_K_plot(void)
 	{
@@ -440,30 +536,20 @@ void line(int x1, double y1, int x2, double y2)
 
 // Show components of K vector as a line graph
 extern double K[];
-int plot_K(int delay)
+void plot_K()
 	{
-	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
-
 	// Draw base line
 	#define K_Width ((K_box_width - TopX * 2) / dim_K)
 	SDL_SetRenderDrawColor(gfx_K, 0xFF, 0x00, 0x00, 0xFF);		// red line
 	SDL_RenderDrawLine(gfx_K, 0, TopY, K_box_width, TopY);
 
-	SDL_SetRenderDrawColor(gfx_K, 0x1E, 0xD3, 0xEB, 0xFF);		// blue smurf blue
-	#define Amplitude 20.0f
+	SDL_SetRenderDrawColor(gfx_K, 0x1E, 0xD3, 0xEB, 0xFF);		// blue-smurf blue
+	#define Amplitude 40.0f
 	for (int k = 1; k < dim_K; ++k)
 		line(k * K_Width,		 -Amplitude * K[k - 1],
 			(k + 1) * K_Width, -Amplitude * K[k]);
 
 	SDL_RenderPresent(gfx_K);
-	SDL_Delay(delay);
-
-	// Read keyboard state, if "Q" is pressed, return 1
-	SDL_PumpEvents();
-    if (keys[SDL_SCANCODE_Q])
-		return 1;
-	else
-		return 0;
 	}
 
 void plot_trainer(double val)
@@ -478,6 +564,25 @@ void plot_trainer(double val)
 	SDL_Rect fillRect = {TopX, y + TopY, 5, -y};
 	SDL_RenderFillRect(gfx_K, &fillRect);
 	SDL_RenderPresent(gfx_K);
+	}
+
+int delay_vis(int delay)
+	{
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);		// keyboard states
+
+	SDL_Delay(delay);
+	
+	// SDL_Event event;
+	// SDL_PollEvent(&event);
+	// if (event.type == SDL_Quit)
+	//	return 1;
+
+	// Read keyboard state, if "Q" is pressed, return 1
+	SDL_PumpEvents();
+    if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])
+		return 1;
+	else
+		return 0;
 	}
 
 void pause_graphics()
@@ -498,7 +603,7 @@ void pause_graphics()
 			//User requests quit
 			if (e.type == SDL_QUIT)			// This seems to be close-window event
 				quit = true;
-			if (keys[SDL_SCANCODE_Q])		// press 'Q' to quit
+			if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])	// press 'Q' to quit
 				quit = true;
 			}
 		}
@@ -520,7 +625,7 @@ void beep()
 	music = Mix_LoadMUS("beep.wav");
 	Mix_PlayMusic(music, -1);
 	SDL_PauseAudio(0);
-	SDL_Delay(1000);
+	SDL_Delay(800);
 	// fprintf(stderr, "Sound played\n");
 	Mix_FreeMusic(music);
 	}
