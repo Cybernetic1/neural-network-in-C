@@ -17,6 +17,7 @@
       <itemPath>Q-learning.c</itemPath>
       <itemPath>back-prop.c</itemPath>
       <itemPath>main.c</itemPath>
+      <itemPath>real-time-recurrent-learning.c</itemPath>
       <itemPath>tests.c</itemPath>
       <itemPath>visualization.c</itemPath>
     </logicalFolder>
@@ -58,6 +59,8 @@
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
+      <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
+      </item>
       <item path="tests.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="visualization.c" ex="false" tool="0" flavor2="0">
@@ -92,6 +95,8 @@
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="tests.c" ex="false" tool="0" flavor2="0">
       </item>

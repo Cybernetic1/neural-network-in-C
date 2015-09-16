@@ -9,7 +9,7 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "RNN.h"
 
-#define Eta 0.01f			// learning rate
+#define Eta 0.02f			// learning rate
 #define BIASOUTPUT 0.5f		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
@@ -185,8 +185,10 @@ double calc_error(NNET *net, double Y[])
 	return mse; //return the root of mean square error
 	}
 
+// **************************** Old code, currently not used *****************************
 
-//*************************calculate error average*************//
+/*
+// *************************calculate error average*************
 // relative error = |average of second 10 errors : average of first 10 errors - 1|
 // It is 0 if the errors stay constant, non-zero if the errors are changing rapidly
 // these errors are from the training set --YKY
@@ -216,3 +218,4 @@ double relative_error(double error[], int len)
 	return (relativeErr > 0) ? relativeErr : -relativeErr;
 	}
 
+*/

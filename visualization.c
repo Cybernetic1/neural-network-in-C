@@ -167,11 +167,9 @@ void plot_output(NNET *net)
 					Square_width - 1, Square_width - 1};
 			SDL_RenderFillRect(gfx_Out, &fillRect);
 			}
-
-	SDL_RenderPresent(gfx_Out);
 	}
 
-extern void plot_tester(double x, double y)
+void plot_tester(double x, double y)
 	{
 	int i = (int) (x * (GridPoints - 1));
 	int j = (int) (y * (GridPoints - 1));
@@ -182,10 +180,12 @@ extern void plot_tester(double x, double y)
 	SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
 			Square_width - 1, Square_width - 1};
 	SDL_RenderFillRect(gfx_Out, &fillRect);
-
-	SDL_RenderPresent(gfx_Out);
 	}
 
+void flush_output()		// This is to allow plotting some dots on the graph before displaying
+	{
+	SDL_RenderPresent(gfx_Out);
+	}
 
 // *************************** YKY's weights visualizer ********************************
 
@@ -561,7 +561,7 @@ void plot_trainer(double val)
 	int y = (int) (Amplitude * val);
 
 	SDL_SetRenderDrawColor(gfx_K, 0xEB, 0xCC, 0x1E, 0xFF);
-	SDL_Rect fillRect = {TopX, y + TopY, 5, -y};
+	SDL_Rect fillRect = {TopX, TopY - y, 5, y};
 	SDL_RenderFillRect(gfx_K, &fillRect);
 	SDL_RenderPresent(gfx_K);
 	}

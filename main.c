@@ -212,10 +212,11 @@ int main(int argc, char** argv)
 	extern void sine_wave_test2();
 	extern void classic_BP_test();
 	extern void forward_test();
+	extern void loop_dance_test();
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
-	
-	#define WhichTest	1
+
+	#define WhichTest	4
 
 	switch (WhichTest)
 		{
@@ -233,6 +234,9 @@ int main(int argc, char** argv)
 			return 0;
 		case 4:
 			sine_wave_test2();				// train with absolute values of sine
+			return 0;
+		case 5:
+			loop_dance_test();				// make K vector dance in a loop
 			return 0;
 		}
 	}

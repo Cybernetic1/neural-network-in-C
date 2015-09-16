@@ -39,6 +39,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Q-learning.o \
 	${OBJECTDIR}/back-prop.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/real-time-recurrent-learning.o \
 	${OBJECTDIR}/tests.o \
 	${OBJECTDIR}/visualization.o
 
@@ -86,6 +87,11 @@ ${OBJECTDIR}/main.o: main.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+
+${OBJECTDIR}/real-time-recurrent-learning.o: real-time-recurrent-learning.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/real-time-recurrent-learning.o real-time-recurrent-learning.c
 
 ${OBJECTDIR}/tests.o: tests.c 
 	${MKDIR} -p ${OBJECTDIR}

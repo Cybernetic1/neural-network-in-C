@@ -17,6 +17,7 @@ extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
 extern void plot_output(NNET *net);
+extern void flush_output();
 extern void plot_tester(double, double);
 extern void plot_K();
 extern int delay_vis(int);
@@ -179,6 +180,9 @@ void sine_wave_test()
 // New idea: allow RNN to act *multiple* times within each step of the sine wave.
 // This will stretch the time scale arbitrarily so the "sine" shape will be lost, but
 // I think this kind of learning is more suitable for this RNN model's capability.
+
+// Currently this test fails miserably because the training error is jumping all around
+// the place and so BP fails to converge.
 void sine_wave_test2()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
@@ -196,7 +200,7 @@ void sine_wave_test2()
 	
 	// Initialize K vector
 	for (int k = 0; k < dim_K; ++k)
-		K[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0;
+		K[k] = (rand() / (float) RAND_MAX) * 1.0f;
 	
 	for (int i = 0; 1; ++i)
 		{
@@ -205,13 +209,13 @@ void sine_wave_test2()
 		#define N2 10		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N2; j++) 
 			{
-			K[1] = cos(2 * Pi * j / N2);		// Phase information to aid learning
+			// K[1] = cos(2 * Pi * j / N2);		// Phase information to aid learning
 
 			forward_prop(Net, dim_K, K);
 
 			// Desired value
 			#define Amplitude2 1.0f
-			double K_star = Amplitude2 * ( sin(2 * Pi * j / N2) );
+			double K_star = Amplitude2 * ( sin(2 * Pi * j / N2) ) + 1.0f;
 
 			// Difference between actual outcome and desired value:
 			double error = LastLayer.neurons[0].output - K_star;
@@ -324,8 +328,6 @@ void classic_BP_test()
 
 		back_prop(Net);
 
-		plot_output(Net);
-
 		// Testing set
 		double test_err = 0.0f;
 		for (int j = 0; j < 20; ++j)
@@ -360,6 +362,8 @@ void classic_BP_test()
 			double ratio = sum_err1 / (sum_err1 + sum_err2);
 			printf("iteration: %05d, error ratio: %1.05lf ", i, ratio);
 
+			plot_output(Net);
+			flush_output();
 			plot_W(Net);
 			// plot_NN(Net);
 			plot_trainer(0);		// required to clear the window
@@ -370,7 +374,7 @@ void classic_BP_test()
 			if (isnan(ratio))
 				break;
 			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
-			if (test_err < 0.001)
+			if (test_err < 0.005)
 				break;
 			if (quit)
 				break;
@@ -440,6 +444,69 @@ void forward_test()
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);		
 		}
 	
+	pause_graphics();
+	free(Net);
+	}
+
+
+// Randomly generate a loop of K vectors;  make the RNN learn to traverse this loop.
+void loop_dance_test()
+	{
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
+	int neuronsOfLayer[4] = {dim_K, 10, 10, dim_K}; // first = input layer, last = output layer
+	create_NN(Net, NumLayers, neuronsOfLayer);
+	double sum_error2;
+	int quit;
+
+	// start_NN_plot();
+	start_W_plot();
+	start_K_plot();
+
+	printf("Randomly generate a loop of K vectors;\n");
+	printf("Make the RNN learn to traverse this loop.\n\n");
+
+	#define LoopLength 3
+	double Kn[LoopLength][dim_K];
+	for (int i = 0; i < LoopLength; ++i)
+		for (int k = 0; k < dim_K; ++k)
+			Kn[i][k] = (rand() / (float) RAND_MAX);			// random in [0,1]
+
+	for (int j = 0; 1; ++j)			// iterations
+		{
+		sum_error2 = 0.0f;
+
+		for (int i = 0; i < LoopLength; ++i)			// do one loop
+			{
+			forward_prop(Net, dim_K, K);
+
+			// Expected output value = Kn[i][k].
+			// Calculate error:
+			for (int k = 0; k < dim_K; ++k)
+				{
+				// Difference between actual outcome and desired value:
+				double error = LastLayer.neurons[k].output - Kn[i][k];
+				LastLayer.neurons[k].error = error;		// record this for back-prop
+				sum_error2 += (error * error);		// record sum of squared errors
+
+				// copy output to input
+				K[k] = LastLayer.neurons[k].output;
+				}
+
+			back_prop(Net);
+
+			plot_W(Net);
+			// plot_NN(Net);
+			plot_trainer(0);
+			plot_K();
+			if (quit = delay_vis(0))
+				break;
+			}
+
+		printf("iteration: %05d, error: %lf\n", j, sum_error2);
+		if (quit)
+			break;
+		}
+
 	pause_graphics();
 	free(Net);
 	}

@@ -22,7 +22,7 @@ wchar_t outChars[1024] = L"";
 int inCharsNum = 0;
 int outCharsNum = 0;
 
-// *******************read training data and testing data**********************
+// ******************* read training data and testing data **********************
 
 void addInChars(wchar_t *newStr)
 	{
