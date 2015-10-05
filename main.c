@@ -213,10 +213,11 @@ int main(int argc, char** argv)
 	extern void classic_BP_test();
 	extern void forward_test();
 	extern void loop_dance_test();
+	extern void arithmetic_test();
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	#define WhichTest	4
+	#define WhichTest	6
 
 	switch (WhichTest)
 		{
@@ -237,6 +238,9 @@ int main(int argc, char** argv)
 			return 0;
 		case 5:
 			loop_dance_test();				// make K vector dance in a loop
+			return 0;
+		case 6:
+			arithmetic_test();				// primary-school subtraction arithmetic
 			return 0;
 		}
 	}

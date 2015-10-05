@@ -510,3 +510,186 @@ void loop_dance_test()
 	pause_graphics();
 	free(Net);
 	}
+
+// **************** 2-Digit Primary-school Subtraction Arithmetic test *****************
+
+// The goal is to perform subtraction like a human child would.
+// Input: 2-digit numbers A and B, for example "12", "07"
+// Output: A - B, eg:  "12" - "07" = "05"
+
+// State vector = A1, A0, B1, B0, C1, C0, carry-flag, current-digit, result-ready-flag,
+//		underflow-error-flag
+
+// Algorithm:
+
+// If current-digit = 0:
+//		if A0 >= B0 then C0 = A0 - B0
+//		else C0 = 10 + (A0 - B0) , carry-flag = 1
+//		current-digit = 1
+
+// If current-digit = 1:
+//		if A1 >= B1 then
+//			C1 = A1 - B1
+//		else Underflow Error
+//		if carry-flag = 0:
+//			result-ready = 1
+//		else	// carry-flag = 1
+//			if C1 >= 1
+//				--C1
+//			else Underflow error
+//			result-ready = 1
+
+// This defines the transition operator acting on vector space K1 (of dimension 10)
+void transition(double K1[], double K2[])
+	{
+	double A1 = floor(K1[0] * 10.0) / 10.0;
+	double A0 = floor(K1[1] * 10.0) / 10.0;
+	double B1 = floor(K1[2] * 10.0) / 10.0;
+	double B0 = floor(K1[3] * 10.0) / 10.0;
+	double C1 = K1[4];
+	double C0 = K1[5];
+	double carryFlag = K1[6];
+	double currentDigit = K1[7];
+	double resultReady = K1[8];
+	double underflowError = K1[9];
+
+	if (currentDigit <= 0.5)
+		{
+		if (A0 >= B0)
+			{
+			C0 = A0 - B0;
+			carryFlag = 0.0;
+			}
+		else
+			{
+			C0 = 1.0 + (A0 - B0);
+			carryFlag = 1.0;
+			}
+		currentDigit = 1.0;
+		resultReady = 0.0;
+		underflowError = 0.0;
+		}
+	else		// current digit = 1
+		{
+		if (A1 >= B1)
+			{
+			C1 = A1 - B1;
+			underflowError = 0.0;
+			}
+		else
+			underflowError = 1.0;
+
+		if (carryFlag <= 0.5)
+			resultReady = 1.0;
+		else
+			{
+			if (C1 >= 0.0999)
+				C1 -= 0.1;
+			else
+				underflowError = 1.0;
+			resultReady = 1.0;
+			}
+		}
+	
+	K2[0] = A1;
+	K2[1] = A0;
+	K2[2] = B1;
+	K2[3] = B0;
+	K2[4] = C1;
+	K2[5] = C0;
+	K2[6] = carryFlag;
+	K2[7] = currentDigit;
+	K2[8] = resultReady;
+	K2[9] = underflowError;
+	}
+
+// Test the transition operator (1 time)
+void arithmetic_test_1()
+	{
+	double K1[10], K2[10];
+	double a1, a0, b1, b0;
+	
+	// generate A,B randomly
+	a1 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[0] = a1;
+	a0 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[1] = a0;
+	b1 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[2] = b1;
+	b0 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[3] = b0;
+
+	#define digit(d)	((int)(d * 10.0 + 0.001) + '0')
+	printf("%c%c - %c%c\n", digit(a1), digit(a0), digit(b1), digit(b0));
+	
+	K1[6] = 0.0;
+	K1[7] = 0.0;
+	K1[8] = 0.0;
+	K1[9] = 0.0;
+	
+	LOOP:
+	// call the transition
+	transition(K1, K2);
+	
+	// get result
+	if (K2[8] >= 0.5)			// result ready?
+		{
+		int correct = 1;
+		
+		// correct answer
+		int a = floor(a1 * 10) * 10 + a0 * 10;
+		int b = floor(b1 * 10) * 10 + b0 * 10;
+		printf("a = %d\n", a);
+		printf("b = %d\n", b);
+
+		int c = a - b;
+		printf("c = %d\n", c);
+		double c1 = (double)(c / 10) / 10.0;
+		double c0 = (double)(c % 10) / 10.0;
+		
+		if (c < 0)				// underflow
+			{
+			if (K2[9] < 0.5)
+				correct = 0;
+			}
+		else
+			{
+			if (K2[9] >= 0.5)
+				correct = 0;
+
+			if (K2[4] - c1 > 0.00001)
+				correct = 0;
+			if (K2[5] - c0 > 0.00001)
+				correct = 0;
+			}
+		
+		printf(" answer = %c%c\n", digit(c1), digit(c0));
+		printf(" genifer = %c%c\n", digit(K2[4]), digit(K2[5]));
+		
+		if (correct)
+			printf("Yes!\n");
+		else
+			{
+			printf("\x1b[31m*************** wrong! **************** \x1b[39;49m\n");
+			beep();
+			}
+		}
+	else
+		{
+		for (int k = 0; k < 10; ++k)
+			K1[k] = K2[k];
+		goto LOOP;
+		}
+	}
+
+// Repeat the test N times
+void arithmetic_test()
+	{
+	for (int n = 0; n < 100; ++n)
+		{
+		arithmetic_test_1();
+		printf("\n");
+		}
+	}
+
+// At this point we are able to generate training examples for the transition operator
