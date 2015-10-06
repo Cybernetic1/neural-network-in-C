@@ -213,11 +213,13 @@ int main(int argc, char** argv)
 	extern void classic_BP_test();
 	extern void forward_test();
 	extern void loop_dance_test();
-	extern void arithmetic_test();
+	extern void arithmetic_testA();
+	extern void arithmetic_testB();
+	extern void arithmetic_testC();
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	#define WhichTest	1
+	#define WhichTest	8
 
 	switch (WhichTest)
 		{
@@ -240,7 +242,13 @@ int main(int argc, char** argv)
 			loop_dance_test();				// make K vector dance in a loop
 			return 0;
 		case 6:
-			arithmetic_test();				// primary-school subtraction arithmetic
-			return 0;
+			arithmetic_testA();				// primary-school subtraction arithmetic
+			return 0;						// test the reference transition function
+		case 7:
+			arithmetic_testB();				// primary-school subtraction arithmetic
+			return 0;						// learn transition operator via back-prop
+		case 8:
+			arithmetic_testC();				// primary-school subtraction arithmetic
+			return 0;						// check transition operator that was learned
 		}
 	}

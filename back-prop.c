@@ -127,7 +127,7 @@ void back_prop(NNET *net)
 		double output = lastLayer.neurons[n].output;
 		double error = lastLayer.neurons[n].error;
 		//for output layer, ∆ = y∙(1-y)∙error
-		lastLayer.neurons[n].delta = steepness * output * (1.0f - output) * error;
+		lastLayer.neurons[n].delta = steepness * output * (1.0 - output) * error;
 		}
 
 	// calculate ∆ for hidden layers
@@ -143,7 +143,7 @@ void back_prop(NNET *net)
 				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
 						* nextLayer.neurons[i].delta;
 				}
-			net->layers[l].neurons[n].delta = steepness * output * (1.0f - output) * sum;
+			net->layers[l].neurons[n].delta = steepness * output * (1.0 - output) * sum;
 			}
 		}
 
@@ -153,7 +153,7 @@ void back_prop(NNET *net)
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
 			net->layers[l].neurons[n].weights[0] += Eta * 
-					net->layers[l].neurons[n].delta * 1.0f;		// 1.0f = bias input
+					net->layers[l].neurons[n].delta * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
 				{	
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;

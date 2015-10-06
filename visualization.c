@@ -228,7 +228,7 @@ void plot_W(NNET *net)
 
 	#define numLayers (net->numLayers)
 	#define Y_step (W_box_height / numLayers)
-	#define Gain (Y_step / 2)
+	#define Gain (Y_step / 10)
 	for (int l = 1; l < numLayers; l++)		// Note: layer 0 has no weights
 		{
 		double gain = 1.0f;
