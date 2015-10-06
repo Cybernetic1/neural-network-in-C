@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	#define WhichTest	6
+	#define WhichTest	1
 
 	switch (WhichTest)
 		{

@@ -262,19 +262,18 @@ void sine_wave_test2()
 // trials, then compare their ratio.
 void classic_BP_test()
 	{
-	int neuronsOfLayer[4] = {2, 16, 12, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[3] = {2, 3, 1}; // first = input layer, last = output layer
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
 
-	int quit;
+	int quit = 0;
 	#define M	100			// how many errors to record for averaging
 	double errors1[M], errors2[M];	// two arrays for recording errors
-	double sum_err1, sum_err2 = 0.0f;	// sums of errors
+	double sum_err1 = 0.0, sum_err2 = 0.0;	// sums of errors
 	int tail = 0;			// index for cyclic arrays (last-in, first-out)
-	double single_err;		// error per individual neuron
-
+	
 	for (int i = 0; i < M; ++i)			// clear errors to 0.0
-		errors1[i] = errors2[i] = 0.0f;
+		errors1[i] = errors2[i] = 0.0;
 	
 	// start_NN_plot();
 	start_W_plot();
@@ -285,15 +284,26 @@ void classic_BP_test()
 	
 	for (int i = 0; 1; ++i)
 		{
+		printf("iteration: %05d: ", i);
+
 		// Create random K vector
 		for (int k = 0; k < 2; ++k)
 			K[k] = (rand() / (float) RAND_MAX);
 		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
+		
+		if ((i % 4) == 0)
+			K[0] = 1.0, K[1] = 0.0;
+		if ((i % 4) == 1)
+			K[0] = 0.0, K[1] = 0.0;
+		if ((i % 4) == 2)
+			K[0] = 0.0, K[1] = 1.0;
+		if ((i % 4) == 3)
+			K[0] = 1.0, K[1] = 1.0;
 
-		forward_prop(Net, 2, K);
+		forward_prop(Net, 2, K);		// dim K = 2
 
 		// Desired value = K_star
-		single_err = 0.0f;
+		double training_err = 0.0;
 		for (int k = 0; k < 1; ++k)
 			{
 			// double ideal = K[k];				/* identity function */
@@ -308,20 +318,21 @@ void classic_BP_test()
 			double error = ideal - LastLayer.neurons[k].output;
 			LastLayer.neurons[k].error = error;		// record this for back-prop
 
-			single_err += (error * error);		// record sum of squared errors
+			training_err += (error * error);		// record sum of squared errors
 			}
-
+		printf("sum of squared error = %lf  ", training_err);
+		
 		// update error arrays cyclically
 		// (This is easier to understand by referring to the next block of code)
 		sum_err2 -= errors2[tail];
 		sum_err2 += errors1[tail];
 		sum_err1 -= errors1[tail];
-		sum_err1 += single_err;
+		sum_err1 += training_err;
 		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
 		
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
-		errors1[tail] = single_err;
+		errors1[tail] = training_err;
 		++tail;
 		if (tail == M)				// loop back in cycle
 			tail = 0;
@@ -329,7 +340,7 @@ void classic_BP_test()
 		back_prop(Net);
 
 		// Testing set
-		double test_err = 0.0f;
+		double test_err = 0.0;
 		for (int j = 0; j < 20; ++j)
 			{
 			// Create random K vector
@@ -340,7 +351,7 @@ void classic_BP_test()
 			forward_prop(Net, 2, K);
 
 			// Desired value = K_star
-			single_err = 0.0f;
+			double single_err = 0.0;
 			for (int k = 0; k < 1; ++k)
 				{
 				// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
@@ -355,13 +366,13 @@ void classic_BP_test()
 			test_err += single_err;
 			}
 		test_err /= 20.0f;
-		printf("  random test error = %1.06lf\n", test_err);
-		
-		if ((i % 1) == 0)			// display status periodically
-			{
-			double ratio = sum_err1 / (sum_err1 + sum_err2);
-			printf("iteration: %05d, error ratio: %1.05lf ", i, ratio);
+		printf("random test error = %1.06lf  ", test_err);
 
+		double ratio = sum_err1 / (sum_err1 + sum_err2);
+		printf("error ratio = %1.05lf\n", ratio);
+
+		if ((i % 200) == 0)			// display status periodically
+			{
 			plot_output(Net);
 			flush_output();
 			plot_W(Net);
@@ -370,18 +381,20 @@ void classic_BP_test()
 			// plot_K();
 			if (quit = delay_vis(0))
 				break;
-			
-			if (isnan(ratio))
-				break;
-			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
-			if (test_err < 0.005)
-				break;
-			if (quit)
-				break;
 			}
+		
+		if (isnan(ratio))
+			break;
+		// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
+		// if (test_err < 0.01)
+		if (training_err < 0.01)
+			break;
 		}
 
 	beep();
+	plot_output(Net);
+	flush_output();
+	plot_W(Net);
 	
 	if (!quit)
 		pause_graphics();
@@ -517,8 +530,8 @@ void loop_dance_test()
 // Input: 2-digit numbers A and B, for example "12", "07"
 // Output: A - B, eg:  "12" - "07" = "05"
 
-// State vector = A1, A0, B1, B0, C1, C0, carry-flag, current-digit, result-ready-flag,
-//		underflow-error-flag
+// State vector = [ A1, A0, B1, B0, C1, C0, carry-flag, current-digit, result-ready-flag,
+//		underflow-error-flag ]
 
 // Algorithm:
 
@@ -692,4 +705,7 @@ void arithmetic_test()
 		}
 	}
 
-// At this point we are able to generate training examples for the transition operator
+// At this point we are able to generate training examples for the transition operator.
+// Perhaps now get to the main code to see if R can approximate this operator well?
+// The learning algorithm would be to learn the transition operator as one single step.
+// This should be very simple and back-prop would do.
