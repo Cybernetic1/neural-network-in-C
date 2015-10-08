@@ -9,14 +9,14 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "RNN.h"
 
-#define Eta 1.0				// learning rate
+#define Eta 0.0002				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 //********sigmoid function and randomWeight generator********************//
 
 double sigmoid(double v)
 	{
-	#define steepness 1.0
+	#define steepness 3.0
 	return 1.0 / (1.0 + exp(-steepness * v));
 	}
 

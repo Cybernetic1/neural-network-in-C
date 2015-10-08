@@ -227,7 +227,7 @@ int main(int argc, char** argv)
 			forward_test();
 			return 0;
 		case 1:
-			classic_BP_test();
+			classic_BP_test();				// learn XOR function
 			return 0;
 		case 2:
 			K_wandering_test();
