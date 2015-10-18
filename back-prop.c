@@ -96,7 +96,7 @@ void forward_prop(NNET *net, int dim_V, double V[])
 
 
 //****************************** back-propagation ***************************//
-// The error "delta" is propagated backwards starting from the output layer, hence the
+// The error is propagated backwards starting from the output layer, hence the
 // name for this algorithm.
 
 // In the update formula, we need to adjust by "η ∙ input ∙ ∆", where η is the learning rate.
@@ -109,6 +109,15 @@ void forward_prop(NNET *net, int dim_V, double V[])
 // http://math.stackexchange.com/questions/78575/derivative-of-sigmoid-function-sigma-x-frac11e-x
 // Therefore in the code, we use "output * (1 - output)" for the value of "σ'(summed input)",
 // because output = σ(summed input), where summed_input_i = Σ_j W_ji input_j.
+
+// The meaning of delta (∆) is the "local gradient".  At the output layer, ∆ is equal to
+// the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
+// equal to the derivative times the weighted sum of the ∆'s from the "next" layers.
+// From the algorithmic point of view, ∆ is derivative of the error with respect to the
+// summed inputs (for that particular neuron).  It changes for every input instance because
+// the error is dependent on the NN's raw input.  So, for each raw input instance, the
+// "local gradient" keeps changing.  I have a hypothesis that ∆ will fluctuate wildly
+// when the NN topology is "inadequate" to learn the target function.
 
 // Some history:
 // It was in 1974-1986 that Paul Werbos, David Rumelhart, Geoffrey Hinton and Ronald Williams
