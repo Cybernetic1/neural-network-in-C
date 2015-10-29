@@ -579,6 +579,11 @@ int delay_vis(int delay)
 
 	// Read keyboard state, if "Q" is pressed, return 1
 	SDL_PumpEvents();
+	
+	extern void end_timer();
+	if (keys[SDL_SCANCODE_T])
+		end_timer();
+
     if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])
 		return 1;
 	else

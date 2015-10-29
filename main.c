@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
+#include <sys/timeb.h>		// For timing operations
 
 #include "RNN.h"
 
@@ -17,6 +18,7 @@ extern void plot_NN(NNET *net);
 extern void pause_graphics();
 extern void start_NN_plot();
 extern void start_K_plot();
+extern void beep();
 
 //************************** training data ***********************//
 // Each entry of training data consists of a K input value and a desired K
@@ -219,36 +221,68 @@ int main(int argc, char** argv)
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	#define WhichTest	8
+	printf("[1] forward test\n");
+	printf("[2] classic BP test (XOR)\n");
+	printf("[3] K wandering test\n");
+	printf("[4] sine wave test (differential)\n");
+	printf("[5] sine wave test (absolute)\n");
+	printf("[6] K dance test\n");
+	printf("[7] arthmetic test: test operator\n");
+	printf("[8] arithmetic test: learn operator\n");
+	printf("[9] arithmetic test: test learned operator\n");
+	printf("[q] quit\n");
 
-	switch (WhichTest)
+	
+	int whichTest = getchar() - '0';
+
+	
+	switch (whichTest)
 		{
-		case 0:
-			forward_test();
-			return 0;
 		case 1:
-			classic_BP_test();				// learn XOR function
-			return 0;
+			forward_test();
+			break;
 		case 2:
-			K_wandering_test();
-			return 0;
+			classic_BP_test();				// learn XOR function
+			break;
 		case 3:
-			sine_wave_test();				// train with differential values of sine
-			return 0;
+			K_wandering_test();
+			break;
 		case 4:
-			sine_wave_test2();				// train with absolute values of sine
-			return 0;
+			sine_wave_test();				// train with differential values of sine
+			break;
 		case 5:
-			loop_dance_test();				// make K vector dance in a loop
-			return 0;
+			sine_wave_test2();				// train with absolute values of sine
+			break;
 		case 6:
-			arithmetic_testA();				// primary-school subtraction arithmetic
-			return 0;						// test the reference transition function
+			loop_dance_test();				// make K vector dance in a loop
+			break;
 		case 7:
-			arithmetic_testB();				// primary-school subtraction arithmetic
-			return 0;						// learn transition operator via back-prop
+			arithmetic_testA();				// primary-school subtraction arithmetic
+			break;							// test the reference transition function
 		case 8:
+			arithmetic_testB();				// primary-school subtraction arithmetic
+			break;							// learn transition operator via back-prop
+		case 9:
 			arithmetic_testC();				// primary-school subtraction arithmetic
-			return 0;						// check transition operator that was learned
+			break;							// check transition operator that was learned
 		}
+	
+	beep();
+	return 0;
+	}
+
+struct timeb startTime, endTime;
+
+void start_timer()
+	{
+	ftime(&startTime);
+	}
+
+void end_timer()
+	{
+	ftime(&endTime);
+    int duration = endTime.time - startTime.time;
+	int minutes = duration / 60;
+	int seconds = duration % 60;
+    printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
 	}
