@@ -1,27 +1,27 @@
 
 //**********************struct for NEURON**********************************//
-typedef struct rNEURON
+typedef struct NEURON
 	{
     double input;
     double output;
     double *weights;
-    double grad;			// "local gradient"
+    double grad;		// "local gradient"
     double error;
-	} rNEURON;
+	} NEURON;
 
 //**********************struct for LAYER***********************************//
-typedef struct rLAYER
+typedef struct LAYER
 	{
     int numNeurons;
-    rNEURON *neurons;
-	} rLAYER;
+    NEURON *neurons;
+	} LAYER;
 
 //*********************struct for NNET************************************//
-typedef struct RNN
+typedef struct NNET
 	{
     double *inputs;
     int numLayers;
-    rLAYER *layers;
-	} RNN;
+    LAYER *layers;
+	} NNET; //neural network
 
 #define dim_K	10

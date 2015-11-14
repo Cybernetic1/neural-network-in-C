@@ -3,7 +3,7 @@
 #include <SDL2/SDL.h>
 #include <sys/timeb.h>		// For timing operations
 
-#include "RNN.h"
+#include "feedforwardNN.h"
 
 #define dim_K 10			// dimension of cognitive state vector K
 double K[dim_K];
@@ -213,11 +213,13 @@ int main(int argc, char** argv)
 	extern void sine_wave_test();
 	extern void sine_wave_test2();
 	extern void classic_BP_test();
+	extern void classic_BP_test_ReLU();
 	extern void forward_test();
 	extern void loop_dance_test();
 	extern void arithmetic_testA();
 	extern void arithmetic_testB();
 	extern void arithmetic_testC();
+	extern void RNN_sine_test();
 	
 	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
@@ -230,11 +232,12 @@ int main(int argc, char** argv)
 	printf("[7] arthmetic test: test operator\n");
 	printf("[8] arithmetic test: learn operator\n");
 	printf("[9] arithmetic test: test learned operator\n");
+	printf("[10] rectifier BP test (XOR)\n");
+	printf("[11] RNN sine-wave test\n");
 	printf("[q] quit\n");
-
 	
-	int whichTest = getchar() - '0';
-
+	int whichTest = 0;
+	scanf("%d", &whichTest);
 	
 	switch (whichTest)
 		{
@@ -265,6 +268,12 @@ int main(int argc, char** argv)
 		case 9:
 			arithmetic_testC();				// primary-school subtraction arithmetic
 			break;							// check transition operator that was learned
+		case 10:
+			classic_BP_test_ReLU();			// learn XOR function
+			break;
+		case 11:
+			RNN_sine_test();				// train RNN to produce sine wave
+			break;
 		}
 	
 	beep();

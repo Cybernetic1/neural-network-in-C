@@ -2,7 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 
-#include "RNN.h"
+#include "feedforwardNN.h"
 
 SDL_Renderer *gfx_Ideal;				// For ideal output visualizer
 SDL_Window *win_Ideal;
@@ -37,7 +37,7 @@ void plot_ideal(void)
 		return;
 		}
 
-	win_Ideal = SDL_CreateWindow("Ideal output", 10, 10, Ideal_box_width, Ideal_box_height, SDL_WINDOW_SHOWN);
+	win_Ideal = SDL_CreateWindow("Ideal output", 500, 500, Ideal_box_width, Ideal_box_height, SDL_WINDOW_SHOWN);
 	if (win_Ideal == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -77,13 +77,14 @@ void plot_ideal(void)
 			if (ideal > 1.0f || ideal < 0.0f)
 				printf("error:  %fl, %fl = %fl\n", input[0], input[1], ideal);
 
-			int b = 0x00;
-			float r = ideal < 0.0f ? -ideal : 0.0f;
-			if (r > 1.0f || r < 0.0f) b = 0xFF;
-			float g = ideal >= 0.0f ? ideal : 0.0f;
-			if (g > 1.0f || g < 0.0f) b = 0xFF;
-			
-			SDL_SetRenderDrawColor(gfx_Ideal, f2i(r), f2i(g), b, 0xFF);
+			int c3 = 0x00;
+			float c1 = (ideal < 0.0) ? -ideal : 0.0;
+			if (c1 > 1.0) { c3 = 0xFF; c1 = 1.0; }
+			if (c1 < 0.0) { c3 = 0xFF; c1 = 0.0; }
+			float c2 = (ideal > 0.0) ? ideal : 0.0;
+			if (c2 > 1.0) { c3 = 0xFF; c2 = 1.0; }
+			if (c2 < 0.0) { c3 = 0xFF; c2 = 0.0; }
+			SDL_SetRenderDrawColor(gfx_Ideal, f2i(c2), f2i(c1), c3, 0xFF);
 
 			// Plot little square
 			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
@@ -109,7 +110,7 @@ void start_output_plot(void)
 		return;
 		}
 
-	win_Out = SDL_CreateWindow("Output", 500, 500, Out_box_width, Out_box_height, SDL_WINDOW_SHOWN);
+	win_Out = SDL_CreateWindow("Output", 10, 10, Out_box_width, Out_box_height, SDL_WINDOW_SHOWN);
 	if (win_Out == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -154,13 +155,14 @@ void plot_output(NNET *net)
 			float g = output >= 0.5f ? (output - 0.5f) * 2 : 0.0f;
 			if (g > 1.0f || g < 0.0f) b = 0xFF; */
 
-			int b = 0x00;
-			float r = output < 0.0f ? -output : 0.0f;
-			if (r > 1.0f || r < 0.0f) b = 0xFF;
-			float g = output > 0.0f ? output : 0.0f;
-			if (g > 1.0f || g < 0.0f) b = 0xFF;
-			
-			SDL_SetRenderDrawColor(gfx_Out, f2i(r), f2i(g), b, 0xFF);
+			int c3 = 0x00;
+			float c1 = (output < 0.0) ? -output : 0.0;
+			if (c1 > 1.0) { c3 = 0xFF; c1 = 1.0; }
+			if (c1 < 0.0) { c3 = 0xFF; c1 = 0.0; }
+			float c2 = (output > 0.0) ? output : 0.0;
+			if (c2 > 1.0) { c3 = 0xFF; c2 = 1.0; }
+			if (c2 < 0.0) { c3 = 0xFF; c2 = 0.0; }
+			SDL_SetRenderDrawColor(gfx_Out, f2i(c2), f2i(c1), c3, 0xFF);
 
 			// Plot little square
 			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,
@@ -261,13 +263,15 @@ void plot_W(NNET *net)
 			int basepoint_x = 10 + neuronWidth * n;
 			int gap = (neuronWidth - 10) / (numWeights - 1);
 
-			for (int m = 1; m < numWeights; ++m)		// for each weight
+			for (int m = 0; m < numWeights - 1; ++m)
+			// for each weight including bias, but minus one because # line segments
+			// is 1 less than # of weights
 				{
-				double weight0 = Gain * net->layers[l].neurons[n].weights[m - 1];
-				double weight1 = Gain * net->layers[l].neurons[n].weights[m];
-				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * (m - 1),
+				double weight0 = Gain * net->layers[l].neurons[n].weights[m];
+				double weight1 = Gain * net->layers[l].neurons[n].weights[m + 1];
+				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * m,
 						baseline_y - weight0,
-						basepoint_x + 5 + gap * m,
+						basepoint_x + 5 + gap * (m + 1),
 						baseline_y - weight1);
 				}
 			}
@@ -340,10 +344,11 @@ void plot_NN(NNET *net)
 		// set color
 		// float r = ((float) l ) / (numLayers);
 		// float b = 1.0f - ((float) l ) / (numLayers);
-		SDL_SetRenderDrawColor(gfx_NN, 0xFF, 0x00, 0x00, 0xFF);		// red
+		SDL_SetRenderDrawColor(gfx_NN, 0x00, 0xFF, 0x00, 0xFF);		// green
 
-		int nn = net->layers[l].numNeurons;
-		if (nn == 1)	// only 1 neuron in the layer
+		int numNeurons = net->layers[l].numNeurons;
+		// numNeurons = actual number of neurons, not counting the bias neuron
+		if (numNeurons == 1)	// only 1 neuron in the layer
 			{
 			double output = Volume * gain * net->layers[l].neurons[0].output;
 
@@ -353,16 +358,20 @@ void plot_NN(NNET *net)
 			}
 		else			// > 1 neurons in the layer
 			{
-			int neuronWidth = (NN_box_width - 20) / (nn - 1);
-		
-			for (int n = 1; n < nn; n++)		// for each neuron
+			// The line is divided into (numNeurons - 1) parts
+			int neuronWidth = (NN_box_width - 20) / (numNeurons - 1);
+
+			// for each neuron except the last
+			// (because # of line segments = 1 less than # of neurons)
+			// (note that "output" does not have a bias element)
+			for (int n = 0; n < numNeurons - 1; n++)
 				{
-				double output0 = Volume * gain * net->layers[l].neurons[n - 1].output;
-				double output1 = Volume * gain * net->layers[l].neurons[n].output;
+				double output0 = Volume * gain * net->layers[l].neurons[n].output;
+				double output1 = Volume * gain * net->layers[l].neurons[n + 1].output;
 
 				int basepoint_x = 10 + neuronWidth * n;
-				SDL_RenderDrawLine(gfx_NN, basepoint_x - neuronWidth, baseline_y - output0, \
-					basepoint_x, baseline_y - output1);
+				SDL_RenderDrawLine(gfx_NN, basepoint_x, baseline_y - output0, \
+					basepoint_x + neuronWidth, baseline_y - output1);
 				}
 			}
 		}

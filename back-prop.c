@@ -7,12 +7,12 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>		// time as random seed in create_NN()
-#include "RNN.h"
+#include "feedforwardNN.h"
 
-#define Eta 0.001				// learning rate
+#define Eta 0.02				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
-//********sigmoid function and randomWeight generator********************//
+//******** activation functions and random weight generator ********************//
 
 double sigmoid(double v)
 	{
@@ -20,9 +20,20 @@ double sigmoid(double v)
 	return 1.0 / (1.0 + exp(-steepness * v));
 	}
 
-double randomWeight() // generate random weight between [+0.5,-0.5]
+// This non-smooth rectifier can prevent the "vanishing gradient" problem:
+// Gradient is constant so it never vanishes!
+double rectifier(double v)
 	{
-	return (rand() / (double) RAND_MAX) * 1.0 - 0.5;
+	if (v >= 0.0)
+		return v;
+	else
+		#define leakage 0.001
+		return leakage * v;
+	}
+
+double randomWeight() // generate random weight between [+1.0, -1.0]
+	{
+	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
 	}
 
 //****************************create neural network*********************//
@@ -63,18 +74,17 @@ void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 
 void forward_prop(NNET *net, int dim_V, double V[])
 	{
-	//set the output of input layer
-	//two inputs x1 and x2
+	// set the output of input layer
 	for (int i = 0; i < dim_V; ++i)
 		net->layers[0].neurons[i].output = V[i];
 
-	//calculate output from hidden layers to output layer
+	// calculate output from hidden layers to output layer
 	for (int i = 1; i < net->numLayers; i++)
 		{
 		for (int j = 0; j < net->layers[i].numNeurons; j++)
 			{
 			double v = 0; //induced local field for neurons
-			//calculate v, which is the sum of the product of input and weights
+			// calculate v, which is the sum of the product of input and weights
 			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
 				{
 				if (k == 0)
@@ -94,13 +104,46 @@ void forward_prop(NNET *net, int dim_V, double V[])
 		}
 	}
 
+// Same as above, except with rectifier activation function
+// ReLU = "rectified linear unit"
+void forward_prop_ReLU(NNET *net, int dim_V, double V[])
+	{
+	// set the output of input layer
+	for (int i = 0; i < dim_V; ++i)
+		net->layers[0].neurons[i].output = V[i];
+
+	// calculate output from hidden layers to output layer
+	for (int i = 1; i < net->numLayers; i++)
+		{
+		for (int j = 0; j < net->layers[i].numNeurons; j++)
+			{
+			double v = 0; // induced local field for neurons
+			// calculate v, which is the sum of the product of input and weights
+			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
+				{
+				if (k == 0)
+					v += net->layers[i].neurons[j].weights[k] * BIASOUTPUT;
+				else
+					v += net->layers[i].neurons[j].weights[k] *
+						net->layers[i - 1].neurons[k - 1].output;
+				}
+
+			// For the last layer, skip the sigmoid function
+			// Note: this idea seems to destroy back-prop convergence
+			// if (i == net->numLayers - 1)
+			//	net->layers[i].neurons[j].output = v;
+			// else
+			net->layers[i].neurons[j].output = rectifier(v);
+			}
+		}
+	}
 
 //****************************** back-propagation ***************************//
 // The error is propagated backwards starting from the output layer, hence the
 // name for this algorithm.
 
-// In the update formula, we need to adjust by "η ∙ input ∙ ∆", where η is the learning rate.
-// The value of		∆_j = σ'(summed input) Σ_i W_ji ∆_i
+// In the update formula, we need to adjust by "η ∙ input ∙ ∇", where η is the learning rate.
+// The value of		∇_j = σ'(summed input) Σ_i W_ji ∇_i
 // where σ is the sigmoid function, σ' is its derivative.  This formula is obtained directly
 // from differentiating the error E with respect to the weights W.
 
@@ -110,13 +153,13 @@ void forward_prop(NNET *net, int dim_V, double V[])
 // Therefore in the code, we use "output * (1 - output)" for the value of "σ'(summed input)",
 // because output = σ(summed input), where summed_input_i = Σ_j W_ji input_j.
 
-// The meaning of delta (∆) is the "local gradient".  At the output layer, ∆ is equal to
+// The meaning of del (∇) is the "local gradient".  At the output layer, ∇ is equal to
 // the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
-// equal to the derivative times the weighted sum of the ∆'s from the "next" layers.
-// From the algorithmic point of view, ∆ is derivative of the error with respect to the
+// equal to the derivative times the weighted sum of the ∇'s from the "next" layers.
+// From the algorithmic point of view, ∇ is derivative of the error with respect to the
 // summed inputs (for that particular neuron).  It changes for every input instance because
 // the error is dependent on the NN's raw input.  So, for each raw input instance, the
-// "local gradient" keeps changing.  I have a hypothesis that ∆ will fluctuate wildly
+// "local gradient" keeps changing.  I have a hypothesis that ∇ will fluctuate wildly
 // when the NN topology is "inadequate" to learn the target function.
 
 // Some history:
@@ -130,16 +173,16 @@ void back_prop(NNET *net)
 	int numLayers = net->numLayers;
 	LAYER lastLayer = net->layers[numLayers - 1];
 
-	// calculate ∆ for output layer
+	// calculate gradient for output layer
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
 		double output = lastLayer.neurons[n].output;
 		double error = lastLayer.neurons[n].error;
-		//for output layer, ∆ = y∙(1-y)∙error
-		lastLayer.neurons[n].delta = steepness * output * (1.0 - output) * error;
+		//for output layer, ∇ = y∙(1-y)∙error
+		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * error;
 		}
 
-	// calculate ∆ for hidden layers
+	// calculate gradient for hidden layers
 	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
@@ -150,9 +193,9 @@ void back_prop(NNET *net)
 			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
 				{
 				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].delta;
+						* nextLayer.neurons[i].grad;
 				}
-			net->layers[l].neurons[n].delta = steepness * output * (1.0 - output) * sum;
+			net->layers[l].neurons[n].grad = steepness * output * (1.0 - output) * sum;
 			}
 		}
 
@@ -162,17 +205,66 @@ void back_prop(NNET *net)
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
 			net->layers[l].neurons[n].weights[0] += Eta * 
-					net->layers[l].neurons[n].delta * 1.0;		// 1.0f = bias input
+					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
 				{	
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
 				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].delta * inputForThisNeuron;
+						net->layers[l].neurons[n].grad * inputForThisNeuron;
 				}
 			}
 		}
 	}
 
+// Same as above, except with rectifier activation function
+// In this case:  σ'(x) = sign(x)
+void back_prop_ReLU(NNET *net)
+	{
+	int numLayers = net->numLayers;
+	LAYER lastLayer = net->layers[numLayers - 1];
+
+	// calculate gradient for output layer
+	for (int n = 0; n < lastLayer.numNeurons; ++n)
+		{
+		double output = lastLayer.neurons[n].output;
+		double error = lastLayer.neurons[n].error;
+		//for output layer, ∇ = sign(y)∙error
+		lastLayer.neurons[n].grad = ((output >= 0.0) ? 1.0 : leakage) * error;
+		}
+
+	// calculate gradient for hidden layers
+	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
+			{
+			double output = net->layers[l].neurons[n].output;
+			double sum = 0.0f;
+			LAYER nextLayer = net->layers[l + 1];
+			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+				{
+				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+						* nextLayer.neurons[i].grad;
+				}
+			net->layers[l].neurons[n].grad = ((output >= 0.0) ? 1.0 : leakage) * sum;
+			}
+		}
+
+	// update all weights
+	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
+			{
+			net->layers[l].neurons[n].weights[0] += Eta * 
+					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
+			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
+				{	
+				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
+				net->layers[l].neurons[n].weights[i + 1] += Eta *
+						net->layers[l].neurons[n].grad * inputForThisNeuron;
+				}
+			}
+		}
+	}
 
 // Calculate error between output of forward-prop and a given answer Y
 double calc_error(NNET *net, double Y[])
@@ -192,7 +284,7 @@ double calc_error(NNET *net, double Y[])
 		sumOfSquareError += error * error / 2;
 		}
 	double mse = sumOfSquareError / LastLayer.numNeurons;
-	return mse; //return the root of mean square error
+	return mse; //return mean square error
 	}
 
 // **************************** Old code, currently not used *****************************

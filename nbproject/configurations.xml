@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>RNN.h</itemPath>
+      <itemPath>feedforwardNN.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -57,6 +58,8 @@
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
+      <item path="feedforwardNN.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
@@ -93,6 +96,8 @@
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="feedforwardNN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
