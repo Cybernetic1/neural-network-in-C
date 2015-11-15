@@ -9,7 +9,7 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "feedforwardNN.h"
 
-#define Eta 0.02				// learning rate
+#define Eta 0.03				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 //******** activation functions and random weight generator ********************//
@@ -24,11 +24,11 @@ double sigmoid(double v)
 // Gradient is constant so it never vanishes!
 double rectifier(double v)
 	{
-	if (v >= 0.0)
+	#define Leakage 0.001
+	if (v >= Leakage)
 		return v;
 	else
-		#define leakage 0.001
-		return leakage * v;
+		return Leakage;
 	}
 
 double randomWeight() // generate random weight between [+1.0, -1.0]
@@ -79,19 +79,19 @@ void forward_prop(NNET *net, int dim_V, double V[])
 		net->layers[0].neurons[i].output = V[i];
 
 	// calculate output from hidden layers to output layer
-	for (int i = 1; i < net->numLayers; i++)
+	for (int l = 1; l < net->numLayers; l++)
 		{
-		for (int j = 0; j < net->layers[i].numNeurons; j++)
+		for (int n = 0; n < net->layers[l].numNeurons; n++)
 			{
 			double v = 0; //induced local field for neurons
 			// calculate v, which is the sum of the product of input and weights
-			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
+			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[i].neurons[j].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
 				else
-					v += net->layers[i].neurons[j].weights[k] *
-						net->layers[i - 1].neurons[k - 1].output;
+					v += net->layers[l].neurons[n].weights[k] *
+						net->layers[l - 1].neurons[k - 1].output;
 				}
 
 			// For the last layer, skip the sigmoid function
@@ -99,7 +99,7 @@ void forward_prop(NNET *net, int dim_V, double V[])
 			// if (i == net->numLayers - 1)
 			//	net->layers[i].neurons[j].output = v;
 			// else
-				net->layers[i].neurons[j].output = sigmoid(v);
+			net->layers[l].neurons[n].output = sigmoid(v);
 			}
 		}
 	}
@@ -113,19 +113,19 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 		net->layers[0].neurons[i].output = V[i];
 
 	// calculate output from hidden layers to output layer
-	for (int i = 1; i < net->numLayers; i++)
+	for (int l = 1; l < net->numLayers; l++)
 		{
-		for (int j = 0; j < net->layers[i].numNeurons; j++)
+		for (int n = 0; n < net->layers[l].numNeurons; n++)
 			{
-			double v = 0; // induced local field for neurons
+			double v = 0.0; // induced local field for neurons
 			// calculate v, which is the sum of the product of input and weights
-			for (int k = 0; k <= net->layers[i - 1].numNeurons; k++)
+			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[i].neurons[j].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
 				else
-					v += net->layers[i].neurons[j].weights[k] *
-						net->layers[i - 1].neurons[k - 1].output;
+					v += net->layers[l].neurons[n].weights[k] *
+						net->layers[l - 1].neurons[k - 1].output;
 				}
 
 			// For the last layer, skip the sigmoid function
@@ -133,7 +133,13 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			// if (i == net->numLayers - 1)
 			//	net->layers[i].neurons[j].output = v;
 			// else
-			net->layers[i].neurons[j].output = rectifier(v);
+			net->layers[l].neurons[n].output = rectifier(v);
+
+			// This is to prepare for back-prop
+			if (v >= 0.0)
+				net->layers[l].neurons[n].grad = 1.0;
+			else
+				net->layers[l].neurons[n].grad = Leakage;
 			}
 		}
 	}
@@ -226,10 +232,11 @@ void back_prop_ReLU(NNET *net)
 	// calculate gradient for output layer
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
-		double output = lastLayer.neurons[n].output;
+		// double output = lastLayer.neurons[n].output;
 		double error = lastLayer.neurons[n].error;
 		//for output layer, ∇ = sign(y)∙error
-		lastLayer.neurons[n].grad = ((output >= 0.0) ? 1.0 : leakage) * error;
+		// .grad has been prepared in forward-prop
+		lastLayer.neurons[n].grad *= error;
 		}
 
 	// calculate gradient for hidden layers
@@ -237,7 +244,7 @@ void back_prop_ReLU(NNET *net)
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
 			{
-			double output = net->layers[l].neurons[n].output;
+			// double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
 			LAYER nextLayer = net->layers[l + 1];
 			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
@@ -245,7 +252,8 @@ void back_prop_ReLU(NNET *net)
 				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
 						* nextLayer.neurons[i].grad;
 				}
-			net->layers[l].neurons[n].grad = ((output >= 0.0) ? 1.0 : leakage) * sum;
+			// .grad has been prepared in forward-prop
+			net->layers[l].neurons[n].grad *= sum;
 			}
 		}
 

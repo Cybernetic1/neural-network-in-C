@@ -316,7 +316,7 @@ void classic_BP_test()
 
 		// Desired value = K_star
 		double training_err = 0.0;
-		for (int k = 0; k < 1; ++k)				// output has only 1 component
+		for (int k = 0; k < 1; ++k) // output has only 1 component
 			{
 			// double ideal = K[k];				/* identity function */
 			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
@@ -423,11 +423,14 @@ void classic_BP_test()
 	}
 
 // Same as above, with rectified units
+
 void classic_BP_test_ReLU()
 	{
-	int neuronsOfLayer[] = {2, 8, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[] = {2, 8, 8, 1}; // first = input layer, last = output layer
+	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int quit = 0;
 	#define M	50			// how many errors to record for averaging
@@ -458,7 +461,7 @@ void classic_BP_test_ReLU()
 
 		// Desired value = K_star
 		double training_err = 0.0;
-		for (int k = 0; k < 1; ++k)				// output has only 1 component
+		for (int k = 0; k < 1; ++k) // output has only 1 component
 			{
 			// double ideal = K[k];				/* identity function */
 			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
@@ -466,8 +469,8 @@ void classic_BP_test_ReLU()
 			double ideal = ((double) (f2b(K[0]) ^ f2b(K[1]))); // ^ f2b(K[2]) ^ f2b(K[3])))
 
 			// Difference between actual outcome and desired value:
-			double error = ideal - LastLayer.neurons[k].output;
-			LastLayer.neurons[k].error = error; // record this for back-prop
+			double error = ideal - lastLayer.neurons[k].output;
+			lastLayer.neurons[k].error = error; // record this for back-prop
 
 			training_err += fabs(error); // record sum of errors
 			// printf("training error = %lf \n", training_err);
@@ -494,35 +497,41 @@ void classic_BP_test_ReLU()
 
 		back_prop_ReLU(Net);
 
-		// Testing set
-		double test_err = 0.0;
-		#define numTests 100
-		for (int j = 0; j < numTests; ++j)
+		if ((i % 500) == 0)
 			{
-			// Create random K vector
-			for (int k = 0; k < 2; ++k)
-				K[k] = ((double) rand() / (double) RAND_MAX);
-			// plot_tester(K[0], K[1]);
-
-			forward_prop_ReLU(Net, 2, K);
-
-			// Desired value = K_star
-			double single_err = 0.0;
-			for (int k = 0; k < 1; ++k)
+			// Testing set
+			double test_err = 0.0;
+			#define numTests 100
+			for (int j = 0; j < numTests; ++j)
 				{
-				// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
-				double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
-				// double ideal = K[k];				/* identity function */
+				// Create random K vector
+				for (int k = 0; k < 2; ++k)
+					K[k] = ((double) rand() / (double) RAND_MAX);
+				// plot_tester(K[0], K[1]);
 
-				// Difference between actual outcome and desired value:
-				double error = ideal - LastLayer.neurons[k].output;
+				forward_prop_ReLU(Net, 2, K);
 
-				single_err += fabs(error); // record sum of errors
+				// Desired value = K_star
+				double single_err = 0.0;
+				for (int k = 0; k < 1; ++k)
+					{
+					// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
+					double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
+					// double ideal = K[k];				/* identity function */
+
+					// Difference between actual outcome and desired value:
+					double error = ideal - lastLayer.neurons[k].output;
+
+					single_err += fabs(error); // record sum of errors
+					}
+				test_err += single_err;
 				}
-			test_err += single_err;
+			test_err /= ((double) numTests);
+			printf("random test error = %1.06lf  ", test_err);
+
+			if (test_err < 0.002)
+				break;
 			}
-		test_err /= ((double) numTests);
-		printf("random test error = %1.06lf  ", test_err);
 
 		double ratio = (sum_err2 - sum_err1) / sum_err1;
 		if (ratio > 0)
@@ -534,7 +543,7 @@ void classic_BP_test_ReLU()
 			{
 			plot_NN(Net);
 			plot_W(Net);
-			plot_output(Net);		// note: this function calls forward_prop!
+			plot_output(Net); // note: this function calls forward_prop!
 			flush_output();
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
@@ -546,8 +555,6 @@ void classic_BP_test_ReLU()
 			break;
 		// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
 		// if (test_err < 0.01)
-		if (test_err < 0.005)
-			break;
 		}
 
 	beep();
@@ -954,7 +961,7 @@ void arithmetic_testB()
 
 		if (training_err < 0.0008)
 			break;
-				
+
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
 		errors1[tail] = training_err;
@@ -963,7 +970,7 @@ void arithmetic_testB()
 			tail = 0;
 
 		back_prop(Net); // train the network!
-	
+
 		// Testing set
 		if ((i % 100) == 0)
 			{
@@ -1064,8 +1071,8 @@ void arithmetic_testB()
 	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
 	printf("ready [1.0] = %f\n", LastLayer.neurons[4].output);
 	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
-	****/
-	
+	 ****/
+
 	if (!quit)
 		pause_graphics();
 	else
@@ -1280,8 +1287,8 @@ void arithmetic_testC()
 	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
 	printf("ready [1.0] = %f\n", LastLayer.neurons[4].output);
 	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
-	****/
-	
+	 ****/
+
 	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
 	#define P 100
 	for (int i = 0; i < P; ++i)
@@ -1334,7 +1341,7 @@ void RNN_sine_test()
 
 	// Initialize K vector
 	K[0] = (rand() / (float) RAND_MAX) * 1.0f;
-	
+
 	// new sequence item, new error
 	// weight change = given by new gradient (for current time-step)
 	// new gradient = given by recursive formula (old gradient)
@@ -1346,7 +1353,7 @@ void RNN_sine_test()
 		#define N3 10		// loop from 0 to 2π in N divisions
 		for (int j = 0; j < N3; j++)
 			{
-			K[1] = cos(2 * Pi * j / N2);		// Phase information to aid learning
+			K[1] = cos(2 * Pi * j / N2); // Phase information to aid learning
 
 			forward_RNN(Net, dimK, K);
 
@@ -1413,7 +1420,7 @@ void RNN_equilibrium_test()
 
 	// Create random input-output pairs as target training set
 	#define DataSize 5
-	double K_star[DataSize][2][dim_K];		// second index: 0 = input, 1 = output
+	double K_star[DataSize][2][dim_K]; // second index: 0 = input, 1 = output
 	for (int i = 0; i < DataSize; ++i)
 		for (int k = 0; k < dim_K; ++k)
 			{
@@ -1432,22 +1439,22 @@ void RNN_equilibrium_test()
 
 	for (int i = 0; 1; ++i)
 		{
-		for (int k = 0; k < dimK; ++k)				// initialize K
+		for (int k = 0; k < dimK; ++k) // initialize K
 			K[k] = K_star[i % DataSize][0][k];
-		
+
 		#define MaxIterations 100
-		for (int j = 0; j < MaxIterations; j++)		// allow network to converge
+		for (int j = 0; j < MaxIterations; j++) // allow network to converge
 			{
 			forward_RNN(Net, dimK, K);
 
 			// Check if convergence has reached
 			// Difference between last output and current output:
 			double diff = 0.0f;
-			for (int k = 0; k < dimK; ++k)			
+			for (int k = 0; k < dimK; ++k)
 				diff += fabs(LastLayer.neurons[k].output - K[k]);
 			if (diff < 0.001)
 				break;
-			
+
 			// If not, copy output to input, and re-iterate
 			for (int k = 0; k < dimK; ++k)
 				K[k] = LastLayer.neurons[k].output;
