@@ -128,7 +128,7 @@ void start_output_plot(void)
 		}
 	}
 
-void plot_output(NNET *net)
+void plot_output(NNET *net, void prop(NNET*, int, double []))
 	{
 	SDL_SetRenderDrawColor(gfx_Out, 0, 0, 0, 0xFF);
 	SDL_RenderClear(gfx_Out);		//Clear screen
@@ -144,8 +144,7 @@ void plot_output(NNET *net)
 			K[0] = ((double) i) / (GridPoints - 1);
 			K[1] = ((double) j) / (GridPoints - 1);
 
-			extern void forward_prop(NNET*, int, double []);
-			forward_prop(net, 2, K);			// get output
+			prop(net, 2, K);			// get output
 			double output = net->layers[net->numLayers - 1].neurons[0].output;
 
 			/* Set color

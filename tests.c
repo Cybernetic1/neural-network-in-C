@@ -6,6 +6,7 @@
 
 extern void create_NN(NNET *, int, int *);
 extern void create_RNN(RNN *, int, int *);
+extern void free_NN(NNET *, int *);
 extern void forward_prop(NNET *, int, double *);
 extern void forward_prop_ReLU(NNET *, int, double *);
 extern void forward_RNN(RNN *, int, double *);
@@ -22,7 +23,7 @@ extern void start_output_plot(void);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
-extern void plot_output(NNET *net);
+extern void plot_output(NNET *net, void ());
 extern void flush_output();
 extern void plot_tester(double, double);
 extern void plot_K();
@@ -90,7 +91,7 @@ void K_wandering_test()
 
 	if (!quit)
 		pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // Train RNN to reproduce a sine wave time-series
@@ -181,7 +182,7 @@ void sine_wave_test()
 
 	if (!quit)
 		pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // Train RNN to reproduce a sine wave time-series
@@ -265,7 +266,7 @@ void sine_wave_test2()
 
 	if (!quit)
 		pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // Test classical back-prop
@@ -394,7 +395,7 @@ void classic_BP_test()
 			{
 			plot_NN(Net);
 			plot_W(Net);
-			plot_output(Net);
+			plot_output(Net, forward_prop);
 			flush_output();
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
@@ -411,7 +412,7 @@ void classic_BP_test()
 		}
 
 	beep();
-	plot_output(Net);
+	plot_output(Net, forward_prop);
 	flush_output();
 	plot_W(Net);
 
@@ -419,14 +420,14 @@ void classic_BP_test()
 		pause_graphics();
 	else
 		quit_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // Same as above, with rectified units
 
 void classic_BP_test_ReLU()
 	{
-	int neuronsOfLayer[] = {2, 8, 8, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[] = {2, 7, 7, 1}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
@@ -450,8 +451,6 @@ void classic_BP_test_ReLU()
 
 	for (int i = 1; 1; ++i)
 		{
-		printf("iteration: %05d: ", i);
-
 		// Create random K vector
 		for (int k = 0; k < 2; ++k)
 			K[k] = (rand() / (float) RAND_MAX);
@@ -486,7 +485,6 @@ void classic_BP_test_ReLU()
 		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
 
 		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
-		printf("mean error = %lf  ", mean_err);
 
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
@@ -496,6 +494,27 @@ void classic_BP_test_ReLU()
 			tail = 0;
 
 		back_prop_ReLU(Net);
+
+		double ratio = (sum_err2 - sum_err1) / sum_err1;
+
+		if ((i % 500) == 0) // display status periodically
+			{
+			printf("iteration: %05d: ", i);
+			printf("mean error = %lf  ", mean_err);
+			if (ratio > 0)
+				printf("error ratio = %f \t", ratio);
+			else
+				printf("error ratio = \x1b[31m%f\x1b[39;49m\t", ratio);
+
+			plot_NN(Net);
+			plot_W(Net);
+			plot_output(Net, forward_prop_ReLU); // note: this function calls forward_prop!
+			flush_output();
+			// plot_trainer(0);		// required to clear the window
+			// plot_K();
+			if (quit = delay_vis(0))
+				break;
+			}
 
 		if ((i % 500) == 0)
 			{
@@ -527,27 +546,9 @@ void classic_BP_test_ReLU()
 				test_err += single_err;
 				}
 			test_err /= ((double) numTests);
-			printf("random test error = %1.06lf  ", test_err);
+			printf("random test error = %1.06lf \n", test_err);
 
-			if (test_err < 0.002)
-				break;
-			}
-
-		double ratio = (sum_err2 - sum_err1) / sum_err1;
-		if (ratio > 0)
-			printf("error ratio = %f\n", ratio);
-		else
-			printf("error ratio = \x1b[31m%f\x1b[39;49m\n", ratio);
-
-		if ((i % 500) == 0) // display status periodically
-			{
-			plot_NN(Net);
-			plot_W(Net);
-			plot_output(Net); // note: this function calls forward_prop!
-			flush_output();
-			// plot_trainer(0);		// required to clear the window
-			// plot_K();
-			if (quit = delay_vis(0))
+			if (test_err < 0.01)
 				break;
 			}
 
@@ -558,7 +559,7 @@ void classic_BP_test_ReLU()
 		}
 
 	beep();
-	plot_output(Net);
+	plot_output(Net, forward_prop_ReLU);
 	flush_output();
 	plot_W(Net);
 
@@ -566,7 +567,7 @@ void classic_BP_test_ReLU()
 		pause_graphics();
 	else
 		quit_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // Test forward propagation
@@ -625,7 +626,7 @@ void forward_test()
 		}
 
 	pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 
@@ -689,7 +690,7 @@ void loop_dance_test()
 		}
 
 	pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // **************** 2-Digit Primary-school Subtraction Arithmetic test *****************
@@ -1080,7 +1081,7 @@ void arithmetic_testB()
 
 	extern void saveNet();
 	saveNet(Net, NumLayers, neuronsOfLayer);
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 void saveNet(NNET *net, int numLayers, int *neuronsOfLayer)
@@ -1319,6 +1320,8 @@ void arithmetic_testC()
 	printf("Answers negative = %d (%.1f%%)\n", ans_negative, ans_negative * 100 / (float) P);
 	printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
 	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
+
+	free_NN(Net, neuronsOfLayer);
 	}
 
 void RNN_sine_test()
@@ -1397,7 +1400,7 @@ void RNN_sine_test()
 
 	if (!quit)
 		pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
 
 // From now on we adopt a simple architecture:  The RNN is a multi-layer feed-forward
@@ -1494,5 +1497,5 @@ void RNN_equilibrium_test()
 
 	if (!quit)
 		pause_graphics();
-	free(Net);
+	free_NN(Net, neuronsOfLayer);
 	}
