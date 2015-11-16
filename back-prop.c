@@ -24,11 +24,11 @@ double sigmoid(double v)
 // Gradient is constant so it never vanishes!
 double rectifier(double v)
 	{
-	#define Leakage 0.1
+	#define Leakage 0.0
 	if (v < Leakage)
-		return Leakage;
-	else if (v > 1.0)
-		return 1.0;
+		return -Leakage * v;
+//	else if (v > 1.0)
+//		return 1.0 + Leakage * v;
 	else
 		return v;
 	}
@@ -168,17 +168,17 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			// if (i == net->numLayers - 1)
 			//	net->layers[i].neurons[j].output = v;
 			// else
-			net->layers[l].neurons[n].output = softplus(v);
-
-			/* This is to prepare for back-prop
+			// net->layers[l].neurons[n].output = softplus(v);
+			net->layers[l].neurons[n].output = rectifier(v);
+			
+			// This is to prepare for back-prop
 			if (v < Leakage)
-				net->layers[l].neurons[n].grad = Leakage;
-			if (v > 1.0)
-				net->layers[l].neurons[n].grad = Leakage;
+				net->layers[l].neurons[n].grad = -Leakage;
+			// if (v > 1.0)
+			//	net->layers[l].neurons[n].grad = Leakage;
 			else
 				net->layers[l].neurons[n].grad = 1.0;
-			*/
-			net->layers[l].neurons[n].grad = d_softplus(v);
+			// net->layers[l].neurons[n].grad = d_softplus(v);
 			}
 		}
 	}

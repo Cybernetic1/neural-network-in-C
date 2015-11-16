@@ -639,7 +639,7 @@ void beep()
 	music = Mix_LoadMUS("beep.wav");
 	Mix_PlayMusic(music, -1);
 	SDL_PauseAudio(0);
-	SDL_Delay(800);
+	SDL_Delay(200);
 	// fprintf(stderr, "Sound played\n");
 	Mix_FreeMusic(music);
 	}
