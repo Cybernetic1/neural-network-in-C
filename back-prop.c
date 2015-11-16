@@ -9,7 +9,7 @@
 #include <time.h>		// time as random seed in create_NN()
 #include "feedforwardNN.h"
 
-#define Eta 0.02				// learning rate
+#define Eta 0.01				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 //******** activation functions and random weight generator ********************//
@@ -24,13 +24,23 @@ double sigmoid(double v)
 // Gradient is constant so it never vanishes!
 double rectifier(double v)
 	{
-	#define Leakage 0.001
-	if (v < 0.0)
-		return 0.0;
+	#define Leakage 0.1
+	if (v < Leakage)
+		return Leakage;
 	else if (v > 1.0)
 		return 1.0;
 	else
 		return v;
+	}
+
+double softplus(double v)
+	{
+	return log(1.0 + exp(v));
+	}
+
+double d_softplus(double v)
+	{
+	return 1.0 / (1.0 + exp(-v));
 	}
 
 double randomWeight() // generate random weight between [+1.0, -1.0]
@@ -41,7 +51,7 @@ double randomWeight() // generate random weight between [+1.0, -1.0]
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
 void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
-	{
+	{https://upload.wikimedia.org/math/9/d/1/9d1ec31ec0d0d9ecfea52406d0b3f6b6.png
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
@@ -158,15 +168,17 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			// if (i == net->numLayers - 1)
 			//	net->layers[i].neurons[j].output = v;
 			// else
-			net->layers[l].neurons[n].output = rectifier(v);
+			net->layers[l].neurons[n].output = softplus(v);
 
-			// This is to prepare for back-prop
-			if (v < 0.0)
-				net->layers[l].neurons[n].grad = 0.0;
+			/* This is to prepare for back-prop
+			if (v < Leakage)
+				net->layers[l].neurons[n].grad = Leakage;
 			if (v > 1.0)
-				net->layers[l].neurons[n].grad = 0.0;
+				net->layers[l].neurons[n].grad = Leakage;
 			else
 				net->layers[l].neurons[n].grad = 1.0;
+			*/
+			net->layers[l].neurons[n].grad = d_softplus(v);
 			}
 		}
 	}

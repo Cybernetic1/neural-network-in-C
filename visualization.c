@@ -154,14 +154,15 @@ void plot_output(NNET *net, void prop(NNET*, int, double []))
 			float g = output >= 0.5f ? (output - 0.5f) * 2 : 0.0f;
 			if (g > 1.0f || g < 0.0f) b = 0xFF; */
 
-			int c3 = 0x00;
+			float c3 = 0.0;
+			#define C3gain 0.5
 			float c1 = (output < 0.0) ? -output : 0.0;
-			if (c1 > 1.0) { c3 = 0xFF; c1 = 1.0; }
-			if (c1 < 0.0) { c3 = 0xFF; c1 = 0.0; }
+			if (c1 > 1.0) { c1 = 1.0; c3 = (c1 - 1.0) + C3gain; }
+			if (c1 < 0.0) { c1 = 0.0; c3 = -c1 + C3gain; }
 			float c2 = (output > 0.0) ? output : 0.0;
-			if (c2 > 1.0) { c3 = 0xFF; c2 = 1.0; }
-			if (c2 < 0.0) { c3 = 0xFF; c2 = 0.0; }
-			SDL_SetRenderDrawColor(gfx_Out, f2i(c2), f2i(c1), c3, 0xFF);
+			if (c2 > 1.0) { c2 = 1.0; c3 = (c2 - 1.0) + C3gain; }
+			if (c2 < 0.0) { c2 = 0.0; c3 = -c2 + C3gain; }
+			SDL_SetRenderDrawColor(gfx_Out, f2i(c2), f2i(c1), f2i(c3), 0xFF);
 
 			// Plot little square
 			SDL_Rect fillRect = {11 + Square_width * i, 11 + Square_width * j,

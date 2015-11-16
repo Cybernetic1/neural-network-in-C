@@ -232,46 +232,45 @@ int main(int argc, char** argv)
 	printf("[7] arthmetic test: test operator\n");
 	printf("[8] arithmetic test: learn operator\n");
 	printf("[9] arithmetic test: test learned operator\n");
-	printf("[10] rectifier BP test (XOR)\n");
-	printf("[11] RNN sine-wave test\n");
+	printf("[a] rectifier BP test (XOR)\n");
+	printf("[b] RNN sine-wave test\n");
 	printf("[q] quit\n");
 	
-	int whichTest = 0;
-	scanf("%d", &whichTest);
+	char whichTest = getchar();
 	
 	switch (whichTest)
 		{
-		case 1:
+		case '1':
 			forward_test();
 			break;
-		case 2:
+		case '2':
 			classic_BP_test();				// learn XOR function
 			break;
-		case 3:
+		case '3':
 			K_wandering_test();
 			break;
-		case 4:
+		case '4':
 			sine_wave_test();				// train with differential values of sine
 			break;
-		case 5:
+		case '5':
 			sine_wave_test2();				// train with absolute values of sine
 			break;
-		case 6:
+		case '6':
 			loop_dance_test();				// make K vector dance in a loop
 			break;
-		case 7:
+		case '7':
 			arithmetic_testA();				// primary-school subtraction arithmetic
 			break;							// test the reference transition function
-		case 8:
+		case '8':
 			arithmetic_testB();				// primary-school subtraction arithmetic
 			break;							// learn transition operator via back-prop
-		case 9:
+		case '9':
 			arithmetic_testC();				// primary-school subtraction arithmetic
 			break;							// check transition operator that was learned
-		case 10:
+		case 'a':
 			classic_BP_test_ReLU();			// learn XOR function
 			break;
-		case 11:
+		case 'b':
 			RNN_sine_test();				// train RNN to produce sine wave
 			break;
 		}

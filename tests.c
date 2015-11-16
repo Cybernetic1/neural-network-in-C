@@ -427,7 +427,7 @@ void classic_BP_test()
 
 void classic_BP_test_ReLU()
 	{
-	int neuronsOfLayer[] = {2, 7, 7, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[] = {2, 10, 10, 1}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, NumLayers, neuronsOfLayer);
@@ -500,11 +500,11 @@ void classic_BP_test_ReLU()
 		if ((i % 500) == 0) // display status periodically
 			{
 			printf("iteration: %05d: ", i);
-			printf("mean error = %lf  ", mean_err);
+			printf("mean error = %.03lf  ", mean_err);
 			if (ratio > 0)
-				printf("error ratio = %f \t", ratio);
+				printf("error ratio = %.03f \t", ratio);
 			else
-				printf("error ratio = \x1b[31m%f\x1b[39;49m\t", ratio);
+				printf("error ratio = \x1b[31m%.03f\x1b[39;49m\t", ratio);
 
 			plot_NN(Net);
 			plot_W(Net);
@@ -546,9 +546,9 @@ void classic_BP_test_ReLU()
 				test_err += single_err;
 				}
 			test_err /= ((double) numTests);
-			printf("random test error = %1.06lf \n", test_err);
+			printf("random test error = %.03lf \n", test_err);
 
-			if (test_err < 0.01)
+			if (test_err < 0.05)
 				break;
 			}
 
