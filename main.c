@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <sys/timeb.h>		// For timing operations
 
@@ -220,63 +221,72 @@ int main(int argc, char** argv)
 	extern void arithmetic_testB();
 	extern void arithmetic_testC();
 	extern void RNN_sine_test();
-	
-	printf("*** Welcome to Genifer 5.3 ***\n\n");
 
-	printf("[1] forward test\n");
-	printf("[2] classic BP test (XOR)\n");
-	printf("[3] K wandering test\n");
-	printf("[4] sine wave test (differential)\n");
-	printf("[5] sine wave test (absolute)\n");
-	printf("[6] K dance test\n");
-	printf("[7] arthmetic test: test operator\n");
-	printf("[8] arithmetic test: learn operator\n");
-	printf("[9] arithmetic test: test learned operator\n");
-	printf("[a] rectifier BP test (XOR)\n");
-	printf("[b] RNN sine-wave test\n");
-	printf("[q] quit\n");
-	
-	char whichTest = getchar();
-	
-	switch (whichTest)
+	bool quit = false;
+	char whichTest = "\n";
+	while (!quit)
 		{
-		case '1':
-			forward_test();
-			break;
-		case '2':
-			classic_BP_test();				// learn XOR function
-			break;
-		case '3':
-			K_wandering_test();
-			break;
-		case '4':
-			sine_wave_test();				// train with differential values of sine
-			break;
-		case '5':
-			sine_wave_test2();				// train with absolute values of sine
-			break;
-		case '6':
-			loop_dance_test();				// make K vector dance in a loop
-			break;
-		case '7':
-			arithmetic_testA();				// primary-school subtraction arithmetic
-			break;							// test the reference transition function
-		case '8':
-			arithmetic_testB();				// primary-school subtraction arithmetic
-			break;							// learn transition operator via back-prop
-		case '9':
-			arithmetic_testC();				// primary-school subtraction arithmetic
-			break;							// check transition operator that was learned
-		case 'a':
-			classic_BP_test_ReLU();			// learn XOR function
-			break;
-		case 'b':
-			RNN_sine_test();				// train RNN to produce sine wave
-			break;
+		printf("*** Welcome to Genifer 5.3 ***\n\n");
+
+		printf("[1] forward test\n");
+		printf("[2] classic BP test (XOR)\n");
+		printf("[3] K wandering test\n");
+		printf("[4] sine wave test (differential)\n");
+		printf("[5] sine wave test (absolute)\n");
+		printf("[6] K dance test\n");
+		printf("[7] arthmetic test: test operator\n");
+		printf("[8] arithmetic test: learn operator\n");
+		printf("[9] arithmetic test: test learned operator\n");
+		printf("[a] rectifier BP test (XOR)\n");
+		printf("[b] RNN sine-wave test\n");
+		printf("[q] quit\n");
+
+		do
+			whichTest = getchar();
+		while (whichTest == '\n');
+
+		switch (whichTest)
+			{
+			case '1':
+				forward_test();
+				break;
+			case '2':
+				classic_BP_test(); // learn XOR function
+				break;
+			case '3':
+				K_wandering_test();
+				break;
+			case '4':
+				sine_wave_test(); // train with differential values of sine
+				break;
+			case '5':
+				sine_wave_test2(); // train with absolute values of sine
+				break;
+			case '6':
+				loop_dance_test(); // make K vector dance in a loop
+				break;
+			case '7':
+				arithmetic_testA(); // primary-school subtraction arithmetic
+				break; // test the reference transition function
+			case '8':
+				arithmetic_testB(); // primary-school subtraction arithmetic
+				break; // learn transition operator via back-prop
+			case '9':
+				arithmetic_testC(); // primary-school subtraction arithmetic
+				break; // check transition operator that was learned
+			case 'a':
+				classic_BP_test_ReLU(); // learn XOR function
+				break;
+			case 'b':
+				RNN_sine_test(); // train RNN to produce sine wave
+				break;
+			case 'q':
+				quit = true;
+				break;
+			}
+
+		beep();
 		}
-	
-	beep();
-	return 0;
 	}
 
 struct timeb startTime, endTime;
@@ -289,8 +299,8 @@ void start_timer()
 void end_timer()
 	{
 	ftime(&endTime);
-    int duration = endTime.time - startTime.time;
+	int duration = endTime.time - startTime.time;
 	int minutes = duration / 60;
 	int seconds = duration % 60;
-    printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
+	printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
 	}

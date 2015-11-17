@@ -38,9 +38,12 @@ OBJECTFILES= \
 	${OBJECTDIR}/Chinese-test.o \
 	${OBJECTDIR}/Q-learning.o \
 	${OBJECTDIR}/back-prop.o \
+	${OBJECTDIR}/backprop-through-time.o \
+	${OBJECTDIR}/basic-tests.o \
+	${OBJECTDIR}/experiments.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/real-time-recurrent-learning.o \
-	${OBJECTDIR}/tests.o \
+	${OBJECTDIR}/stochastic-forward-backward.o \
 	${OBJECTDIR}/visualization.o
 
 
@@ -66,7 +69,7 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lSDL2_mixer
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lSDL2_mixer -lgsl -lgslcblas
 
 ${OBJECTDIR}/Chinese-test.o: Chinese-test.c 
 	${MKDIR} -p ${OBJECTDIR}
@@ -83,6 +86,21 @@ ${OBJECTDIR}/back-prop.o: back-prop.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/back-prop.o back-prop.c
 
+${OBJECTDIR}/backprop-through-time.o: backprop-through-time.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/backprop-through-time.o backprop-through-time.c
+
+${OBJECTDIR}/basic-tests.o: basic-tests.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/basic-tests.o basic-tests.c
+
+${OBJECTDIR}/experiments.o: experiments.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/experiments.o experiments.c
+
 ${OBJECTDIR}/main.o: main.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -93,10 +111,10 @@ ${OBJECTDIR}/real-time-recurrent-learning.o: real-time-recurrent-learning.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/real-time-recurrent-learning.o real-time-recurrent-learning.c
 
-${OBJECTDIR}/tests.o: tests.c 
+${OBJECTDIR}/stochastic-forward-backward.o: stochastic-forward-backward.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tests.o tests.c
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/stochastic-forward-backward.o stochastic-forward-backward.c
 
 ${OBJECTDIR}/visualization.o: visualization.c 
 	${MKDIR} -p ${OBJECTDIR}

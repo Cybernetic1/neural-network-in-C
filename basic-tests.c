@@ -1,12 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <gsl/gsl_matrix.h>		// GNU scientific library
+#include <gsl/gsl_eigen.h>		// ...for finding matrix eigen values
+#include <gsl/gsl_complex_math.h>	// ...for complex abs value
+#include <stdbool.h>
 #include "RNN.h"
 #include "feedforwardNN.h"
 
 extern void create_NN(NNET *, int, int *);
 extern void create_RNN(RNN *, int, int *);
 extern void free_NN(NNET *, int *);
+extern void free_RNN(RNN *, int *);
 extern void forward_prop(NNET *, int, double *);
 extern void forward_prop_ReLU(NNET *, int, double *);
 extern void forward_RNN(RNN *, int, double *);
@@ -36,27 +41,61 @@ extern void start_timer(), end_timer();
 
 extern double K[];
 
-#define NumLayers (sizeof(neuronsOfLayer) / sizeof(int))
-#define LastLayer (Net->layers[NumLayers - 1])
-
-// Randomly generate an RNN, watch it operate on K and see how K moves
-// Observation: 
+// **** Randomly generate an RNN, watch it operate on K and see how K moves
+// Observation: chaotic behavior is observed only when the spectral radii of
+// weight matrices are sufficiently > 1 (on average).
 
 void K_wandering_test()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[] = {10, 10, 10}; // first = input layer, last = output layer
-	create_NN(Net, NumLayers, neuronsOfLayer);
-	double K2[dim_K];
-	int quit = 0;
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
+
+	// **** Calculate spectral radius of weight matrices
+	printf("Eigen values = \n");
+	for (int l = 1; l < numLayers; ++l)		// except first layer which has no weights
+		{
+		int N = 10;
+		// assume weight matrix is square, if not, fill with zero rows perhaps (TO-DO)
+		gsl_matrix *A = gsl_matrix_alloc(N, N);
+		for (int n = 0; n < N; ++n)
+			for (int i = 0; i < N; ++i)
+				gsl_matrix_set(A, n, i, Net->layers[l].neurons[n].weights[i]);
+		
+		gsl_eigen_nonsymmv_workspace *wrk = gsl_eigen_nonsymmv_alloc(N);
+		gsl_vector_complex *Aval = gsl_vector_complex_alloc(N);
+		gsl_matrix_complex *Avec = gsl_matrix_complex_alloc(N, N);
+
+		gsl_eigen_nonsymmv(A, Aval, Avec, wrk);
+		gsl_eigen_nonsymmv_free(wrk);
+		
+		gsl_eigen_nonsymmv_sort(Aval, Avec, GSL_EIGEN_SORT_ABS_DESC);
+		
+		printf("[ ");
+		for (int i = 0; i < N; i++)
+			{
+			gsl_complex v = gsl_vector_complex_get(Aval, i);
+			// printf("%.02f %.02f, ", GSL_REAL(v), GSL_IMAG(v));
+			printf("%.02f ", gsl_complex_abs(v));
+			}
+		printf(" ]\n");
+		
+		gsl_matrix_free(A);
+		gsl_matrix_complex_free(Avec);
+		gsl_vector_complex_free(Aval);
+		}
 
 	start_K_plot();
-	printf("Press 'Q' to quit\n\n");
+	printf("\nPress 'Q' to quit\n\n");
 
-	// Initialize K vector
+	// **** Initialize K vector
 	for (int k = 0; k < dim_K; ++k)
 		K[k] = (rand() / (float) RAND_MAX) - 0.5f;
 
+	double K2[dim_K];
+	int quit = 0;
 	for (int j = 0; j < 10000; j++) // max number of iterations
 		{
 		forward_prop(Net, dim_K, K);
@@ -68,7 +107,7 @@ void K_wandering_test()
 		for (int k = 0; k < dim_K; ++k)
 			{
 			K2[k] = K[k];
-			K[k] = LastLayer.neurons[k].output;
+			K[k] = lastLayer.neurons[k].output;
 			// printf(", %0.4lf", K[k]);
 			double diff = (K2[k] - K[k]);
 			d += (diff * diff);
@@ -91,6 +130,8 @@ void K_wandering_test()
 
 	if (!quit)
 		pause_graphics();
+	else
+		quit_graphics();
 	free_NN(Net, neuronsOfLayer);
 	}
 
@@ -104,7 +145,9 @@ void sine_wave_test()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[3] = {10, 12, 10}; // first = input layer, last = output layer
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
@@ -138,7 +181,7 @@ void sine_wave_test()
 			double dK_star = Amplitude * (sin(2 * Pi * (j + 1) / N) - sin(2 * Pi * j / N));
 
 			// Calculate actual difference between K[0] and K'[0]:
-			double dK = LastLayer.neurons[0].output - K[0];
+			double dK = lastLayer.neurons[0].output - K[0];
 
 			// The error is the difference between the above two values:
 			double error = dK_star - dK;
@@ -147,17 +190,17 @@ void sine_wave_test()
 			//		K* - K = dK*
 			//		K' - K = dK
 			// thus, K* - k' = dK* - dK 
-			LastLayer.neurons[0].error = error;
+			lastLayer.neurons[0].error = error;
 
 			// The rest of the errors are zero:
 			for (int k = 1; k < dim_K; ++k)
-				LastLayer.neurons[k].error = 0.0f;
+				lastLayer.neurons[k].error = 0.0f;
 
 			back_prop(Net);
 
 			// copy output to input
 			for (int k = 0; k < dim_K; ++k)
-				K[k] = LastLayer.neurons[k].output;
+				K[k] = lastLayer.neurons[k].output;
 
 			sum_error2 += (error * error); // record sum of squared errors
 
@@ -182,6 +225,8 @@ void sine_wave_test()
 
 	if (!quit)
 		pause_graphics();
+	else
+		quit_graphics();
 	free_NN(Net, neuronsOfLayer);
 	}
 
@@ -199,7 +244,9 @@ void sine_wave_test2()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[3] = {10, 7, 10}; // first = input layer, last = output layer
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 	double K2[dim_K];
 	int quit;
 	double sum_error2;
@@ -230,18 +277,18 @@ void sine_wave_test2()
 			double K_star = Amplitude2 * (sin(2 * Pi * j / N2)) + 1.0f;
 
 			// Difference between actual outcome and desired value:
-			double error = LastLayer.neurons[0].output - K_star;
-			LastLayer.neurons[0].error = error;
+			double error = lastLayer.neurons[0].output - K_star;
+			lastLayer.neurons[0].error = error;
 
 			// The rest of the errors are zero:
 			for (int k = 1; k < dim_K; ++k)
-				LastLayer.neurons[k].error = 0.0f;
+				lastLayer.neurons[k].error = 0.0f;
 
 			back_prop(Net);
 
 			// copy output to input
 			for (int k = 0; k < dim_K; ++k)
-				K[k] = LastLayer.neurons[k].output;
+				K[k] = lastLayer.neurons[k].output;
 
 			sum_error2 += (error * error); // record sum of squared errors
 
@@ -266,6 +313,8 @@ void sine_wave_test2()
 
 	if (!quit)
 		pause_graphics();
+	else
+		quit_graphics();
 	free_NN(Net, neuronsOfLayer);
 	}
 
@@ -277,7 +326,9 @@ void classic_BP_test()
 	{
 	int neuronsOfLayer[] = {2, 8, 1}; // first = input layer, last = output layer
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int quit = 0;
 	#define M	50			// how many errors to record for averaging
@@ -328,8 +379,8 @@ void classic_BP_test()
 			// printf("*** ideal = %lf\n", ideal);
 
 			// Difference between actual outcome and desired value:
-			double error = ideal - LastLayer.neurons[k].output;
-			LastLayer.neurons[k].error = error; // record this for back-prop
+			double error = ideal - lastLayer.neurons[k].output;
+			lastLayer.neurons[k].error = error; // record this for back-prop
 
 			training_err += fabs(error); // record sum of errors
 			}
@@ -376,7 +427,7 @@ void classic_BP_test()
 				// double ideal = K[k];				/* identity function */
 
 				// Difference between actual outcome and desired value:
-				double error = ideal - LastLayer.neurons[k].output;
+				double error = ideal - lastLayer.neurons[k].output;
 
 				single_err += fabs(error); // record sum of errors
 				}
@@ -430,7 +481,7 @@ void classic_BP_test_ReLU()
 	int neuronsOfLayer[] = {2, 10, 10, 1}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	create_NN(Net, numLayers, neuronsOfLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int quit = 0;
@@ -449,7 +500,7 @@ void classic_BP_test_ReLU()
 	// plot_ideal();
 	printf("BP ReLU test.\nPress 'Q' to quit\n\n");
 
-	for (int i = 1; 1; ++i)
+	for (int i = 1; true; ++i)
 		{
 		// Create random K vector
 		for (int k = 0; k < 2; ++k)
@@ -520,8 +571,8 @@ void classic_BP_test_ReLU()
 			{
 			// Testing set
 			double test_err = 0.0;
-			#define numTests 100
-			for (int j = 0; j < numTests; ++j)
+			#define numTests2 100
+			for (int j = 0; j < numTests2; ++j)
 				{
 				// Create random K vector
 				for (int k = 0; k < 2; ++k)
@@ -576,7 +627,9 @@ void forward_test()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[4] = {4, 3, 3, 2}; // first = input layer, last = output layer
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 	double sum_error2;
 
 	start_NN_plot();
@@ -587,7 +640,7 @@ void forward_test()
 	printf("the test's own calculation, with 100 randomized inputs.\n\n");
 
 	// Set all weights to 1
-	for (int l = 1; l < NumLayers; l++) // for each layer
+	for (int l = 1; l < numLayers; l++) // for each layer
 		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron
 			for (int k = 0; k <= neuronsOfLayer[l - 1]; k++) // for each weight
 				Net->layers[l].neurons[n].weights[k] = 1.0f;
@@ -612,7 +665,7 @@ void forward_test()
 		for (int k = 0; k < 2; ++k)
 			{
 			// Difference between actual outcome and desired value:
-			double error = LastLayer.neurons[k].output - K_star;
+			double error = lastLayer.neurons[k].output - K_star;
 			sum_error2 += (error * error); // record sum of squared errors
 			}
 
@@ -636,7 +689,9 @@ void loop_dance_test()
 	{
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int neuronsOfLayer[4] = {dim_K, 10, 10, dim_K}; // first = input layer, last = output layer
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 	double sum_error2;
 	int quit;
 
@@ -653,7 +708,7 @@ void loop_dance_test()
 		for (int k = 0; k < dim_K; ++k)
 			Kn[i][k] = (rand() / (float) RAND_MAX); // random in [0,1]
 
-	for (int j = 0; 1; ++j) // iterations
+	for (int j = 0; true; ++j) // iterations
 		{
 		sum_error2 = 0.0f;
 
@@ -666,12 +721,12 @@ void loop_dance_test()
 			for (int k = 0; k < dim_K; ++k)
 				{
 				// Difference between actual outcome and desired value:
-				double error = LastLayer.neurons[k].output - Kn[i][k];
-				LastLayer.neurons[k].error = error; // record this for back-prop
+				double error = lastLayer.neurons[k].output - Kn[i][k];
+				lastLayer.neurons[k].error = error; // record this for back-prop
 				sum_error2 += (error * error); // record sum of squared errors
 
 				// copy output to input
-				K[k] = LastLayer.neurons[k].output;
+				K[k] = lastLayer.neurons[k].output;
 				}
 
 			back_prop(Net);
@@ -828,7 +883,7 @@ LOOP:
 	// get result
 	if (K2[8] > 0.5) // result ready?
 		{
-		int correct = 1;
+		bool correct = true;
 
 		// correct answer
 		int a = floor(a1 * 10) * 10 + a0 * 10;
@@ -844,19 +899,19 @@ LOOP:
 		if (c < 0) // result is negative
 			{
 			if (K2[9] < 0.5) // underflow should be set but is not
-				correct = 0;
+				correct = false;
 			}
 		else
 			{
 			if (K2[9] > 0.5) // underflow should be clear but is set
-				correct = 0;
+				correct = false;
 
 			double err1 = fabs(K2[6] - c1);
 			double err2 = fabs(K2[7] - c0);
 			if (err1 > 0.001)
-				correct = 0;
+				correct = false;
 			if (err2 > 0.001)
-				correct = 0;
+				correct = false;
 			}
 
 		printf(" answer = %c%c\t", digit(c1), digit(c0));
@@ -899,7 +954,9 @@ void arithmetic_testB()
 	{
 	int neuronsOfLayer[] = {8, 13, 10, 6}; // first = input layer, last = output layer
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
-	create_NN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int quit = 0;
 	#define M	50			// how many errors to record for averaging
@@ -919,7 +976,7 @@ void arithmetic_testB()
 	printf("Press 'Q' to quit\n\n");
 
 	char status[200], *s;
-	for (int i = 0; 1; ++i)
+	for (int i = 0; true; ++i)
 		{
 		s = status + sprintf(status, "iteration: %05d: ", i);
 
@@ -942,8 +999,8 @@ void arithmetic_testB()
 		double training_err = 0.0;
 		for (int k = 4; k < 10; ++k)
 			{
-			double error = K_star[k] - LastLayer.neurons[k - 4].output;
-			LastLayer.neurons[k - 4].error = error; // record this for back-prop
+			double error = K_star[k] - lastLayer.neurons[k - 4].output;
+			lastLayer.neurons[k - 4].error = error; // record this for back-prop
 
 			training_err += fabs(error); // record sum of errors
 			}
@@ -996,8 +1053,8 @@ void arithmetic_testB()
 				double single_err = 0.0;
 				for (int k = 4; k < 10; ++k)
 					{
-					double error = K_star[k] - LastLayer.neurons[k - 4].output;
-					LastLayer.neurons[k - 4].error = error; // record this for back-prop
+					double error = K_star[k] - lastLayer.neurons[k - 4].output;
+					lastLayer.neurons[k - 4].error = error; // record this for back-prop
 
 					single_err += fabs(error); // record sum of errors
 					}
@@ -1055,23 +1112,23 @@ void arithmetic_testB()
 	K[8] = 0.0;		// ready
 	K[9] = 0.0;		// overflow
 	forward_prop(Net, 8, K);
-	printf("carry [1.0] = %f\n", LastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", LastLayer.neurons[1].output);
-	printf("C1 [0.0] = %f\n", LastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
-	printf("ready [0.0] = %f\n", LastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
+	printf("carry [1.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.0] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [0.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
 
 	// copy output back to K;  second iteration
 	for (int k = 0; k < 6; ++k)
-		K[k + 4] = LastLayer.neurons[k].output;
+		K[k + 4] = lastLayer.neurons[k].output;
 	forward_prop(Net, 8, K);
-	printf("\ncarry [0.0] = %f\n", LastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", LastLayer.neurons[1].output);
-	printf("C1 [0.3] = %f\n", LastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
-	printf("ready [1.0] = %f\n", LastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
+	printf("\ncarry [0.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.3] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [1.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
 	 ****/
 
 	if (!quit)
@@ -1080,7 +1137,7 @@ void arithmetic_testB()
 		quit_graphics();
 
 	extern void saveNet();
-	saveNet(Net, NumLayers, neuronsOfLayer);
+	saveNet(Net, numLayers, neuronsOfLayer);
 	free_NN(Net, neuronsOfLayer);
 	}
 
@@ -1184,24 +1241,24 @@ LOOP:
 	if (K2[8] > 0.5) // result ready?
 		{
 		double err1 = 0.0, err2 = 0.0;
-		int correct = 1;
+		bool correct = true;
 		if (c < 0) // answer is negative
 			{
 			if (K2[9] < 0.5) // underflow is clear but should be set
-				correct = 0;
+				correct = false;
 			}
 		else
 			{
 			if (K2[9] >= 0.5) // underflow is set but should be clear
-				correct = 0;
+				correct = false;
 
 			err1 = fabs(K2[6] - c1);
 			err2 = fabs(K2[7] - c0);
 			printf(" err1, err2 = %f, %f\n", err1, err2);
 			if (err1 > 0.099999)
-				correct = 0;
+				correct = false;
 			if (err2 > 0.099999)
-				correct = 0;
+				correct = false;
 			}
 
 		printf(" answer = %c%c    ", digit(c1), digit(c0));
@@ -1256,7 +1313,9 @@ void arithmetic_testC()
 	{
 	int neuronsOfLayer[4];
 	NNET *Net;
-	Net = loadNet(NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	Net = loadNet(numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	/****
 	printf("\n\nTest with: 73 - 37 = 36.\n");
@@ -1271,23 +1330,23 @@ void arithmetic_testC()
 	K[8] = 0.0;		// ready
 	K[9] = 0.0;		// overflow
 	forward_prop(Net, 8, K);
-	printf("carry [1.0] = %f\n", LastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", LastLayer.neurons[1].output);
-	printf("C1 [0.0] = %f\n", LastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
-	printf("ready [0.0] = %f\n", LastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
+	printf("carry [1.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.0] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [0.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
 
 	// copy output back to K;  second iteration
 	for (int k = 0; k < 6; ++k)
-		K[k + 4] = LastLayer.neurons[k].output;
+		K[k + 4] = lastLayer.neurons[k].output;
 	forward_prop(Net, 8, K);
-	printf("\ncarry [0.0] = %f\n", LastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", LastLayer.neurons[1].output);
-	printf("C1 [0.3] = %f\n", LastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", LastLayer.neurons[3].output);
-	printf("ready [1.0] = %f\n", LastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", LastLayer.neurons[5].output);
+	printf("\ncarry [0.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.3] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [1.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
 	 ****/
 
 	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
@@ -1295,7 +1354,7 @@ void arithmetic_testC()
 	for (int i = 0; i < P; ++i)
 		{
 		printf("(%d) ", i);
-		switch (arithmetic_testC_1(Net, LastLayer))
+		switch (arithmetic_testC_1(Net, lastLayer))
 			{
 			case 1:
 				++ans_correct;
@@ -1329,7 +1388,9 @@ void RNN_sine_test()
 	// create RNN
 	RNN *Net = (RNN *) malloc(sizeof (RNN));
 	int neuronsOfLayer[4] = {2, 10, 10, 1}; // first = input layer, last = output layer
-	create_RNN(Net, NumLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_RNN(Net, numLayers, neuronsOfLayer);
+	rLAYER lastLayer = Net->layers[numLayers - 1];
 
 	int dimK = 2;
 	double K2[dimK];
@@ -1349,7 +1410,7 @@ void RNN_sine_test()
 	// weight change = given by new gradient (for current time-step)
 	// new gradient = given by recursive formula (old gradient)
 
-	for (int i = 0; 1; ++i)
+	for (int i = 0; true; ++i)
 		{
 		sum_error2 = 0.0f;
 
@@ -1366,18 +1427,18 @@ void RNN_sine_test()
 			double K_star = Amplitude2 * (sin(2.0 * Pi * j / N2)) + 1.0f;
 
 			// Difference between actual outcome and desired value:
-			double error = LastLayer.neurons[0].output - K_star;
-			LastLayer.neurons[0].error = error;
+			double error = lastLayer.neurons[0].output - K_star;
+			lastLayer.neurons[0].error = error;
 
 			// The rest of the errors are zero:
 			for (int k = 1; k < dimK; ++k)
-				LastLayer.neurons[k].error = 0.0f;
+				lastLayer.neurons[k].error = 0.0f;
 
 			RTRL(Net);
 
 			// copy output to input
 			for (int k = 0; k < dimK; ++k)
-				K[k] = LastLayer.neurons[k].output;
+				K[k] = lastLayer.neurons[k].output;
 
 			sum_error2 += (error * error); // record sum of squared errors
 
@@ -1400,102 +1461,7 @@ void RNN_sine_test()
 
 	if (!quit)
 		pause_graphics();
-	free_NN(Net, neuronsOfLayer);
-	}
-
-// From now on we adopt a simple architecture:  The RNN is a multi-layer feed-forward
-// network, with its output layer connected to its input layer.  For learning, we simply
-// use traditional back-prop, the key is by allowing the network to iterate as long as
-// it needs to converge to an equilibrium point, and then we use the difference between
-// the equilibrium point and the target as error.
-
-void RNN_equilibrium_test()
-	{
-	// create RNN
-	RNN *Net = (RNN *) malloc(sizeof (RNN));
-	int neuronsOfLayer[4] = {3, 4, 4, 3}; // first = input layer, last = output layer
-	create_RNN(Net, NumLayers, neuronsOfLayer);
-
-	int dimK = 3;
-	double K2[dimK];
-	int quit;
-	double sum_error2;
-
-	// Create random input-output pairs as target training set
-	#define DataSize 5
-	double K_star[DataSize][2][dim_K]; // second index: 0 = input, 1 = output
-	for (int i = 0; i < DataSize; ++i)
-		for (int k = 0; k < dim_K; ++k)
-			{
-			K_star[i][0][k] = (rand() / (float) RAND_MAX); // random in [0,1]
-			K_star[i][1][k] = (rand() / (float) RAND_MAX); // random in [0,1]
-			}
-
-	printf("RNN equilibrium learning test\n");
-	printf("Press 'Q' to quit\n\n");
-	start_NN_plot();
-	start_W_plot();
-	start_K_plot();
-
-	// For each (outer) iteration, allow network to converge to equilibrium
-	// Then apply back-prop once to train network
-
-	for (int i = 0; 1; ++i)
-		{
-		for (int k = 0; k < dimK; ++k) // initialize K
-			K[k] = K_star[i % DataSize][0][k];
-
-		#define MaxIterations 100
-		for (int j = 0; j < MaxIterations; j++) // allow network to converge
-			{
-			forward_RNN(Net, dimK, K);
-
-			// Check if convergence has reached
-			// Difference between last output and current output:
-			double diff = 0.0f;
-			for (int k = 0; k < dimK; ++k)
-				diff += fabs(LastLayer.neurons[k].output - K[k]);
-			if (diff < 0.001)
-				break;
-
-			// If not, copy output to input, and re-iterate
-			for (int k = 0; k < dimK; ++k)
-				K[k] = LastLayer.neurons[k].output;
-			}
-
-		// When we have reached here, network has either converged or is chaotic
-		// We apply to back-prop to train the network
-		LastLayer.neurons[0].error = 0.0f;
-
-		// The rest of the errors are zero:
-		for (int k = 1; k < dimK; ++k)
-			LastLayer.neurons[k].error = 0.0f;
-
-		RTRL(Net);
-
-		// copy output to input
-		for (int k = 0; k < dimK; ++k)
-			K[k] = LastLayer.neurons[k].output;
-
-		// sum_error2 += (error * error); // record sum of squared errors
-
-		// plot_W(Net);
-		// plot_NN(Net);
-		// plot_trainer(K_star);
-		plot_K();
-		if (quit = delay_vis(0))
-			break;
-
-		printf("iteration: %05d, error: %lf\n", i, sum_error2);
-		if (isnan(sum_error2))
-			break;
-		if (sum_error2 < 0.01)
-			break;
-		if (quit)
-			break;
-		}
-
-	if (!quit)
-		pause_graphics();
-	free_NN(Net, neuronsOfLayer);
+	else
+		quit_graphics();
+	free_RNN(Net, neuronsOfLayer);
 	}

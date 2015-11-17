@@ -12,7 +12,13 @@
 #define Eta 0.01				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
+double randomWeight() // generate random weight between [+1.0, -1.0]
+	{
+	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
+	}
+
 //******** activation functions and random weight generator ********************//
+// Note: sometimes the derivative is calculated in the forward_prop function
 
 double sigmoid(double v)
 	{
@@ -43,15 +49,10 @@ double d_softplus(double v)
 	return 1.0 / (1.0 + exp(-v));
 	}
 
-double randomWeight() // generate random weight between [+1.0, -1.0]
-	{
-	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
-	}
-
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
 void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
-	{https://upload.wikimedia.org/math/9/d/1/9d1ec31ec0d0d9ecfea52406d0b3f6b6.png
+	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
