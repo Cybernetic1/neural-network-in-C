@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "RNN.h"
-#include "feedforwardNN.h"
+#include "feedforward-NN.h"
 
 extern void create_NN(NNET *, int, int *);
 extern void create_RNN(RNN *, int, int *);
@@ -14,8 +14,8 @@ extern void forward_prop(NNET *, int, double *);
 extern void forward_prop_ReLU(NNET *, int, double *);
 extern void forward_RNN(RNN *, int, double *);
 extern void back_prop(NNET *);
-extern void back_prop_ReLU(NNET *);
-extern void RTRL(RNN *);
+extern void back_prop_ReLU(NNET *, double *);
+extern void RTRL(RNN *, double *);
 extern NNET *loadNet(int, int *);
 extern void pause_graphics();
 extern void quit_graphics();
@@ -52,17 +52,18 @@ extern double K[];
 // it needs to converge to an equilibrium point, and then we use the difference between
 // the equilibrium point and the target as error.
 
-void RNN_equilibrium_test()
+void RTRL_equilibrium_test()
 	{
 	// create RNN
 	RNN *Net = (RNN *) malloc(sizeof (RNN));
 	int neuronsOfLayer[4] = {3, 4, 4, 3}; // first = input layer, last = output layer
 	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	create_RNN(Net, numLayers, neuronsOfLayer);
+	create_RTRL_NN(Net, numLayers, neuronsOfLayer);
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 
 	int dimK = 3;
 	double K2[dimK];
+	double errors[dimK];
 	int quit;
 	double sum_error2;
 
@@ -76,7 +77,7 @@ void RNN_equilibrium_test()
 			K_star[i][1][k] = (rand() / (float) RAND_MAX); // random in [0,1]
 			}
 
-	printf("RNN equilibrium learning test\n");
+	printf("RTRL equilibrium learning test\n");
 	printf("Press 'Q' to quit\n\n");
 	start_NN_plot();
 	start_W_plot();
@@ -93,7 +94,7 @@ void RNN_equilibrium_test()
 		#define MaxIterations 100
 		for (int j = 0; j < MaxIterations; j++) // allow network to converge
 			{
-			forward_RNN(Net, dimK, K);
+			forward_RTRL(Net, dimK, K);
 
 			// Check if convergence has reached
 			// Difference between last output and current output:
@@ -110,13 +111,13 @@ void RNN_equilibrium_test()
 
 		// When we have reached here, network has either converged or is chaotic
 		// We apply to back-prop to train the network
-		lastLayer.neurons[0].error = 0.0f;
+		errors[0] = 0.0f;
 
 		// The rest of the errors are zero:
 		for (int k = 1; k < dimK; ++k)
-			lastLayer.neurons[k].error = 0.0f;
+			errors[k] = 0.0f;
 
-		RTRL(Net);
+		RTRL(Net, errors);
 
 		// copy output to input
 		for (int k = 0; k < dimK; ++k)
@@ -142,7 +143,7 @@ void RNN_equilibrium_test()
 
 	if (!quit)
 		pause_graphics();
-	free_RNN(Net, neuronsOfLayer);
+	free_RTRL_NN(Net, neuronsOfLayer);
 	}
 
 
@@ -153,7 +154,8 @@ void classic_BP_test_ReLU2()
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	create_NN(Net, numLayers, neuronsOfLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
-
+	double errors[1];
+	
 	int quit = 0;
 	#define M	50			// how many errors to record for averaging
 	double errors1[M], errors2[M]; // two arrays for recording errors
@@ -190,7 +192,7 @@ void classic_BP_test_ReLU2()
 
 			// Difference between actual outcome and desired value:
 			double error = ideal - lastLayer.neurons[k].output;
-			lastLayer.neurons[k].error = error; // record this for back-prop
+			errors[0] = error; // record this for back-prop
 
 			training_err += fabs(error); // record sum of errors
 			// printf("training error = %lf \n", training_err);
@@ -214,7 +216,7 @@ void classic_BP_test_ReLU2()
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		back_prop_ReLU(Net);
+		back_prop_ReLU(Net, errors);
 
 		double ratio = (sum_err2 - sum_err1) / sum_err1;
 

@@ -37,6 +37,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 OBJECTFILES= \
 	${OBJECTDIR}/Chinese-test.o \
 	${OBJECTDIR}/Q-learning.o \
+	${OBJECTDIR}/arithmetic-test.o \
 	${OBJECTDIR}/back-prop.o \
 	${OBJECTDIR}/backprop-through-time.o \
 	${OBJECTDIR}/basic-tests.o \
@@ -80,6 +81,11 @@ ${OBJECTDIR}/Q-learning.o: Q-learning.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Q-learning.o Q-learning.c
+
+${OBJECTDIR}/arithmetic-test.o: arithmetic-test.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/arithmetic-test.o arithmetic-test.c
 
 ${OBJECTDIR}/back-prop.o: back-prop.c 
 	${MKDIR} -p ${OBJECTDIR}

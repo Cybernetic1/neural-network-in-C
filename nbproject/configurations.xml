@@ -4,8 +4,9 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>BPTT-RNN.h</itemPath>
       <itemPath>RNN.h</itemPath>
-      <itemPath>feedforwardNN.h</itemPath>
+      <itemPath>feedforward-NN.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -16,6 +17,7 @@
                    projectFiles="true">
       <itemPath>Chinese-test.c</itemPath>
       <itemPath>Q-learning.c</itemPath>
+      <itemPath>arithmetic-test.c</itemPath>
       <itemPath>back-prop.c</itemPath>
       <itemPath>backprop-through-time.c</itemPath>
       <itemPath>basic-tests.c</itemPath>
@@ -53,11 +55,15 @@
           <commandLine>-lm -lSDL2 -lSDL2_mixer -lgsl -lgslcblas</commandLine>
         </linkerTool>
       </compileType>
+      <item path="BPTT-RNN.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Chinese-test.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="Q-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="arithmetic-test.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -67,7 +73,7 @@
       </item>
       <item path="experiments.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="feedforwardNN.h" ex="false" tool="3" flavor2="0">
+      <item path="feedforward-NN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -98,11 +104,15 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="BPTT-RNN.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Chinese-test.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="Q-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="arithmetic-test.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="back-prop.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -112,7 +122,7 @@
       </item>
       <item path="experiments.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="feedforwardNN.h" ex="false" tool="3" flavor2="0">
+      <item path="feedforward-NN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>

@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <sys/timeb.h>		// For timing operations
 
-#include "feedforwardNN.h"
+#include "feedforward-NN.h"
 
 #define dim_K 10			// dimension of cognitive state vector K
 double K[dim_K];
@@ -221,9 +221,10 @@ int main(int argc, char** argv)
 	extern void arithmetic_testB();
 	extern void arithmetic_testC();
 	extern void RNN_sine_test();
+	extern void BPTT_arithmetic_test();
 
 	bool quit = false;
-	char whichTest = "\n";
+	char whichTest = '\n';
 	while (!quit)
 		{
 		printf("*** Welcome to Genifer 5.3 ***\n\n");
@@ -239,6 +240,7 @@ int main(int argc, char** argv)
 		printf("[9] arithmetic test: test learned operator\n");
 		printf("[a] rectifier BP test (XOR)\n");
 		printf("[b] RNN sine-wave test\n");
+		printf("[c] BPTT arithmetic test\n");
 		printf("[q] quit\n");
 
 		do
@@ -280,6 +282,9 @@ int main(int argc, char** argv)
 			case 'b':
 				RNN_sine_test(); // train RNN to produce sine wave
 				break;
+			case 'c':
+				BPTT_arithmetic_test(); // learn arithmetic operator using BPTT
+				break;
 			case 'q':
 				quit = true;
 				break;
@@ -296,11 +301,14 @@ void start_timer()
 	ftime(&startTime);
 	}
 
-void end_timer()
+void end_timer(char *s)
 	{
 	ftime(&endTime);
 	int duration = endTime.time - startTime.time;
 	int minutes = duration / 60;
 	int seconds = duration % 60;
-	printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
+	if (s == NULL)
+		printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
+	else
+		sprintf(s, "%d:%d", minutes, seconds);
 	}

@@ -50,6 +50,64 @@
 #define Eta 0.001				// learning rate
 #define BIASOUTPUT 1.0			// output for bias. It's always 1.
 
+//****************************create neural network*********************//
+// GIVEN: how many layers, and how many neurons in each layer
+void create_RTRL_NN(RNN *net, int numLayers, int *neuronsOfLayer)
+	{
+	srand(time(NULL));
+	net->numLayers = numLayers;
+
+	assert(numLayers >= 3);
+
+	net->layers = (rLAYER *) malloc(numLayers * sizeof (rLAYER));
+	//construct input layer, no weights
+	net->layers[0].numNeurons = neuronsOfLayer[0];
+	net->layers[0].neurons = (rNEURON *) malloc(neuronsOfLayer[0] * sizeof (rNEURON));
+
+	//construct hidden layers
+	for (int l = 1; l < numLayers; l++) //construct layers
+		{
+		net->layers[l].neurons = (rNEURON *) malloc(neuronsOfLayer[l] * sizeof (rNEURON));
+		net->layers[l].numNeurons = neuronsOfLayer[l];
+		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
+			{
+			net->layers[l].neurons[n].weights =
+					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
+				{
+				//construct weights of neuron from previous layer neurons
+				//when k = 0, it's bias weight
+				extern double randomWeight();
+				net->layers[l].neurons[n].weights[i] = randomWeight();
+				//net->layers[i].neurons[j].weights[k] = 0.0f;
+				}
+			}
+		}
+	}
+
+void free_RTRL_NN(RNN *net, int *neuronsOfLayer)
+	{
+	// for input layer
+	free(net->layers[0].neurons);
+
+	// for each hidden layer
+	int numLayers = net->numLayers;
+	for (int l = 1; l < numLayers; l++) // for each layer
+		{
+		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+			{
+			free(net->layers[l].neurons[n].weights);
+			}
+		free(net->layers[l].neurons);
+		}
+
+	// free all layers
+	free(net->layers);
+	
+	// free the whole net
+	free(net);
+	}
+
 //**************************** forward-propagation ***************************//
 
 void forward_RTRL(RNN *net, int dim_V, double V[])
@@ -88,7 +146,7 @@ void forward_RTRL(RNN *net, int dim_V, double V[])
 
 //****************************** RTRL ***************************//
 
-void RTRL(RNN *net)
+void RTRL(RNN *net, double *errors)
 	{
 	int numLayers = net->numLayers;
 	rLAYER lastLayer = net->layers[numLayers - 1];
@@ -98,9 +156,8 @@ void RTRL(RNN *net)
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
 		double output = lastLayer.neurons[n].output;
-		double error = lastLayer.neurons[n].error;
 		//for output layer, ∆ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * error;
+		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
 		}
 
 	// calculate ∆ for hidden layers

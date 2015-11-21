@@ -2,27 +2,135 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 
-#include "feedforwardNN.h"
+#include "feedforward-NN.h"
+#include "BPTT-RNN.h"
 
-SDL_Renderer *gfx_Ideal;				// For ideal output visualizer
-SDL_Window *win_Ideal;
+SDL_Renderer *gfx_LogErr = NULL;		// For log-scale error visualizer
+SDL_Window *win_LogErr = NULL;
 
-SDL_Renderer *gfx_Out;					// For YKY's output visualizer
-SDL_Window *win_Out;
+SDL_Renderer *gfx_Ideal = NULL;			// For ideal output visualizer
+SDL_Window *win_Ideal = NULL;
 
-SDL_Renderer *gfx_W;					// For YKY's weights visualizer
-SDL_Window *win_W;
+SDL_Renderer *gfx_Out = NULL;			// For YKY's output visualizer
+SDL_Window *win_Out = NULL;
 
-SDL_Renderer *gfx_NN;					// For YKY's NN visualizer
-SDL_Window *win_NN;
+SDL_Renderer *gfx_W = NULL;				// For YKY's weights visualizer
+SDL_Window *win_W = NULL;
 
-SDL_Renderer *gfx_NN2;					// For Seh's NN visualizer
-SDL_Window *win_NN2;
+SDL_Renderer *gfx_NN = NULL;			// For YKY's NN visualizer
+SDL_Window *win_NN = NULL;
 
-SDL_Renderer *gfx_K;					// For K-vector visualizer
-SDL_Window *win_K;
+SDL_Renderer *gfx_NN2 = NULL;			// For Seh's NN visualizer
+SDL_Window *win_NN2 = NULL;
+
+SDL_Renderer *gfx_K = NULL;				// For K-vector visualizer
+SDL_Window *win_K = NULL;
 
 #define f2i(v) ((int)(255.0f * v))		// for converting color values
+
+// ************************* YKY's log-scale error visualizer ***************************
+
+#define LogErr_box_width 1000
+#define LogErr_box_height 500
+
+void start_LogErr_plot(void)
+	{
+
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+		{
+		printf("SDL_Init Error: %s \n", SDL_GetError());
+		return;
+		}
+
+	win_LogErr = SDL_CreateWindow("Output", 10, 10, LogErr_box_width, LogErr_box_height, SDL_WINDOW_SHOWN);
+	if (win_LogErr == NULL)
+		{
+		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+
+	gfx_LogErr = SDL_CreateRenderer(win_LogErr, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	if (gfx_LogErr == NULL)
+		{
+		SDL_DestroyWindow(win_LogErr);
+		printf("SDL_CreateRenderer Error: %s \n", SDL_GetError());
+		SDL_Quit();
+		return;
+		}
+	}
+
+void plot_LogErr(double err, double target)
+	{
+	static int errGain = 100.0;
+	#define binSize 1000
+	static double bin[binSize];		// stores plot data in log-scale
+
+	static int index = 1;			// true index of current datum
+	bin[index++] = err;				// record the error
+
+	// Overflow?
+	if (index == binSize)
+		{
+		char s[100];
+		sprintf(s, "Mean error = %.04f @       ", err);
+		extern void end_timer(char *);
+		end_timer(s + 25);
+		SDL_SetWindowTitle(win_LogErr, s);
+
+		// Set gain
+		errGain = LogErr_box_height / bin[index - 1] / 2;
+		
+		// squeeze existing data into first half
+		for (int i = 0; i < binSize / 2; ++i)
+			bin[i] = (bin[i * 2] + bin[i * 2 + 1]) / 2;
+
+		// new index appears in the mid-point
+		index = binSize / 2;
+
+		// clear data from beyond middle
+		for (int i = binSize / 2 + 1; i < binSize; ++i)
+			bin[i] = 0.0;
+
+		SDL_SetRenderDrawColor(gfx_LogErr, 0, 0, 0, 0xFF);
+		SDL_RenderClear(gfx_LogErr);		//Clear screen
+
+		// Plot the mid axis
+		SDL_SetRenderDrawColor(gfx_LogErr, 0, 0, 0xFF, 0xFF);	// blue
+		int baseline_y = LogErr_box_height / 2;
+		SDL_RenderDrawLine(gfx_LogErr, 0,
+				baseline_y,
+				LogErr_box_width,
+				baseline_y);
+
+		// Plot the error target
+		SDL_SetRenderDrawColor(gfx_LogErr, 0xFF, 0, 0, 0xFF);	// red
+		baseline_y = LogErr_box_height - target * errGain;
+		SDL_RenderDrawLine(gfx_LogErr, 0,
+				baseline_y,
+				LogErr_box_width,
+				baseline_y);
+
+		// Re-plot the graph
+		SDL_SetRenderDrawColor(gfx_LogErr, 0x40, 0x90, 0, 0x70);	// red + green
+		for (int i = 1; i < binSize / 2; ++i)
+			{
+			SDL_RenderDrawLine(gfx_LogErr, i - 1,
+				LogErr_box_height - errGain * bin[i - 1],
+				i,
+				LogErr_box_height - errGain * bin[i]);
+			}
+		}
+
+	// Plot the new datum
+	SDL_SetRenderDrawColor(gfx_LogErr, 0x40, 0x90, 0, 0x70);	// red + green
+	SDL_RenderDrawLine(gfx_LogErr, index - 1,
+		LogErr_box_height - errGain * bin[index - 2],
+		index,
+		LogErr_box_height - errGain * err);
+
+	SDL_RenderPresent(gfx_LogErr);
+	}
 
 // **************************** Trainer function visualizer *****************************
 
@@ -192,7 +300,7 @@ void flush_output()		// This is to allow plotting some dots on the graph before 
 // *************************** YKY's weights visualizer ********************************
 
 #define W_box_width 900
-#define W_box_height 400
+#define W_box_height 1200
 
 void start_W_plot(void)
 	{
@@ -203,7 +311,7 @@ void start_W_plot(void)
 		return;
 		}
 
-	win_W = SDL_CreateWindow("NN weights", 80, 1200, W_box_width, W_box_height, SDL_WINDOW_SHOWN);
+	win_W = SDL_CreateWindow("NN weights (auto gain-adjusted)", 80, 20, W_box_width, W_box_height, SDL_WINDOW_SHOWN);
 	if (win_W == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -228,9 +336,79 @@ void plot_W(NNET *net)
 	
 	// SDL_SetRenderDrawBlendMode(gfx_W, SDL_BLENDMODE_BLEND);
 
-	#define numLayers (net->numLayers)
-	#define Y_step (W_box_height / numLayers)
-	#define Gain (Y_step / 1)
+	int numLayers = net->numLayers;
+	int Y_step = W_box_height / numLayers;
+	// double Gain = Y_step / 1.0;
+	for (int l = 1; l < numLayers; l++)		// Note: layer 0 has no weights
+		{
+		double gain = 1.0f;
+		// increase amplitude for hidden layers
+		// if (l > 0 && l < numLayers - 1)
+		// 	gain = 5.0f;
+		// else
+		//	gain = 1.0f;
+
+		// set color
+		float r = ((float) l ) / (numLayers - 1);
+		float b = 1.0f - ((float) l ) / (numLayers - 1);
+		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF);		// blue
+
+		int nn = net->layers[l].numNeurons;
+
+		int neuronWidth = (W_box_width - 20) / nn;
+
+		// draw baseline
+
+		int baseline_y = l * Y_step;
+		SDL_RenderDrawLine(gfx_W, 10, baseline_y, \
+			W_box_width - 10, baseline_y);
+
+		SDL_SetRenderDrawColor(gfx_W, 0xFF, 0x00, 0x00, 0xFF);		// red
+		
+		for (int n = 0; n < nn; n++)		// for each neuron on layer l
+			{
+			int numWeights = net->layers[l - 1].numNeurons + 1;		// always >= 2
+			int basepoint_x = 10 + neuronWidth * n;
+			int gap = (neuronWidth - 10) / (numWeights - 1);
+
+			// ***** Automatic gain-adjust
+			// find min and max weights
+			double min_W, max_W = net->layers[l].neurons[n].weights[0];
+			for (int m = 0; m <= numWeights; ++m)
+				{
+				double weight = net->layers[l].neurons[n].weights[m];
+				if (weight > max_W) max_W = weight;
+				if (weight < min_W) min_W = weight;
+				}
+			gain = ((double) Y_step) / (max_W - min_W);
+
+			for (int m = 0; m < numWeights - 1; ++m)
+			// for each weight including bias, but minus one because # line segments
+			// is 1 less than # of weights
+				{
+				int weight0 = gain * net->layers[l].neurons[n].weights[m];
+				int weight1 = gain * net->layers[l].neurons[n].weights[m + 1];
+				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * m,
+						baseline_y - weight0,
+						basepoint_x + 5 + gap * (m + 1),
+						baseline_y - weight1);
+				}
+			}
+		}
+
+	SDL_RenderPresent(gfx_W);
+	}
+
+void plot_W_BPTT(RNN *net)
+	{
+	SDL_SetRenderDrawColor(gfx_W, 0, 0, 0, 0xFF);
+	SDL_RenderClear(gfx_W);		//Clear screen
+	
+	// SDL_SetRenderDrawBlendMode(gfx_W, SDL_BLENDMODE_BLEND);
+
+	int numLayers = net->numLayers;
+	int Y_step = W_box_height / numLayers;
+	double Gain = Y_step / 1.0;
 	for (int l = 1; l < numLayers; l++)		// Note: layer 0 has no weights
 		{
 		double gain = 1.0f;
@@ -496,7 +674,8 @@ void plot_NN2(NNET *net)
 			float g = output > 0 ? output : 0;
 			if (g < +1) g = +1;
 
-			float b = neuron.input;
+			// float b = neuron.input;	// ?? seems nothing in here
+			float b = 0.0f;
 
 			rect(L_margin + l*bwh, T_margin + n*bwh, bwh, bwh, r, g, b);
 			}
@@ -589,9 +768,9 @@ int delay_vis(int delay)
 	// Read keyboard state, if "Q" is pressed, return 1
 	SDL_PumpEvents();
 	
-	extern void end_timer();
+	extern void end_timer(char *);
 	if (keys[SDL_SCANCODE_T])
-		end_timer();
+		end_timer(NULL);
 
     if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])
 		return 1;
@@ -620,7 +799,29 @@ void pause_graphics()
 			if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])	// press 'Q' to quit
 				quit = true;
 			}
+	
+		if (gfx_LogErr != NULL)
+			SDL_RenderPresent(gfx_LogErr);
+
+		if (gfx_Ideal != NULL)
+			SDL_RenderPresent(gfx_Ideal);
+
+		if (gfx_Out != NULL)
+			SDL_RenderPresent(gfx_Out);
+
+		if (gfx_W != NULL)
+			SDL_RenderPresent(gfx_W);
+
+		if (gfx_NN != NULL)
+			SDL_RenderPresent(gfx_NN);
+
+		if (gfx_NN2 != NULL)
+			SDL_RenderPresent(gfx_NN2);
+
+		if (gfx_K != NULL)
+			SDL_RenderPresent(gfx_K);
 		}
+	
 	SDL_DestroyRenderer(gfx_NN);
 	SDL_DestroyRenderer(gfx_NN2);
 	SDL_DestroyRenderer(gfx_K);
