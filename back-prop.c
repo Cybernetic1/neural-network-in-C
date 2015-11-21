@@ -33,8 +33,8 @@ double rectifier(double v)
 	#define Leakage 0.0
 	if (v < Leakage)
 		return -Leakage * v;
-//	else if (v > 1.0)
-//		return 1.0 + Leakage * v;
+	else if (v > 1.0)
+		return 1.0 + Leakage * v;
 	else
 		return v;
 	}
@@ -140,6 +140,36 @@ void forward_prop(NNET *net, int dim_V, double V[])
 		}
 	}
 
+// Same as above, except with soft_plus activation function
+void forward_prop_SP(NNET *net, int dim_V, double V[])
+	{
+	// set the output of input layer
+	for (int i = 0; i < dim_V; ++i)
+		net->layers[0].neurons[i].output = V[i];
+
+	// calculate output from hidden layers to output layer
+	for (int l = 1; l < net->numLayers; l++)
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)
+			{
+			double v = 0.0; // induced local field for neurons
+			// calculate v, which is the sum of the product of input and weights
+			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
+				{
+				if (k == 0)
+					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+				else
+					v += net->layers[l].neurons[n].weights[k] *
+						net->layers[l - 1].neurons[k - 1].output;
+				}
+
+			net->layers[l].neurons[n].output = softplus(v);
+
+			net->layers[l].neurons[n].grad = d_softplus(v);
+			}
+		}
+	}
+
 // Same as above, except with rectifier activation function
 // ReLU = "rectified linear unit"
 void forward_prop_ReLU(NNET *net, int dim_V, double V[])
@@ -164,22 +194,15 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 						net->layers[l - 1].neurons[k - 1].output;
 				}
 
-			// For the last layer, skip the sigmoid function
-			// Note: this idea seems to destroy back-prop convergence
-			// if (i == net->numLayers - 1)
-			//	net->layers[i].neurons[j].output = v;
-			// else
-			net->layers[l].neurons[n].output = softplus(v);
-			// net->layers[l].neurons[n].output = rectifier(v);
+			net->layers[l].neurons[n].output = rectifier(v);
 			
 			// This is to prepare for back-prop
-			// if (v < Leakage)
-			//	net->layers[l].neurons[n].grad = -Leakage;
-			// if (v > 1.0)
-			//	net->layers[l].neurons[n].grad = Leakage;
-			// else
-			//	net->layers[l].neurons[n].grad = 1.0;
-			net->layers[l].neurons[n].grad = d_softplus(v);
+			if (v < Leakage)
+				net->layers[l].neurons[n].grad = -Leakage;
+			if (v > 1.0)
+				net->layers[l].neurons[n].grad = Leakage;
+			else
+				net->layers[l].neurons[n].grad = 1.0;
 			}
 		}
 	}

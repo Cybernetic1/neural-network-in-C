@@ -14,6 +14,7 @@ extern void free_NN(NNET *, int *);
 extern void free_RTRL_NN(RNN *, int *);
 extern void forward_prop(NNET *, int, double *);
 extern void forward_prop_ReLU(NNET *, int, double *);
+extern void forward_prop_SP(NNET *, int, double *);
 extern void forward_RTRL(RNN *, int, double *);
 extern void back_prop(NNET *, double *);
 extern void back_prop_ReLU(NNET *, double *);
@@ -25,10 +26,12 @@ extern void start_NN2_plot(void);
 extern void start_W_plot(void);
 extern void start_K_plot(void);
 extern void start_output_plot(void);
+extern void start_LogErr_plot(void);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
 extern void plot_output(NNET *net, void ());
+extern void plot_LogErr(double, double);
 extern void flush_output();
 extern void plot_tester(double, double);
 extern void plot_K();
@@ -328,7 +331,7 @@ void sine_wave_test2()
 
 void classic_BP_test()
 	{
-	int neuronsOfLayer[] = {2, 8, 1}; // first = input layer, last = output layer
+	int neuronsOfLayer[] = {2, 4, 4, 4, 4, 4, 4, 1}; // first = input layer, last = output layer
 	NNET *Net = (NNET *) malloc(sizeof (NNET));
 	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
 	create_NN(Net, numLayers, neuronsOfLayer);
@@ -353,9 +356,10 @@ void classic_BP_test()
 	printf("Press 'Q' to quit\n\n");
 	start_timer();
 
+	char str[100], *s = str;
 	for (int i = 0; 1; ++i)
 		{
-		printf("iteration: %05d: ", i);
+		s += sprintf(str, "iteration: %05d: ", i);
 
 		// Create random K vector
 		for (int k = 0; k < 2; ++k)
@@ -371,7 +375,7 @@ void classic_BP_test()
 		//		if ((i % 4) == 3)
 		//			K[0] = 1.0, K[1] = 1.0;
 
-		forward_prop(Net, 2, K); // dim K = 2
+		forward_prop_ReLU(Net, 2, K); // dim K = 2
 
 		// Desired value = K_star
 		double training_err = 0.0;
@@ -402,7 +406,7 @@ void classic_BP_test()
 		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
 
 		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
-		printf("mean error = %lf  ", mean_err);
+		s += sprintf(s, "mean error = %lf  ", mean_err);
 
 		// record new error in cyclic arrays
 		errors2[tail] = errors1[tail];
@@ -411,7 +415,7 @@ void classic_BP_test()
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		back_prop(Net, errors);
+		back_prop_ReLU(Net, errors);
 
 		// Testing set
 		double test_err = 0.0;
@@ -423,7 +427,7 @@ void classic_BP_test()
 				K[k] = ((double) rand() / (double) RAND_MAX);
 			// plot_tester(K[0], K[1]);
 
-			forward_prop(Net, 2, K);
+			forward_prop_ReLU(Net, 2, K);
 
 			// Desired value = K_star
 			double single_err = 0.0;
@@ -441,21 +445,24 @@ void classic_BP_test()
 			test_err += single_err;
 			}
 		test_err /= ((double) numTests);
-		printf("random test error = %1.06lf  ", test_err);
+		s += sprintf(s, "random test error = %1.06lf  ", test_err);
 
 		double ratio = (sum_err2 - sum_err1) / sum_err1;
 		if (ratio > 0)
-			printf("error ratio = %f\n", ratio);
+			s += sprintf(s, "error ratio = %f\r", ratio);
 		else
-			printf("error ratio = \x1b[31m%f\x1b[39;49m\n", ratio);
+			s += sprintf(s, "error ratio = \x1b[31m%f\x1b[39;49m\r", ratio);
+
+		if ((i % 500) == 0)
+			printf(s);
 
 		if ((i % 200) == 0) // display status periodically
 			{
 			// plot_NN(Net);
 			plot_W(Net);
-			plot_output(Net, forward_prop);
-			plot_LogErr(test_err, 0.01);
+			plot_output(Net, forward_prop_ReLU);
 			flush_output();
+			plot_LogErr(test_err, 0.01);
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
 			if (quit = delay_vis(0))
@@ -472,7 +479,7 @@ void classic_BP_test()
 
 	end_timer(NULL);
 	beep();
-	plot_output(Net, forward_prop);
+	plot_output(Net, forward_prop_ReLU);
 	flush_output();
 	plot_W(Net);
 
