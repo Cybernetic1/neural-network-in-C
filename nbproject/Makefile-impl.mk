@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=genifer5c
+PROJECTNAME=genifer5-c
 
 # Active Configuration
 DEFAULTCONF=Debug
