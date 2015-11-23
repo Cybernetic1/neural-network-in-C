@@ -289,8 +289,6 @@ int main(int argc, char** argv)
 				quit = true;
 				break;
 			}
-
-		beep();
 		}
 	}
 

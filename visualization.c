@@ -33,9 +33,10 @@ SDL_Window *win_K = NULL;
 #define LogErr_box_width 1000
 #define LogErr_box_height 400
 
+bool new_LogErr_plot = false;
+
 void start_LogErr_plot(void)
 	{
-
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		{
 		printf("SDL_Init Error: %s \n", SDL_GetError());
@@ -58,6 +59,8 @@ void start_LogErr_plot(void)
 		SDL_Quit();
 		return;
 		}
+	
+	new_LogErr_plot = true;
 	}
 
 void plot_LogErr(double err, double target)
@@ -65,8 +68,18 @@ void plot_LogErr(double err, double target)
 	static int errGain = 100.0;
 	#define binSize 1000
 	static double bin[binSize]; // stores plot data in log-scale
-
 	static int index = 1; // true index of current datum
+
+	if (new_LogErr_plot)
+		{
+		index = 1;
+		errGain = 500.0;
+		new_LogErr_plot = false;
+		// clear window
+		SDL_SetRenderDrawColor(gfx_LogErr, 0, 0, 0, 0xFF);
+		SDL_RenderClear(gfx_LogErr); //Clear screen
+		}
+	
 	bin[index++] = err; // record the error
 
 	// Overflow?
@@ -799,10 +812,17 @@ int delay_vis(int delay)
 	// Read keyboard state, if "Q" is pressed, return 1
 	SDL_PumpEvents();
 
+	// 'T' --- display time
 	extern void end_timer(char *);
 	if (keys[SDL_SCANCODE_T])
 		end_timer(NULL);
 
+	// 'P' --- pause
+	if (keys[SDL_SCANCODE_P])
+		while (!keys[SDL_SCANCODE_R])		// 'R' to resume
+			SDL_PumpEvents();
+
+	// 'Q' --- quit
 	if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])
 		return 1;
 	else
@@ -870,10 +890,12 @@ void beep()
 	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
 	music = Mix_LoadMUS("beep.wav");
 	Mix_PlayMusic(music, -1);
-	SDL_PauseAudio(0);
-	SDL_Delay(400);
+	SDL_PauseAudio(0);		// start playing device
+	SDL_Delay(300);
 	// fprintf(stderr, "Sound played\n");
+	// SDL_PauseAudio(1);
 	Mix_FreeMusic(music);
+	Mix_CloseAudio();
 	}
 
 void quit_graphics()
