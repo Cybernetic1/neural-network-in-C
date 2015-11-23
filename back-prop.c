@@ -7,12 +7,18 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>		// time as random seed in create_NN()
-#include "feedforwardNN.h"
+#include "feedforward-NN.h"
 
 #define Eta 0.01				// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
+double randomWeight() // generate random weight between [+1.0, -1.0]
+	{
+	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
+	}
+
 //******** activation functions and random weight generator ********************//
+// Note: sometimes the derivative is calculated in the forward_prop function
 
 double sigmoid(double v)
 	{
@@ -24,11 +30,11 @@ double sigmoid(double v)
 // Gradient is constant so it never vanishes!
 double rectifier(double v)
 	{
-	#define Leakage 0.1
+	#define Leakage 0.0
 	if (v < Leakage)
-		return Leakage;
+		return -Leakage * v;
 	else if (v > 1.0)
-		return 1.0;
+		return 1.0 + Leakage * v;
 	else
 		return v;
 	}
@@ -43,15 +49,10 @@ double d_softplus(double v)
 	return 1.0 / (1.0 + exp(-v));
 	}
 
-double randomWeight() // generate random weight between [+1.0, -1.0]
-	{
-	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
-	}
-
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
 void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
-	{https://upload.wikimedia.org/math/9/d/1/9d1ec31ec0d0d9ecfea52406d0b3f6b6.png
+	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
@@ -139,6 +140,36 @@ void forward_prop(NNET *net, int dim_V, double V[])
 		}
 	}
 
+// Same as above, except with soft_plus activation function
+void forward_prop_SP(NNET *net, int dim_V, double V[])
+	{
+	// set the output of input layer
+	for (int i = 0; i < dim_V; ++i)
+		net->layers[0].neurons[i].output = V[i];
+
+	// calculate output from hidden layers to output layer
+	for (int l = 1; l < net->numLayers; l++)
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)
+			{
+			double v = 0.0; // induced local field for neurons
+			// calculate v, which is the sum of the product of input and weights
+			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
+				{
+				if (k == 0)
+					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+				else
+					v += net->layers[l].neurons[n].weights[k] *
+						net->layers[l - 1].neurons[k - 1].output;
+				}
+
+			net->layers[l].neurons[n].output = softplus(v);
+
+			net->layers[l].neurons[n].grad = d_softplus(v);
+			}
+		}
+	}
+
 // Same as above, except with rectifier activation function
 // ReLU = "rectified linear unit"
 void forward_prop_ReLU(NNET *net, int dim_V, double V[])
@@ -163,22 +194,15 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 						net->layers[l - 1].neurons[k - 1].output;
 				}
 
-			// For the last layer, skip the sigmoid function
-			// Note: this idea seems to destroy back-prop convergence
-			// if (i == net->numLayers - 1)
-			//	net->layers[i].neurons[j].output = v;
-			// else
-			net->layers[l].neurons[n].output = softplus(v);
-
-			/* This is to prepare for back-prop
+			net->layers[l].neurons[n].output = rectifier(v);
+			
+			// This is to prepare for back-prop
 			if (v < Leakage)
-				net->layers[l].neurons[n].grad = Leakage;
+				net->layers[l].neurons[n].grad = -Leakage;
 			if (v > 1.0)
 				net->layers[l].neurons[n].grad = Leakage;
 			else
 				net->layers[l].neurons[n].grad = 1.0;
-			*/
-			net->layers[l].neurons[n].grad = d_softplus(v);
 			}
 		}
 	}
@@ -213,7 +237,7 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 // Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
 // optimization problems.  The book "Talking Nets" interviewed some of these people.
 
-void back_prop(NNET *net)
+void back_prop(NNET *net, double *errors)
 	{
 	int numLayers = net->numLayers;
 	LAYER lastLayer = net->layers[numLayers - 1];
@@ -222,9 +246,8 @@ void back_prop(NNET *net)
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
 		double output = lastLayer.neurons[n].output;
-		double error = lastLayer.neurons[n].error;
 		//for output layer, ∇ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * error;
+		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
 		}
 
 	// calculate gradient for hidden layers
@@ -263,7 +286,7 @@ void back_prop(NNET *net)
 
 // Same as above, except with rectifier activation function
 // In this case:  σ'(x) = sign(x)
-void back_prop_ReLU(NNET *net)
+void back_prop_ReLU(NNET *net, double *errors)
 	{
 	int numLayers = net->numLayers;
 	LAYER lastLayer = net->layers[numLayers - 1];
@@ -272,10 +295,9 @@ void back_prop_ReLU(NNET *net)
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
 		// double output = lastLayer.neurons[n].output;
-		double error = lastLayer.neurons[n].error;
 		//for output layer, ∇ = sign(y)∙error
 		// .grad has been prepared in forward-prop
-		lastLayer.neurons[n].grad *= error;
+		lastLayer.neurons[n].grad *= errors[n];
 		}
 
 	// calculate gradient for hidden layers
@@ -314,23 +336,23 @@ void back_prop_ReLU(NNET *net)
 	}
 
 // Calculate error between output of forward-prop and a given answer Y
-double calc_error(NNET *net, double Y[])
+double calc_error(NNET *net, double Y[], double *errors)
 	{
 	// calculate mean square error
 	// desired value = Y = K* = trainingOUT
 	double sumOfSquareError = 0;
 
 	int numLayers = net->numLayers;
-	#define LastLayer (net->layers[numLayers - 1])
+	LAYER lastLayer = net->layers[numLayers - 1];
 	// This means each output neuron corresponds to a classification label --YKY
-	for (int i = 0; i < LastLayer.numNeurons; i++)
+	for (int n = 0; n < lastLayer.numNeurons; n++)
 		{
 		//error = desired_value - output
-		double error = Y[i] - LastLayer.neurons[i].output;
-		LastLayer.neurons[i].error = error;
+		double error = Y[n] - lastLayer.neurons[n].output;
+		errors[n] = error;
 		sumOfSquareError += error * error / 2;
 		}
-	double mse = sumOfSquareError / LastLayer.numNeurons;
+	double mse = sumOfSquareError / lastLayer.numNeurons;
 	return mse; //return mean square error
 	}
 

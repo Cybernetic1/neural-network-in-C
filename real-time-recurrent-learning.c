@@ -44,15 +44,15 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
-#include <time.h>		// time as random seed in create_NN()
+#include <time.h>				// time as random seed in create_NN()
 #include "RNN.h"
 
 #define Eta 0.001				// learning rate
-#define BIASOUTPUT 1.0		// output for bias. It's always 1.
+#define BIASOUTPUT 1.0			// output for bias. It's always 1.
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
-void create_RNN(RNN *net, int numLayers, int *neuronsOfLayer)
+void create_RTRL_NN(RNN *net, int numLayers, int *neuronsOfLayer)
 	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
@@ -85,9 +85,32 @@ void create_RNN(RNN *net, int numLayers, int *neuronsOfLayer)
 		}
 	}
 
+void free_RTRL_NN(RNN *net, int *neuronsOfLayer)
+	{
+	// for input layer
+	free(net->layers[0].neurons);
+
+	// for each hidden layer
+	int numLayers = net->numLayers;
+	for (int l = 1; l < numLayers; l++) // for each layer
+		{
+		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+			{
+			free(net->layers[l].neurons[n].weights);
+			}
+		free(net->layers[l].neurons);
+		}
+
+	// free all layers
+	free(net->layers);
+	
+	// free the whole net
+	free(net);
+	}
+
 //**************************** forward-propagation ***************************//
 
-void forward_RNN(RNN *net, int dim_V, double V[])
+void forward_RTRL(RNN *net, int dim_V, double V[])
 	{
 	//set the output of input layer
 	//two inputs x1 and x2
@@ -121,10 +144,9 @@ void forward_RNN(RNN *net, int dim_V, double V[])
 		}
 	}
 
-
 //****************************** RTRL ***************************//
 
-void RTRL(RNN *net)
+void RTRL(RNN *net, double *errors)
 	{
 	int numLayers = net->numLayers;
 	rLAYER lastLayer = net->layers[numLayers - 1];
@@ -134,9 +156,8 @@ void RTRL(RNN *net)
 	for (int n = 0; n < lastLayer.numNeurons; ++n)
 		{
 		double output = lastLayer.neurons[n].output;
-		double error = lastLayer.neurons[n].error;
 		//for output layer, ∆ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * error;
+		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
 		}
 
 	// calculate ∆ for hidden layers
@@ -171,25 +192,4 @@ void RTRL(RNN *net)
 				}
 			}
 		}
-	}
-
-// Calculate error between output of forward-prop and a given answer Y
-double error_RNN(RNN *net, double Y[])
-	{
-	// calculate mean square error
-	// desired value = Y = K* = trainingOUT
-	double sumOfSquareError = 0;
-
-	int numLayers = net->numLayers;
-	#define LastLayer (net->layers[numLayers - 1])
-	// This means each output neuron corresponds to a classification label --YKY
-	for (int i = 0; i < LastLayer.numNeurons; i++)
-		{
-		//error = desired_value - output
-		double error = Y[i] - LastLayer.neurons[i].output;
-		LastLayer.neurons[i].error = error;
-		sumOfSquareError += error * error / 2;
-		}
-	double mse = sumOfSquareError / LastLayer.numNeurons;
-	return mse; //return the root of mean square error
 	}

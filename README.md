@@ -5,6 +5,11 @@ Dependencies:
 
 - SDL2 (Simple DirectMedia Layer v2, for graphics plot)
 
+To install the SDL2 library you may try something like:
+	sudo apt-get install libsdl2-2.0-0
+	sudo apt-get install libsdl2-dev
+	sudo apt-get install libsdl2-mixer-dev
+
 You may use the NetBeans IDE, with C/C++ extensions.  Or compile from command line:
 
     gcc main.c back-prop.c graphics.c Q-learning.c -std=c99 -lm -lSDL2 -o genifer

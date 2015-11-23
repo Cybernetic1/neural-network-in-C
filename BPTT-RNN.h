@@ -3,9 +3,9 @@
 //**********************struct for NEURON**********************************//
 typedef struct rNEURON
 	{
-    double output;
+    double output[Nfold];
     double *weights;
-    double grad;			// "local gradient", allow for 2 time steps
+    double grad[Nfold];			// "local gradient", allow for 2 time steps
 	} rNEURON;
 
 //**********************struct for LAYER***********************************//
@@ -18,7 +18,6 @@ typedef struct rLAYER
 //*********************struct for NNET************************************//
 typedef struct RNN
 	{
-    double *inputs;
     int numLayers;
     rLAYER *layers;
 	} RNN;
