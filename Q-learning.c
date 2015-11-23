@@ -19,7 +19,7 @@
 #include <time.h>
 // #include <SDL2/SDL.h>
 
-#include "RNN.h"
+#include "feedforwardNN.h"
 
 extern double sigmoid(double v);
 extern double randomWeight();

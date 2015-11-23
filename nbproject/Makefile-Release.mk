@@ -62,11 +62,11 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5-c
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5-c: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5-c ${OBJECTFILES} ${LDLIBSOPTIONS}
 
 ${OBJECTDIR}/Chinese-test.o: Chinese-test.c 
 	${MKDIR} -p ${OBJECTDIR}
@@ -109,7 +109,7 @@ ${OBJECTDIR}/visualization.o: visualization.c
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c
+	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5-c
 
 # Subprojects
 .clean-subprojects:
