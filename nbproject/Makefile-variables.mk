@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux-x86
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux-x86
-CND_ARTIFACT_NAME_Debug=genifer5-c
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/genifer5-c
+CND_ARTIFACT_NAME_Debug=genifer5c
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux-x86/genifer5c
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Debug=genifer5-c.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/genifer5-c.tar
+CND_PACKAGE_NAME_Debug=genifer5c.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux-x86/package/genifer5c.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux-x86
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux-x86
-CND_ARTIFACT_NAME_Release=genifer5-c
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/genifer5-c
+CND_ARTIFACT_NAME_Release=genifer5c
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux-x86/genifer5c
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux-x86/package
-CND_PACKAGE_NAME_Release=genifer5-c.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/genifer5-c.tar
+CND_PACKAGE_NAME_Release=genifer5c.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux-x86/package/genifer5c.tar
 #
 # include compiler specific variables
 #
