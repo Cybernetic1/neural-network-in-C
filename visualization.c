@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
+#include <stdlib.h>				// For playing system "beep"
+// #include <SDL2/SDL_mixer.h>	// no longer needed
 
 #include "feedforward-NN.h"
 #include "BPTT-RNN.h"
@@ -902,6 +903,8 @@ void pause_graphics()
 
 void beep()
 	{
+	system("beep");
+	/*
 	Mix_Music *music;
 	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 2, 4096);
 	music = Mix_LoadMUS("beep.wav");
@@ -912,6 +915,7 @@ void beep()
 	// SDL_PauseAudio(1);
 	Mix_FreeMusic(music);
 	Mix_CloseAudio();
+	*/
 	}
 
 void quit_graphics()

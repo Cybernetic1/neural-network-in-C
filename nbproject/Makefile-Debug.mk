@@ -70,7 +70,7 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lSDL2_mixer -lgsl -lgslcblas
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lgsl -lgslcblas
 
 ${OBJECTDIR}/Chinese-test.o: Chinese-test.c 
 	${MKDIR} -p ${OBJECTDIR}

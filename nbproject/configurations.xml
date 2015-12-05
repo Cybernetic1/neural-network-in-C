@@ -52,7 +52,7 @@
           <commandLine>-std=c99</commandLine>
         </cTool>
         <linkerTool>
-          <commandLine>-lm -lSDL2 -lSDL2_mixer -lgsl -lgslcblas</commandLine>
+          <commandLine>-lm -lSDL2 -lgsl -lgslcblas</commandLine>
         </linkerTool>
       </compileType>
       <item path="BPTT-RNN.h" ex="false" tool="3" flavor2="0">
