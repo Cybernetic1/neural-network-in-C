@@ -6,14 +6,15 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
-#include <time.h>		// time as random seed in create_NN()
+#include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
-#define Eta 0.01				// learning rate
+#define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 double randomWeight() // generate random weight between [+1.0, -1.0]
 	{
+	// return 0.5 + (rand() / (double) RAND_MAX) * 0.01;
 	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
 	}
 
@@ -31,10 +32,10 @@ double sigmoid(double v)
 double rectifier(double v)
 	{
 	#define Leakage 0.0
-	if (v < Leakage)
+	if (v < -1.0)
 		return -Leakage * v;
-	else if (v > 1.0)
-		return 1.0 + Leakage * v;
+	// else if (v > 1.0)
+	//	return 1.0 + Leakage * v;
 	else
 		return v;
 	}
@@ -197,10 +198,10 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			net->layers[l].neurons[n].output = rectifier(v);
 			
 			// This is to prepare for back-prop
-			if (v < Leakage)
+			if (v < -1.0)
 				net->layers[l].neurons[n].grad = -Leakage;
-			if (v > 1.0)
-				net->layers[l].neurons[n].grad = Leakage;
+			// if (v > 1.0)
+			//	net->layers[l].neurons[n].grad = Leakage;
 			else
 				net->layers[l].neurons[n].grad = 1.0;
 			}

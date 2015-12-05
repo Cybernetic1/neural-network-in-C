@@ -420,7 +420,10 @@ void classic_BP_test()
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
+		// plot_W(Net);
 		BackPropMethod(Net, errors);
+		// plot_W(Net);
+		// pause_graphics();
 		
 		if ((i % 200) == 0)
 			{

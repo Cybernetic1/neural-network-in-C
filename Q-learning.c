@@ -19,7 +19,7 @@
 #include <time.h>
 // #include <SDL2/SDL.h>
 
-#include "feedforwardNN.h"
+#include "feedforward-NN.h"
 
 extern double sigmoid(double v);
 extern double randomWeight();
@@ -196,7 +196,7 @@ void Q_learn(double K1[], double K2[], double R, double oldQ)
 	oldQ += dQ;
 	// Use dQ as the error for back-prop
 	#define LastLayer (Qnet->layers[numLayers - 1])
-	LastLayer.neurons[0].error = dQ;
+	// LastLayer.neurons[0].error = dQ;
 
 	// Invoke back-prop a few times (perhaps this would make the learning effect stronger?)
 	for (int i = 0; i < 5; ++i)

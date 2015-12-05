@@ -405,18 +405,34 @@ void plot_W(NNET *net)
 				if (weight < min_W) min_W = weight;
 				}
 			}
-		gain = ((double) Y_step) / (max_W - min_W);
-
+		double peak = fmax(fabs(max_W), fabs(min_W));
+		gain = ((double) Y_step) / peak;
+		// printf("Y step = %d\n", Y_step);
+		// printf("min W = %f\n", min_W);
+		// printf("max W = %f\n", max_W);
+		// printf("gain = %f\n", gain);
+	
 		// draw baseline
 		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF); // blue
 		int baseline_y = l * Y_step;
 		SDL_RenderDrawLine(gfx_W, 10, baseline_y, \
 			W_box_width - 10, baseline_y);
 
-		// set color
-		float c1 = ((float) l) / (numLayers - 1);
-		float c2 = 1.0f - ((float) l) / (numLayers - 1);
-		SDL_SetRenderDrawColor(gfx_W, f2i(c1), f2i(c2), 0, 0xFF);
+		// **** set color
+		// The weights for each layer is scaled to fit in the horizontal strip (Y_step)
+		// But if the weights are large, their line color will move towards red-purple
+		// Otherwise they are green.
+		// float c1 = ((float) l) / (numLayers - 1);
+		// float c2 = 1.0f - ((float) l) / (numLayers - 1);
+		float c1 = peak / 2.0f;		// peak starts from ~1.0 and may increase indefinitely
+		float c3 = 0.0f;
+		if (c1 > 1.0f)
+			{
+			c3 = c1 / 10.0f;
+			c1 = 1.0f;
+			}
+		float c2 = 1.0f - c1;
+		SDL_SetRenderDrawColor(gfx_W, f2i(c1), f2i(c2), f2i(c3), 0xFF);
 
 		for (int n = 0; n < nn; n++) // for each neuron on layer l
 			{
