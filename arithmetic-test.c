@@ -44,6 +44,36 @@ extern void start_timer(), end_timer();
 
 extern double K[];
 
+// **************** 2-Digit Primary-school Subtraction Arithmetic test *****************
+
+// The goal is to perform subtraction like a human child would.
+// Input: 2-digit numbers A and B, for example "12", "07"
+// Output: A - B, eg:  "12" - "07" = "05"
+
+// State vector = [ A1, A0, B1, B0, C1, C0, carry-flag, current-digit, result-ready-flag,
+//		underflow-error-flag ]
+
+// Algorithm:
+
+// If current-digit = 0:
+//		if A0 >= B0 then C0 = A0 - B0
+//		else C0 = 10 + (A0 - B0) , carry-flag = 1
+//		current-digit = 1
+
+// If current-digit = 1:
+//		if A1 >= B1 then
+//			C1 = A1 - B1
+//		else Underflow Error
+//		if carry-flag = 0:
+//			result-ready = 1
+//		else	// carry-flag = 1
+//			if C1 >= 1
+//				--C1
+//			else Underflow error
+//			result-ready = 1
+
+// This defines the transition operator acting on vector space K1 (of dimension 10)
+
 void transition(double K1[], double K2[])
 	{
 	double A1 = floor(K1[0] * 10.0) / 10.0;

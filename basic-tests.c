@@ -359,7 +359,7 @@ void classic_BP_test()
 	printf("Press 'Q' to quit\n\n");
 	start_timer();
 
-	#define ErrorThreshold 0.05
+	#define ErrorThreshold 0.005
 
 	char str[200], *s;
 	for (int i = 0; 1; ++i)
@@ -504,154 +504,6 @@ void classic_BP_test()
 	free_NN(Net, neuronsOfLayer);
 	}
 
-// Same as above, with rectified units
-
-void classic_BP_test_ReLU()
-	{
-	int neuronsOfLayer[] = {2, 4, 4, 4, 4, 4, 4, 1}; // first = input layer, last = output layer
-	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
-	NNET *Net = (NNET *) malloc(sizeof (NNET));
-	create_NN(Net, numLayers, neuronsOfLayer);
-	LAYER lastLayer = Net->layers[numLayers - 1];
-	double errors[dim_K];
-
-	int quit = 0;
-	#define M	50			// how many errors to record for averaging
-	double errors1[M], errors2[M]; // two arrays for recording errors
-	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
-	int tail = 0; // index for cyclic arrays (last-in, first-out)
-
-	for (int i = 0; i < M; ++i) // clear errors to 0.0
-		errors1[i] = errors2[i] = 0.0;
-
-	start_NN_plot();
-	start_W_plot();
-	// start_K_plot();
-	start_output_plot();
-	// plot_ideal();
-	printf("BP ReLU test.\nPress 'Q' to quit\n\n");
-
-	for (int i = 1; true; ++i)
-		{
-		// Create random K vector
-		for (int k = 0; k < 2; ++k)
-			K[k] = (rand() / (float) RAND_MAX);
-		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
-
-		forward_prop_ReLU(Net, 2, K); // dim K = 2
-
-		// Desired value = K_star
-		double training_err = 0.0;
-		for (int k = 0; k < 1; ++k) // output has only 1 component
-			{
-			// double ideal = K[k];				/* identity function */
-			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
-			// ^ = binary XOR
-			double ideal = ((double) (f2b(K[0]) ^ f2b(K[1]))); // ^ f2b(K[2]) ^ f2b(K[3])))
-
-			// Difference between actual outcome and desired value:
-			double error = ideal - lastLayer.neurons[k].output;
-			errors[k] = error; // record this for back-prop
-
-			training_err += fabs(error); // record sum of errors
-			// printf("training error = %lf \n", training_err);
-			}
-		// printf("sum of squared error = %lf  ", training_err);
-
-		// update error arrays cyclically
-		// (This is easier to understand by referring to the next block of code)
-		sum_err2 -= errors2[tail];
-		sum_err2 += errors1[tail];
-		sum_err1 -= errors1[tail];
-		sum_err1 += training_err;
-		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
-
-		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
-
-		// record new error in cyclic arrays
-		errors2[tail] = errors1[tail];
-		errors1[tail] = training_err;
-		++tail;
-		if (tail == M) // loop back in cycle
-			tail = 0;
-
-		back_prop_ReLU(Net, errors);
-
-		double ratio = (sum_err2 - sum_err1) / sum_err1;
-
-		if ((i % 500) == 0) // display status periodically
-			{
-			printf("iteration: %05d: ", i);
-			printf("mean error = %.03lf  ", mean_err);
-			if (ratio > 0)
-				printf("error ratio = %.03f \t", ratio);
-			else
-				printf("error ratio = \x1b[31m%.03f\x1b[39;49m\t", ratio);
-
-			plot_NN(Net);
-			plot_W(Net);
-			plot_output(Net, forward_prop_ReLU); // note: this function calls forward_prop!
-			flush_output();
-			// plot_trainer(0);		// required to clear the window
-			// plot_K();
-			if (quit = delay_vis(0))
-				break;
-			}
-
-		if ((i % 500) == 0)
-			{
-			// Testing set
-			double test_err = 0.0;
-			#define numTests2 100
-			for (int j = 0; j < numTests2; ++j)
-				{
-				// Create random K vector
-				for (int k = 0; k < 2; ++k)
-					K[k] = ((double) rand() / (double) RAND_MAX);
-				// plot_tester(K[0], K[1]);
-
-				forward_prop_ReLU(Net, 2, K);
-
-				// Desired value = K_star
-				double single_err = 0.0;
-				for (int k = 0; k < 1; ++k)
-					{
-					// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
-					double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
-					// double ideal = K[k];				/* identity function */
-
-					// Difference between actual outcome and desired value:
-					double error = ideal - lastLayer.neurons[k].output;
-
-					single_err += fabs(error); // record sum of errors
-					}
-				test_err += single_err;
-				}
-			test_err /= ((double) numTests);
-			printf("random test error = %.03lf \n", test_err);
-
-			if (test_err < 0.05)
-				break;
-			}
-
-		if (isnan(ratio) && i > 10)
-			break;
-		// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
-		// if (test_err < 0.01)
-		}
-
-	plot_output(Net, forward_prop_ReLU);
-	flush_output();
-	plot_W(Net);
-	beep();
-
-	if (!quit)
-		pause_graphics();
-	else
-		quit_graphics();
-	free_NN(Net, neuronsOfLayer);
-	}
-
 // Test forward propagation
 
 void forward_test()
@@ -778,36 +630,6 @@ void loop_dance_test()
 	pause_graphics();
 	free_NN(Net, neuronsOfLayer);
 	}
-
-// **************** 2-Digit Primary-school Subtraction Arithmetic test *****************
-
-// The goal is to perform subtraction like a human child would.
-// Input: 2-digit numbers A and B, for example "12", "07"
-// Output: A - B, eg:  "12" - "07" = "05"
-
-// State vector = [ A1, A0, B1, B0, C1, C0, carry-flag, current-digit, result-ready-flag,
-//		underflow-error-flag ]
-
-// Algorithm:
-
-// If current-digit = 0:
-//		if A0 >= B0 then C0 = A0 - B0
-//		else C0 = 10 + (A0 - B0) , carry-flag = 1
-//		current-digit = 1
-
-// If current-digit = 1:
-//		if A1 >= B1 then
-//			C1 = A1 - B1
-//		else Underflow Error
-//		if carry-flag = 0:
-//			result-ready = 1
-//		else	// carry-flag = 1
-//			if C1 >= 1
-//				--C1
-//			else Underflow error
-//			result-ready = 1
-
-// This defines the transition operator acting on vector space K1 (of dimension 10)
 
 void RNN_sine_test()
 	{
