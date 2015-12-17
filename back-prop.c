@@ -1,5 +1,4 @@
 // TO-DO:
-// * the calculation of "error" in back-prop is unclear
 
 #include <stdio.h>
 #include <stdlib.h>

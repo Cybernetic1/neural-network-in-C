@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
-#include <sys/timeb.h>		// For timing operations
 
 #include "feedforward-NN.h"
 
@@ -290,23 +289,4 @@ int main(int argc, char** argv)
 				break;
 			}
 		}
-	}
-
-struct timeb startTime, endTime;
-
-void start_timer()
-	{
-	ftime(&startTime);
-	}
-
-void end_timer(char *s)
-	{
-	ftime(&endTime);
-	int duration = endTime.time - startTime.time;
-	int minutes = duration / 60;
-	int seconds = duration % 60;
-	if (s == NULL)
-		printf("\nTime elapsed = %d:%d\n\n", minutes, seconds);
-	else
-		sprintf(s, "%d:%d", minutes, seconds);
 	}

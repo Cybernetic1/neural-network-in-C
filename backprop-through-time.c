@@ -11,6 +11,8 @@
 #include <time.h>				// time as random seed in create_NN()
 #include "BPTT-RNN.h"
 
+extern double rectifier(double);
+
 #define Eta 0.01				// learning rate
 #define BIASOUTPUT 1.0			// output for bias. It's always 1.
 
@@ -109,13 +111,17 @@ void forward_BPTT(RNN *net, int dim_V, double V[], int nfold)
 							net->layers[l - 1].neurons[k - 1].output[t];
 					}
 
-				// For the last layer, skip the sigmoid function
-				// Note: this idea seems to destroy back-prop convergence
-				// if (i == net->numLayers - 1)
-				//	net->layers[i].neurons[j].output = v;
-				// else
-				extern double sigmoid(double);
-				net->layers[l].neurons[n].output[t] = sigmoid(v);
+				extern double rectifier(double);
+				net->layers[l].neurons[n].output[t] = rectifier(v);
+				
+				// This is to prepare for back-prop
+				#define Leakage 0.0
+				if (v < -1.0)
+					net->layers[l].neurons[n].grad = -Leakage;
+				// if (v > 1.0)
+				//	net->layers[l].neurons[n].grad = Leakage;
+				else
+					net->layers[l].neurons[n].grad = 1.0;
 				}
 			}
 		}
@@ -134,22 +140,22 @@ void backprop_through_time(RNN *net, double *errors, int nfold)
 			// calculate ∇ for output layer
 			for (int n = 0; n < lastLayer.numNeurons; ++n)
 				{
-				double output = lastLayer.neurons[n].output[t];
+				// double output = lastLayer.neurons[n].output[t];
 				//for output layer, ∇ = y∙(1-y)∙error
-				lastLayer.neurons[n].grad[t] = output * (1.0 - output) * errors[n];
+				lastLayer.neurons[n].grad[t] *= errors[n];
 				}
 		else
 			// for the "recurrent" layer
 			for (int n = 0; n < lastLayer.numNeurons; ++n)
 				{
-				double output = lastLayer.neurons[n].output[t];
+				// double output = lastLayer.neurons[n].output[t];
 				double sum = 0.0f;
 				rLAYER nextLayer = net->layers[1];
 				for (int i = 0; i < nextLayer.numNeurons; i++) // for each weight
 					{
 					sum += nextLayer.neurons[i].grad[t + 1];
 					}
-				lastLayer.neurons[n].grad[t] = output * (1.0 - output) * sum;
+				lastLayer.neurons[n].grad[t] *= sum;
 				}
 
 		// calculate ∇ for hidden layers
@@ -157,7 +163,7 @@ void backprop_through_time(RNN *net, double *errors, int nfold)
 			{
 			for (int n = 0; n < net->layers[l].numNeurons; n++) // for each neuron in layer
 				{
-				double output = net->layers[l].neurons[n].output[t];
+				// double output = net->layers[l].neurons[n].output[t];
 				double sum = 0.0f;
 				rLAYER nextLayer = net->layers[l + 1];
 				for (int i = 0; i < nextLayer.numNeurons; i++) // for each weight
@@ -165,7 +171,7 @@ void backprop_through_time(RNN *net, double *errors, int nfold)
 					sum += nextLayer.neurons[i].weights[n + 1] // ignore weights[0] = bias
 							* nextLayer.neurons[i].grad[t];
 					}
-				net->layers[l].neurons[n].grad[t] = output * (1.0 - output) * sum;
+				net->layers[l].neurons[n].grad[t] *= sum;
 				}
 			}
 		}

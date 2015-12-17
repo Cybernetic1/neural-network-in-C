@@ -15,7 +15,7 @@ typedef struct rLAYER
     rNEURON *neurons;
 	} rLAYER;
 
-//*********************struct for NNET************************************//
+//*********************struct for RNN************************************//
 typedef struct RNN
 	{
     int numLayers;
