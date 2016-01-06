@@ -254,7 +254,7 @@ void BPTT_arithmetic_test()
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
-	int quit = 0;
+	bool quit = FALSE;
 	#define M	50			// how many errors to record for averaging
 	double errors1[M], errors2[M]; // two arrays for recording errors
 	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
@@ -273,7 +273,7 @@ void BPTT_arithmetic_test()
 
 	int t = Nfold - 1;		// t is the final time step
 
-	char status[200], *s;
+	char status[512], *s;
 	for (int i = 0; true; ++i)
 		{
 		s = status + sprintf(status, "iteration: %05d: ", i);

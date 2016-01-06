@@ -30,6 +30,8 @@
 // 2) let learn
 // 3) let test
 
+// Cf: BPTT_arithmetic_test()
+
 void relations_test()
 	{
 	extern void forward_BPTT(RNN *, int, double [], int);
