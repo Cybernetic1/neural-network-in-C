@@ -113,55 +113,71 @@ bool [][]reproduce(bool selected[][], int popSize, float crossRate, float mutati
 
 bool pop[][] = malloc(popSize);
 
-	// Main algorithm for genetic search
+// Main algorithm for genetic search
 void evolve()
 	{
-    // initialize population
-    var population = new Array[String](popSize)
-    population = Array.fill(popSize)(randomBitString(numBits))
+	// initialize population
+	bool population[PopSize][NumBits];
+	for (int i = 0; i < PopSize; ++i)
+		for (int j = 0; j < NumBits; ++j)
+			if ((rand() / (double) RAND_MAX) >= 0.5)
+				population[i][j] = TRUE;
+			else
+				population[i][j] = FALSE;
 
-    val population2 = population.sortBy(fitness).reverse
-    for (c <- population2)
+	bool compareDNA(bool x[], bool y[])
 		{
-		print("init: ")
-		printCandidate(c)
+		return oneMax(x) > oneMax(y);
 		}
 
-    // var selected = new Array[String](popSize)
-    var best: String = ""
+	// Sort population
+	qsort(population, PopSize, NumBits, compareDNA);
+	for (int i = 0; i < PopSize; ++i)
+		{
+		printf("init: ");
+		printCandidate(population[i]);
+		}
 
-    breakable { for (i <- 0 to maxGens) {
-      print(f"gen $i%03d, ")
-      val selected = Array.fill(popSize)(binaryTourament(population))
-      // for (c <- selected) { print("select: ") printCandidate(c) }
-      val selected2 = selected.sortBy(fitness).reverse
-      val gen2 = reproduce(selected2, popSize, crossRate, mutationRate)
-      // println("# children = " + children.length)
-      // println("\n Sorting....\n")
-      val gen2s = gen2.sortBy(fitness).reverse
-      // for (c <- children) { print("child: ");  printCandidate(c) }
-      // println("Sorted....")
+	// var selected = new Array[String](popSize)
+	bool best[] = (bool *) malloc(NumBits);
 
-      if (fitness(gen2s(0)) >= fitness(best))
-        best = gen2s(0)
+	for (int i = 0; i < maxGens; ++i)
+		{
+		printf("gen %03d: ", i);
+		val selected = Array.fill(popSize)(binaryTourament(population));
+		// for (c <- selected) { print("select: ") printCandidate(c) }
+		qsort(selected, PopSize, NumBits, compareDNA);
+		gen2 = reproduce(selected2, popSize, crossRate, mutationRate);
+		// println("# children = " + children.length)
+		// println("\n Sorting....\n")
+		qsort(gen2, PopSize, NumBits, compareDNA);
+		// for (c <- children) { print("child: ");  printCandidate(c) }
+		// println("Sorted....")
 
-      gen2s.copyToArray(population)
-      $pop = population
-      frame.repaint()
-      println("best: " + fitness(best) + " " + best)
+		if (fitness(gen2[0]) >= fitness(best))
+			best = gen2[0];
 
-      if (fitness(best) == numBits) {
-        println("Success!!!")
-        break()
-      }
+		gen2.copyToArray(population);
+		pop = population;
+		// frame.repaint();
+		printf("best: %0.3f %s\n", fitness(best), best);
 
-      Thread.sleep(500)
-      // System.in.read()
-    }}
+		if (fitness(best) == NumBits)
+			{
+			printf("Success!!!\n");
+			break;
+			}
 
-  System.in.read()
+		// Thread.sleep(500)
+		// System.in.read()
+		getchar();
+		}
 
-  }
+	printf("Finished.\n");
+	getchar();
+	}
+
+#ifdef CRAP
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
@@ -469,3 +485,5 @@ double calc_error(NNET *net, double Y[], double *errors)
 	double mse = sumOfSquareError / lastLayer.numNeurons;
 	return mse; //return mean square error
 	}
+
+#endif
