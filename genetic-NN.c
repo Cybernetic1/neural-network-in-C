@@ -3,13 +3,12 @@
 // Explanation:
 // * bunch of genes encode a network
 // * each neuron is encoded by a (full) weight vector (dim = width of network)
-// * 
+// * layer = array of vectors, network = layers of arrays of vectors = N∙L vectors
 
 // TO-DO:
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <math.h>
 #include <assert.h>
 #include <time.h>			// time as random seed in create_NN()
@@ -24,61 +23,63 @@
 #define CrossRate		0.98
 #define MutationRate	(1.0 / NumBits)
 
-int oneMax(bool bitString[])
+extern int rand(void);
+extern void qsort(void *, size_t, size_t, int (*compar)(const void *, const void*));
+
+int oneMax(char *s)
 	{
 	int count = 0;
 	for (int i = 0; i < NumBits; ++i)
-		if (bitString[i])
+		if (s[i] == '1')
 			++count;
 	return count;
 	}
 
-bool []randomBitString()
+void randomBitString(char s[])
 	{
-	s = (bool *) malloc(sizeof(bool) * NumBits);
 	for (int i = 0; i < NumBits; ++i)
 		if ((rand() / (double) RAND_MAX) >= 0.5)
-			s[i] = TRUE;
-	return s;
+			s[i] = '0';
+		else
+			s[i] = '1';
 	}
 
-bool []binaryTournament(bool **pop)
+int fitness(char *dna)
+	{
+	return oneMax(dna);
+	}
+
+void binaryTournament(char *selector, char pop[][NumBits])
 	{
 	int i = (rand() / (double) RAND_MAX) * PopSize;
 	int j = (rand() / (double) RAND_MAX) * PopSize;
 
-	if (fitness(pop[i]) > fitness(pop[j]))
-		return pop[i];
+	char *p1 = pop[i], *p2 = pop[j];
+
+	char *p;
+	if (fitness(p1) > fitness(p2))
+		p = p1;
 	else
-		return pop[j];
+		p = p2;
+
+	for (int k = 0; k < NumBits; ++k)
+		selector[k] = p[k];
 	}
 
-int fitness(bool dna[])
+void pointMutation(char *dna, float rate)
 	{
-	oneMax(dna);
-	}
-
-bool []pointMutation(bool dna[], float rate)
-	{
-	result = (bool *) malloc(sizeof(bool) * NumBits);
-	
 	for (int i = 0; i < NumBits; ++i)
 		if ((rand() / (double) RAND_MAX) < rate)
-			result[i] = dna[i] ? FALSE : TRUE;
-		else
-			result[i] = dna[i];
-	return result;
+			dna[i] = (dna[i] == '0') ? '1' : '0';
 	}
 
-bool []crossOver(bool parent1[], bool parent2[], float rate)
+void crossOver(char *result, char *parent1, char *parent2, float rate)
 	{
-	result = (bool *) malloc(sizeof(bool) * NumBits);
-
 	if ((rand() / (double) RAND_MAX) > rate)
 		{
 		for (int i = 0; i < NumBits; ++i)
 			result[i] = parent1[i];
-		return result;
+		return;
 		}
 
 	int point = (rand() / (double) RAND_MAX) * NumBits;
@@ -87,80 +88,83 @@ bool []crossOver(bool parent1[], bool parent2[], float rate)
 		result[i] = parent1[i];
 	for (; i < NumBits; ++i)
 		result[i] = parent2[i];
-	return result;
 	}
 
 // **** Reproduce for 1 generation
-bool [][]reproduce(bool selected[][], int popSize, float crossRate, float mutationRate)
+void reproduce(char children[][NumBits], char selected[][NumBits], int popSize, float crossRate, float mutationRate)
 	{
-	bool **children;
-	bool p1[], p2[];
+	char *p1, *p2;
 
-	for (int i = 0; i < numSelected; ++i)
+	for (int i = 0; i < PopSize; ++i)
 		{
 		p1 = selected[i];
 		p2 = (i % 2 == 0) ? selected[i + 1] : selected[i - 1];
-		if (i == numSelected - 1)
+		if (i == PopSize - 1)
 			p2 = selected[0];
-		
-		bool *child = crossOver(p1, p2, crossRate);
-		children += pointMutation(child, mutationRate);
-		if (children length >= PopSize)
-			break;
+
+		crossOver(children[i], p1, p2, crossRate);
+		pointMutation(children[i], mutationRate);
 		}
-	return children;
 	}
 
-bool pop[][] = malloc(popSize);
+void printCandidate(char candidate[NumBits])
+	{
+	for (int i = 0; i < NumBits; ++i)
+		printf("%c", (candidate[i] == '0') ? ' ' : '*');
+	printf("\n");
+	}
 
 // Main algorithm for genetic search
 void evolve()
 	{
 	// initialize population
-	bool population[PopSize][NumBits];
+	char population[PopSize][NumBits];
 	for (int i = 0; i < PopSize; ++i)
-		for (int j = 0; j < NumBits; ++j)
-			if ((rand() / (double) RAND_MAX) >= 0.5)
-				population[i][j] = TRUE;
-			else
-				population[i][j] = FALSE;
+		randomBitString(population[i]);
 
-	bool compareDNA(bool x[], bool y[])
+	char compareDNA(char x[NumBits], char y[NumBits])
 		{
-		return oneMax(x) > oneMax(y);
+		return (fitness(x) < fitness(y));
 		}
 
 	// Sort population
 	qsort(population, PopSize, NumBits, compareDNA);
+	printf("Initial population:\n");
 	for (int i = 0; i < PopSize; ++i)
 		{
-		printf("init: ");
 		printCandidate(population[i]);
 		}
 
-	// var selected = new Array[String](popSize)
-	bool best[] = (bool *) malloc(NumBits);
+	char selected[PopSize][NumBits];
+	char children[PopSize][NumBits];
+	char best[NumBits];
 
-	for (int i = 0; i < maxGens; ++i)
+	for (int i = 0; i < MaxGens; ++i)
 		{
-		printf("gen %03d: ", i);
-		val selected = Array.fill(popSize)(binaryTourament(population));
-		// for (c <- selected) { print("select: ") printCandidate(c) }
+		printf("gen %03d: \n", i);
+
+		for (int j = 0; j < PopSize; ++j)
+			binaryTournament(selected[j], population);
+
 		qsort(selected, PopSize, NumBits, compareDNA);
-		gen2 = reproduce(selected2, popSize, crossRate, mutationRate);
-		// println("# children = " + children.length)
-		// println("\n Sorting....\n")
-		qsort(gen2, PopSize, NumBits, compareDNA);
-		// for (c <- children) { print("child: ");  printCandidate(c) }
-		// println("Sorted....")
 
-		if (fitness(gen2[0]) >= fitness(best))
-			best = gen2[0];
+		reproduce(children, selected, PopSize, CrossRate, MutationRate);
 
-		gen2.copyToArray(population);
-		pop = population;
-		// frame.repaint();
-		printf("best: %0.3f %s\n", fitness(best), best);
+		qsort(children, PopSize, NumBits, compareDNA);
+
+		for (int k = 0; k < PopSize; ++k)
+			{
+			printCandidate(children[k]);
+			}
+
+		printf("fitness of child 0: %d\n", fitness(children[0]));
+
+		if (fitness(children[0]) > fitness(best))
+			strncpy(best, children[0], sizeof(best));	// dest, src
+		printf("best: %d\n", fitness(best));
+		printCandidate(best);
+
+		strncpy(population, children, sizeof(population));
 
 		if (fitness(best) == NumBits)
 			{
@@ -169,12 +173,10 @@ void evolve()
 			}
 
 		// Thread.sleep(500)
-		// System.in.read()
 		getchar();
 		}
 
 	printf("Finished.\n");
-	getchar();
 	}
 
 #ifdef CRAP

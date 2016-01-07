@@ -254,7 +254,7 @@ void BPTT_arithmetic_test()
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
-	bool quit = FALSE;
+	bool quit = false;
 	#define M	50			// how many errors to record for averaging
 	double errors1[M], errors2[M]; // two arrays for recording errors
 	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors

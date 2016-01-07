@@ -22,6 +22,7 @@
       <itemPath>backprop-through-time.c</itemPath>
       <itemPath>basic-tests.c</itemPath>
       <itemPath>experiments.c</itemPath>
+      <itemPath>genetic-NN.c</itemPath>
       <itemPath>main.c</itemPath>
       <itemPath>real-time-recurrent-learning.c</itemPath>
       <itemPath>stochastic-forward-backward.c</itemPath>
@@ -75,6 +76,8 @@
       </item>
       <item path="feedforward-NN.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="genetic-NN.c" ex="false" tool="0" flavor2="0">
+      </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
@@ -123,6 +126,8 @@
       <item path="experiments.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="feedforward-NN.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="genetic-NN.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>

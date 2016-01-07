@@ -221,6 +221,7 @@ int main(int argc, char** argv)
 	extern void arithmetic_testC();
 	extern void RNN_sine_test();
 	extern void BPTT_arithmetic_test();
+	extern void evolve();
 
 	bool quit = false;
 	char whichTest = '\n';
@@ -240,6 +241,7 @@ int main(int argc, char** argv)
 		printf("[a] rectifier BP test (XOR)\n");
 		printf("[b] RNN sine-wave test\n");
 		printf("[c] BPTT arithmetic test\n");
+		printf("[d] genetic NN test\n");
 		printf("[q] quit\n");
 
 		do
@@ -283,6 +285,9 @@ int main(int argc, char** argv)
 				break;
 			case 'c':
 				BPTT_arithmetic_test(); // learn arithmetic operator using BPTT
+				break;
+			case 'd':
+				evolve(); // learn arithmetic operator using BPTT
 				break;
 			case 'q':
 				quit = true;

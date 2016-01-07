@@ -42,6 +42,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/backprop-through-time.o \
 	${OBJECTDIR}/basic-tests.o \
 	${OBJECTDIR}/experiments.o \
+	${OBJECTDIR}/genetic-NN.o \
 	${OBJECTDIR}/main.o \
 	${OBJECTDIR}/real-time-recurrent-learning.o \
 	${OBJECTDIR}/stochastic-forward-backward.o \
@@ -106,6 +107,11 @@ ${OBJECTDIR}/experiments.o: experiments.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/experiments.o experiments.c
+
+${OBJECTDIR}/genetic-NN.o: genetic-NN.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/genetic-NN.o genetic-NN.c
 
 ${OBJECTDIR}/main.o: main.c 
 	${MKDIR} -p ${OBJECTDIR}
