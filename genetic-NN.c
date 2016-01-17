@@ -44,6 +44,7 @@ void randomWeights(float w[])
 		w[i] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
 	}
 
+// 
 int fitness(float neuron[])
 // Call forward-prop with input-output pairs to evaluate the network
 	{
@@ -65,6 +66,7 @@ int fitness(float neuron[])
 		}
 	}
 
+// 
 void binaryTournament(float *selector, float pop[][NumBits])
 	{
 	int i = (rand() / (double) RAND_MAX) * PopSize;
