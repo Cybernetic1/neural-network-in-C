@@ -23,6 +23,9 @@
 #include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
+extern void create_NN(NNET *, int, int *);
+extern void forward_prop(NNET *, int, float *);
+
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
@@ -35,6 +38,15 @@
 #define CrossRate		0.98
 #define MutationRate	(1.0 / NumBits)
 
+// A question is how to store the current network as well as the entire population.
+// Perhaps the data structure should store all the "population rows".
+float population[L][M][N];
+
+// The actual neural network
+NNET *Net;
+int neuronsOfLayer[L] = { N };		// initialize all layers to have N neurons
+int dimK = N;						// dimension of input-layer vector
+
 extern int rand(void);
 extern void qsort(void *, size_t, size_t, int (*compar)(const void *, const void*));
 
@@ -44,23 +56,26 @@ void randomWeights(float w[])
 		w[i] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
 	}
 
-// 
+// Perhaps each neuron is an individual, in the sense that neurons compete with each other.
+// The network should consist of the top-N neurons in each population row.
+// To test a neuron, the network must contain that neuron.
+// But each score should be associated with an entire network.
+// Does it mean that we cannot score individual neurons?
+// We have to let network compete against network.
+// The population consists of many networks.
+// It does not make sense to evaluate the fitness of a single neuron,
+// except in the context of the "current network".
 int fitness(float neuron[])
-// Call forward-prop with input-output pairs to evaluate the network
+// Call forward-prop with input-output pairs to evaluate the current network.
 	{
-	// build network
-	NNet *Net = (NNet *) malloc(sizeof (NNet));
-	int neuronsOfLayer[L];
-	for (int l = 0; l < L; ++l)
-		neuronsOfLayer[l] = N;
-	int dimK = N;		// dimension of input-layer vector
-	create_gNN(Net, L, neuronsOfLayer, neuron);
+	// initialize network
 	LAYER lastLayer = Net->layers[L - 1];
-	double errors[dimK];
-	
+	float K[dimK];
+	float errors[dimK];
+
 	// forward_prop
 	#define NumTrials	100
-	for (i = 0; i < NumTrials; ++i)
+	for (int i = 0; i < NumTrials; ++i)
 		{
 		forward_prop(Net, dimK, K);
 		}
@@ -135,10 +150,15 @@ void printCandidate(float candidate[NumBits])
 // Main algorithm for genetic search
 void evolve()
 	{
+	// Initialize actual neural network
+	Net = (NNET *) malloc(sizeof (NNET));
+	create_gNN(Net, L, neuronsOfLayer);
+
 	// initialize population
-	float population[PopSize][NumBits];
-	for (int i = 0; i < PopSize; ++i)
-		randomBitString(population[i]);
+	for (int l = 0; l < L; ++l)
+		for (int m = 0; m < M; ++m)
+			for (int n = 0; n < N; ++n)
+				population[l][m][n] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
 
 	float compareDNA(float x[NumBits], float y[NumBits])
 		{
