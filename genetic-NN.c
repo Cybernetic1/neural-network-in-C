@@ -63,9 +63,11 @@ void randomWeights(float w[])
 // Does it mean that we cannot score individual neurons?
 // We have to let network compete against network.
 // The population consists of many networks.
-// It does not make sense to evaluate the fitness of a single neuron,
-// except in the context of the "current network".
-int fitness(float neuron[])
+// It does not make sense to evaluate the fitness of a single neuron, except in the context
+// of the "current network".
+// New idea: fitness of neuron = ∑ (∂E/∂W)²
+// 
+float fitness(int neuron)		// input = index of neuron to be scored
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
 	// initialize network
@@ -78,10 +80,14 @@ int fitness(float neuron[])
 	for (int i = 0; i < NumTrials; ++i)
 		{
 		forward_prop(Net, dimK, K);
+		// Calculate the error
+		// Use back-prop to calculate local gradients
+		// Then fitness = sum of local gradients for a neuron, relative to 1 example.
+		// So we need to add up the fitnesses for all examples.
 		}
 	}
 
-// 
+// This seems to be independent of gene expression
 void binaryTournament(float *selector, float pop[][NumBits])
 	{
 	int i = (rand() / (double) RAND_MAX) * PopSize;
@@ -99,6 +105,7 @@ void binaryTournament(float *selector, float pop[][NumBits])
 		selector[k] = p[k];
 	}
 
+// Each neuron is an individual, a point mutation mutates a single weight within the neuron
 void pointMutation(float *dna, float rate)
 	{
 	for (int i = 0; i < NumBits; ++i)
@@ -106,6 +113,7 @@ void pointMutation(float *dna, float rate)
 			dna[i] = (dna[i] == '0') ? '1' : '0';
 	}
 
+// Cross-over of 2 neurons
 void crossOver(float *result, float *parent1, float *parent2, float rate)
 	{
 	if ((rand() / (double) RAND_MAX) > rate)
@@ -165,7 +173,19 @@ void evolve()
 		return (fitness(x) < fitness(y));
 		}
 
-	// Sort population
+	// Sort population according to fitness
+	// Perhaps the fitness of a neuron inside a network can be defined independent of other
+	// neurons in the network?  For each input-output pair, the network incurs an error.
+	// Can we associate a component of this error to an individual neuron?  Perhaps that is
+	// gvien by the "local gradient" of the neuron?
+	// The fitness of a neuron can be defined as:  ∑ (∂E/∂W)²
+	// where summation is over the weights belonging to the neuron in question;  E is the
+	// error w.r.t. a single input-output pair, so we should do another summation over all
+	// data points.
+	// The rationale for the above formula is that ∂E/∂W measures the error sensitivity of a
+	// single connection (ie, weight).
+	// Armed with this fitness measure, we can continue with the strategy of maintain M
+	// neurons per layer and selecting N out of M to build the actual network.
 	qsort(population, PopSize, NumBits, compareDNA);
 	printf("Initial population:\n");
 	for (int i = 0; i < PopSize; ++i)
