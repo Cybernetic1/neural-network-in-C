@@ -9,12 +9,15 @@
 // * we can select the top-N neurons in each layer's population
 // * in that case, the population size for each layer is M > N
 
+// How to extend to recurrent case?
+// * Perhaps the same idea as stochastic forward-backward?
+
 // TO-DO:
 // * that means we can evole the net given in-out pairs.
 // * can it generalize to mutiple-folds?  maybe.
 // * as a 1st step, maybe combine with stochastic forward-backward
 // * but a single-fold of genetic-NN learning may be more destructive than standard
-//	back-prop, so it may be less suited for n-fold?
+//   back-prop, so it may be less suited for n-fold?
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +26,7 @@
 #include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
-extern void create_NN(NNET *, int, int *);
-extern void forward_prop(NNET *, int, float *);
+extern void forward_gNN(NNET *, int, float *);
 
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
@@ -42,8 +44,6 @@ extern void forward_prop(NNET *, int, float *);
 // Perhaps the data structure should store all the "population rows".
 float population[L][M][N];
 
-// The actual neural network
-NNET *Net;
 int neuronsOfLayer[L] = { N };		// initialize all layers to have N neurons
 int dimK = N;						// dimension of input-layer vector
 
@@ -67,11 +67,11 @@ void randomWeights(float w[])
 // of the "current network".
 // New idea: fitness of neuron = ∑ (∂E/∂W)²
 // 
-float fitness(int neuron)		// input = index of neuron to be scored
+float fitness(int layer, int neuron)	// input = index of neuron to be scored
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
 	// initialize network
-	LAYER lastLayer = Net->layers[L - 1];
+	LAYER lastLayer = population[L - 1];
 	float K[dimK];
 	float errors[dimK];
 
@@ -79,9 +79,11 @@ float fitness(int neuron)		// input = index of neuron to be scored
 	#define NumTrials	100
 	for (int i = 0; i < NumTrials; ++i)
 		{
-		forward_prop(Net, dimK, K);
+		forward_gNN(dimK, K);		// forward-propagate the gNN
 		// Calculate the error
+		// errors[] = ?
 		// Use back-prop to calculate local gradients
+		backprop_gNN(errors);
 		// Then fitness = sum of local gradients for a neuron, relative to 1 example.
 		// So we need to add up the fitnesses for all examples.
 		}
@@ -158,20 +160,17 @@ void printCandidate(float candidate[NumBits])
 // Main algorithm for genetic search
 void evolve()
 	{
-	// Initialize actual neural network
-	Net = (NNET *) malloc(sizeof (NNET));
-	create_gNN(Net, L, neuronsOfLayer);
-
+	// No need to create neural network as it is stored in the population
 	// initialize population
 	for (int l = 0; l < L; ++l)
 		for (int m = 0; m < M; ++m)
 			for (int n = 0; n < N; ++n)
 				population[l][m][n] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
 
-	float compareDNA(float x[NumBits], float y[NumBits])
-		{
-		return (fitness(x) < fitness(y));
-		}
+	// Compare fitness of 2 neurons
+	// The neurons are addressed by layer and position
+	float compareFitness(int layer, int x_index, int y_index)
+		return (fitness(layer, x_index) < fitness(layer, y_index));
 
 	// Sort population according to fitness
 	// Perhaps the fitness of a neuron inside a network can be defined independent of other
@@ -186,7 +185,7 @@ void evolve()
 	// single connection (ie, weight).
 	// Armed with this fitness measure, we can continue with the strategy of maintain M
 	// neurons per layer and selecting N out of M to build the actual network.
-	qsort(population, PopSize, NumBits, compareDNA);
+	qsort(population, PopSize, NumBits, compareFitness);
 	printf("Initial population:\n");
 	for (int i = 0; i < PopSize; ++i)
 		{
@@ -204,11 +203,11 @@ void evolve()
 		for (int j = 0; j < PopSize; ++j)
 			binaryTournament(selected[j], population);
 
-		qsort(selected, PopSize, NumBits, compareDNA);
+		qsort(selected, PopSize, NumBits, compareFitness);
 
 		reproduce(children, selected, PopSize, CrossRate, MutationRate);
 
-		qsort(children, PopSize, NumBits, compareDNA);
+		qsort(children, PopSize, NumBits, compareFitness);
 
 		for (int k = 0; k < PopSize; ++k)
 			{
@@ -237,7 +236,9 @@ void evolve()
 	printf("Finished.\n");
 	}
 
-//****************************create neural network*********************//
+/* No need to create neural network as it is stored in the population
+ * 
+//****************************create neural network*********************
 // GIVEN: how many layers, and how many neurons in each layer
 void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, float dna[][L])
 	{
@@ -293,12 +294,10 @@ void free_gNN(NNET *net, int *neuronsOfLayer)
 	// free the whole net
 	free(net);
 	}
-
-#ifdef CRAP
+*/
 
 //**************************** forward-propagation ***************************//
-
-void forward_prop(NNET *net, int dim_V, double V[])
+void forward_gNN(int dim_V, double V[])
 	{
 	// set the output of input layer
 	for (int i = 0; i < dim_V; ++i)
@@ -320,15 +319,69 @@ void forward_prop(NNET *net, int dim_V, double V[])
 						net->layers[l - 1].neurons[k - 1].output;
 				}
 
-			// For the last layer, skip the sigmoid function
-			// Note: this idea seems to destroy back-prop convergence
-			// if (i == net->numLayers - 1)
-			//	net->layers[i].neurons[j].output = v;
-			// else
 			net->layers[l].neurons[n].output = sigmoid(v);
 			}
 		}
 	}
+
+//****************************** back-propagation ***************************//
+// The meaning of del (∇) is the "local gradient".  At the output layer, ∇ is equal to
+// the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
+// equal to the derivative times the weighted sum of the ∇'s from the "next" layers.
+// From the algorithmic point of view, ∇ is derivative of the error with respect to the
+// summed inputs (for that particular neuron).  It changes for every input instance because
+// the error is dependent on the NN's raw input.  So, for each raw input instance, the
+// "local gradient" keeps changing.  I have a hypothesis that ∇ will fluctuate wildly
+// when the NN topology is "inadequate" to learn the target function.
+
+void backprop_gNN(double *errors)
+	{
+	int numLayers = net->numLayers;
+	LAYER lastLayer = net->layers[numLayers - 1];
+
+	// calculate gradient for output layer
+	for (int n = 0; n < lastLayer.numNeurons; ++n)
+		{
+		double output = lastLayer.neurons[n].output;
+		//for output layer, ∇ = y∙(1-y)∙error
+		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
+		}
+
+	// calculate gradient for hidden layers
+	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
+			{
+			double output = net->layers[l].neurons[n].output;
+			double sum = 0.0f;
+			LAYER nextLayer = net->layers[l + 1];
+			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+				{
+				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+						* nextLayer.neurons[i].grad;
+				}
+			net->layers[l].neurons[n].grad = steepness * output * (1.0 - output) * sum;
+			}
+		}
+
+	// update all weights
+	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
+		{
+		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
+			{
+			net->layers[l].neurons[n].weights[0] += Eta * 
+					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
+			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
+				{	
+				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
+				net->layers[l].neurons[n].weights[i + 1] += Eta *
+						net->layers[l].neurons[n].grad * inputForThisNeuron;
+				}
+			}
+		}
+	}
+
+#ifdef CRAP
 
 // Same as above, except with soft_plus activation function
 void forward_prop_SP(NNET *net, int dim_V, double V[])
@@ -393,83 +446,6 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			//	net->layers[l].neurons[n].grad = Leakage;
 			else
 				net->layers[l].neurons[n].grad = 1.0;
-			}
-		}
-	}
-
-//****************************** back-propagation ***************************//
-// The error is propagated backwards starting from the output layer, hence the
-// name for this algorithm.
-
-// In the update formula, we need to adjust by "η ∙ input ∙ ∇", where η is the learning rate.
-// The value of		∇_j = σ'(summed input) Σ_i W_ji ∇_i
-// where σ is the sigmoid function, σ' is its derivative.  This formula is obtained directly
-// from differentiating the error E with respect to the weights W.
-
-// There is a neat trick for the calculation of σ':  σ'(x) = σ(x) (1−σ(x))
-// For its simple derivation you can see this post:
-// http://math.stackexchange.com/questions/78575/derivative-of-sigmoid-function-sigma-x-frac11e-x
-// Therefore in the code, we use "output * (1 - output)" for the value of "σ'(summed input)",
-// because output = σ(summed input), where summed_input_i = Σ_j W_ji input_j.
-
-// The meaning of del (∇) is the "local gradient".  At the output layer, ∇ is equal to
-// the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
-// equal to the derivative times the weighted sum of the ∇'s from the "next" layers.
-// From the algorithmic point of view, ∇ is derivative of the error with respect to the
-// summed inputs (for that particular neuron).  It changes for every input instance because
-// the error is dependent on the NN's raw input.  So, for each raw input instance, the
-// "local gradient" keeps changing.  I have a hypothesis that ∇ will fluctuate wildly
-// when the NN topology is "inadequate" to learn the target function.
-
-// Some history:
-// It was in 1974-1986 that Paul Werbos, David Rumelhart, Geoffrey Hinton and Ronald Williams
-// discovered this algorithm for neural networks, although it has been described by
-// Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
-// optimization problems.  The book "Talking Nets" interviewed some of these people.
-
-void back_prop(NNET *net, double *errors)
-	{
-	int numLayers = net->numLayers;
-	LAYER lastLayer = net->layers[numLayers - 1];
-
-	// calculate gradient for output layer
-	for (int n = 0; n < lastLayer.numNeurons; ++n)
-		{
-		double output = lastLayer.neurons[n].output;
-		//for output layer, ∇ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
-		}
-
-	// calculate gradient for hidden layers
-	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
-			{
-			double output = net->layers[l].neurons[n].output;
-			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
-				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
-				}
-			net->layers[l].neurons[n].grad = steepness * output * (1.0 - output) * sum;
-			}
-		}
-
-	// update all weights
-	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
-			{
-			net->layers[l].neurons[n].weights[0] += Eta * 
-					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{	
-				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].grad * inputForThisNeuron;
-				}
 			}
 		}
 	}
