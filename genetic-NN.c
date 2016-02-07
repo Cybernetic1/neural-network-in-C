@@ -24,9 +24,7 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>			// time as random seed in create_NN()
-#include "feedforward-NN.h"
-
-extern void forward_gNN(NNET *, int, double *);
+// #include "feedforward-NN.h"
 
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
@@ -42,7 +40,9 @@ extern void forward_gNN(NNET *, int, double *);
 
 // A question is how to store the current network as well as the entire population.
 // Perhaps the data structure should store all the "population rows".
-double population[L][M][N];
+double population[L][M][N];		// each element is a connection weight
+double output[L][M];				// output of each neuron
+double grad[L][M];				// local gradient for each neuron
 
 int neuronsOfLayer[L] = { N };		// initialize all layers to have N neurons
 int dimK = N;						// dimension of input-layer vector
@@ -52,27 +52,21 @@ extern void qsort(void *, size_t, size_t, int (*compar)(const void *, const void
 
 // Perhaps each neuron is an individual, in the sense that neurons compete with each other.
 // The network should consist of the top-N neurons in each population row.
-// To test a neuron, the network must contain that neuron.
-// But each score should be associated with an entire network.
-// Does it mean that we cannot score individual neurons?
-// We have to let network compete against network.
-// The population consists of many networks.
-// It does not make sense to evaluate the fitness of a single neuron, except in the context
-// of the "current network".
-// New idea: fitness of neuron = ∑ (∂E/∂W)²
-// 
+// Fitness of neuron = ∑ (∂E/∂W)² where E = error, relative to one input-output pair,
+// and we sum over such I/O pairs
 double fitness(int layer, int neuron)	// input = index of neuron to be scored
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
 	// initialize network
-	LAYER lastLayer = population[L - 1];
-	double K[dimK];
-	double errors[dimK];
+	float lastLayer[][] = population[L - 1];
+	float K[dimK];
+	float errors[dimK];
 
 	// forward_prop
 	#define NumTrials	100
 	for (int i = 0; i < NumTrials; ++i)
 		{
+		// prepare input and ideal output values
 		// Create random K vector (4 + 2 + 2 elements)
 		for (int k = 0; k < 4; ++k)
 			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
@@ -91,6 +85,7 @@ double fitness(int layer, int neuron)	// input = index of neuron to be scored
 		// Calculate the error, for back-prop
 		for (int k = 0; k < dimK; ++k)
 			errors[k] = K_star[k] - K[k];	// error = ideal - actual
+
 		// Use back-prop to calculate local gradients
 		backprop_gNN(errors);
 		// Then fitness = sum of local gradients for a neuron, relative to 1 example.
