@@ -26,7 +26,7 @@
 #include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
-extern void forward_gNN(NNET *, int, float *);
+extern void forward_gNN(NNET *, int, double *);
 
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
@@ -42,19 +42,13 @@ extern void forward_gNN(NNET *, int, float *);
 
 // A question is how to store the current network as well as the entire population.
 // Perhaps the data structure should store all the "population rows".
-float population[L][M][N];
+double population[L][M][N];
 
 int neuronsOfLayer[L] = { N };		// initialize all layers to have N neurons
 int dimK = N;						// dimension of input-layer vector
 
 extern int rand(void);
 extern void qsort(void *, size_t, size_t, int (*compar)(const void *, const void*));
-
-void randomWeights(float w[])
-	{
-	for (int i = 0; i < N; ++i)
-		w[i] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
-	}
 
 // Perhaps each neuron is an individual, in the sense that neurons compete with each other.
 // The network should consist of the top-N neurons in each population row.
@@ -67,37 +61,54 @@ void randomWeights(float w[])
 // of the "current network".
 // New idea: fitness of neuron = ∑ (∂E/∂W)²
 // 
-float fitness(int layer, int neuron)	// input = index of neuron to be scored
+double fitness(int layer, int neuron)	// input = index of neuron to be scored
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
 	// initialize network
 	LAYER lastLayer = population[L - 1];
-	float K[dimK];
-	float errors[dimK];
+	double K[dimK];
+	double errors[dimK];
 
 	// forward_prop
 	#define NumTrials	100
 	for (int i = 0; i < NumTrials; ++i)
 		{
+		// Create random K vector (4 + 2 + 2 elements)
+		for (int k = 0; k < 4; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+		for (int k = 4; k < 6; ++k)
+			K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
+		for (int k = 6; k < 8; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+
+		// Desired value = K_star
+		double K_star[10];
+		extern void transition(double [], double []);
+		transition(K, K_star);
+
 		forward_gNN(dimK, K);		// forward-propagate the gNN
-		// Calculate the error
-		// errors[] = ?
+
+		// Calculate the error, for back-prop
+		for (int k = 0; k < dimK; ++k)
+			errors[k] = K_star[k] - K[k];	// error = ideal - actual
 		// Use back-prop to calculate local gradients
 		backprop_gNN(errors);
 		// Then fitness = sum of local gradients for a neuron, relative to 1 example.
+		fitness = 
 		// So we need to add up the fitnesses for all examples.
+		sum_fitness -= fitness;
 		}
 	}
 
 // This seems to be independent of gene expression
-void binaryTournament(float *selector, float pop[][NumBits])
+void binaryTournament(double *selector, double pop[][NumBits])
 	{
 	int i = (rand() / (double) RAND_MAX) * PopSize;
 	int j = (rand() / (double) RAND_MAX) * PopSize;
 
-	float *p1 = pop[i], *p2 = pop[j];
+	double *p1 = pop[i], *p2 = pop[j];
 
-	float *p;
+	double *p;
 	if (fitness(p1) > fitness(p2))
 		p = p1;
 	else
@@ -108,7 +119,7 @@ void binaryTournament(float *selector, float pop[][NumBits])
 	}
 
 // Each neuron is an individual, a point mutation mutates a single weight within the neuron
-void pointMutation(float *dna, float rate)
+void pointMutation(double *dna, double rate)
 	{
 	for (int i = 0; i < NumBits; ++i)
 		if ((rand() / (double) RAND_MAX) < rate)
@@ -116,7 +127,7 @@ void pointMutation(float *dna, float rate)
 	}
 
 // Cross-over of 2 neurons
-void crossOver(float *result, float *parent1, float *parent2, float rate)
+void crossOver(double *result, double *parent1, double *parent2, double rate)
 	{
 	if ((rand() / (double) RAND_MAX) > rate)
 		{
@@ -134,9 +145,9 @@ void crossOver(float *result, float *parent1, float *parent2, float rate)
 	}
 
 // **** Reproduce for 1 generation
-void reproduce(float children[][NumBits], float selected[][NumBits], int popSize, float crossRate, float mutationRate)
+void reproduce(double children[][NumBits], double selected[][NumBits], int popSize, double crossRate, double mutationRate)
 	{
-	float *p1, *p2;
+	double *p1, *p2;
 
 	for (int i = 0; i < PopSize; ++i)
 		{
@@ -150,7 +161,7 @@ void reproduce(float children[][NumBits], float selected[][NumBits], int popSize
 		}
 	}
 
-void printCandidate(float candidate[NumBits])
+void printCandidate(double candidate[NumBits])
 	{
 	for (int i = 0; i < NumBits; ++i)
 		printf("%c", (candidate[i] == '0') ? ' ' : '*');
@@ -169,7 +180,7 @@ void evolve()
 
 	// Compare fitness of 2 neurons
 	// The neurons are addressed by layer and position
-	float compareFitness(int layer, int x_index, int y_index)
+	double compareFitness(int layer, int x_index, int y_index)
 		return (fitness(layer, x_index) < fitness(layer, y_index));
 
 	// Sort population according to fitness
@@ -192,9 +203,9 @@ void evolve()
 		printCandidate(population[i]);
 		}
 
-	float selected[PopSize][NumBits];
-	float children[PopSize][NumBits];
-	float best[NumBits];
+	double selected[PopSize][NumBits];
+	double children[PopSize][NumBits];
+	double best[NumBits];
 
 	for (int i = 0; i < MaxGens; ++i)
 		{
@@ -240,7 +251,7 @@ void evolve()
  * 
 //****************************create neural network*********************
 // GIVEN: how many layers, and how many neurons in each layer
-void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, float dna[][L])
+void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, double dna[][L])
 	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
