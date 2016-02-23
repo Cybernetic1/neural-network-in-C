@@ -1,11 +1,13 @@
 #include <stdbool.h>
-#include <SDL2/SDL.h>
+#include <SDL2/SDL.h>			// SDL graphics library
 #include <stdlib.h>				// For playing system "beep"
-// #include <SDL2/SDL_mixer.h>	// no longer needed
+// #include <SDL2/SDL_mixer.h>	// SDL sound, no longer needed
 #include <sys/timeb.h>		// For timing operations
 
 #include "feedforward-NN.h"
 #include "BPTT-RNN.h"
+
+// ***************** Global variables ****************
 
 SDL_Renderer *gfx_LogErr = NULL; // For log-scale error visualizer
 SDL_Window *win_LogErr = NULL;
@@ -28,6 +30,8 @@ SDL_Window *win_NN2 = NULL;
 SDL_Renderer *gfx_K = NULL; // For K-vector visualizer
 SDL_Window *win_K = NULL;
 
+bool display_W = true; // turn W visualization ON/OFF
+
 #define f2i(v) ((int)(255.0f * v))		// for converting color values
 
 // ************************* YKY's log-scale error visualizer ***************************
@@ -45,7 +49,7 @@ void start_LogErr_plot(void)
 		return;
 		}
 
-	win_LogErr = SDL_CreateWindow("Errors (automatic log-scaled)", 10, 500, LogErr_box_width, LogErr_box_height, SDL_WINDOW_SHOWN);
+	win_LogErr = SDL_CreateWindow("Errors (automatic log-scaled)", 10, 1200, LogErr_box_width, LogErr_box_height, SDL_WINDOW_SHOWN);
 	if (win_LogErr == NULL)
 		{
 		printf("SDL_CreateWindow Error: %s \n", SDL_GetError());
@@ -61,7 +65,12 @@ void start_LogErr_plot(void)
 		SDL_Quit();
 		return;
 		}
-	
+
+	new_LogErr_plot = true;
+	}
+
+void restart_LogErr_plot(void)
+	{
 	new_LogErr_plot = true;
 	}
 
@@ -75,13 +84,13 @@ void plot_LogErr(double err, double target)
 	if (new_LogErr_plot)
 		{
 		index = 1;
-		errGain = 500.0;
+		errGain = 100.0;
 		new_LogErr_plot = false;
 		// clear window
 		SDL_SetRenderDrawColor(gfx_LogErr, 0, 0, 0, 0xFF);
 		SDL_RenderClear(gfx_LogErr); //Clear screen
 		}
-	
+
 	bin[index++] = err; // record the error
 
 	// Overflow?
@@ -345,12 +354,15 @@ void flush_output() // This is to allow plotting some dots on the graph before d
 	}
 
 // *************************** YKY's weights visualizer ********************************
+// TO-DO:  ability to turn off visualization temporarily
+// check for key press, turn flag ON/OFF
 
 #define W_box_width 900
 #define W_box_height 1000
 
 void start_W_plot(void)
 	{
+	display_W = true;
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		{
@@ -374,10 +386,15 @@ void start_W_plot(void)
 		SDL_Quit();
 		return;
 		}
+
+	printf("[P] pause, [R] resume, [W] weights ON/OFF, [T] display time\n");
 	}
 
 void plot_W(NNET *net)
 	{
+	if (!display_W)
+		return;
+
 	SDL_SetRenderDrawColor(gfx_W, 0, 0, 0, 0xFF);
 	SDL_RenderClear(gfx_W); //Clear screen
 
@@ -413,7 +430,7 @@ void plot_W(NNET *net)
 		// printf("min W = %f\n", min_W);
 		// printf("max W = %f\n", max_W);
 		// printf("gain = %f\n", gain);
-	
+
 		// draw baseline
 		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF); // blue
 		int baseline_y = l * Y_step;
@@ -426,7 +443,7 @@ void plot_W(NNET *net)
 		// Otherwise they are green.
 		// float c1 = ((float) l) / (numLayers - 1);
 		// float c2 = 1.0f - ((float) l) / (numLayers - 1);
-		float c1 = peak / 2.0f;		// peak starts from ~1.0 and may increase indefinitely
+		float c1 = peak / 2.0f; // peak starts from ~1.0 and may increase indefinitely
 		float c3 = 0.0f;
 		if (c1 > 1.0f)
 			{
@@ -442,6 +459,19 @@ void plot_W(NNET *net)
 			int basepoint_x = 10 + neuronWidth * n;
 			int gap = (neuronWidth - 10) / (numWeights - 1);
 
+			SDL_SetRenderDrawColor(gfx_W, f2i(c1), f2i(c2), f2i(c3), 0xFF);
+			for (int m = 0; m < numWeights; ++m)
+				// for each weight including bias, but minus one because # line segments
+				// is 1 less than # of weights
+				{
+				int weight0 = gain * net->layers[l].neurons[n].weights[m];
+				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * m,
+								baseline_y,
+								basepoint_x + 5 + gap * m,
+								baseline_y - weight0);
+				}
+
+			SDL_SetRenderDrawColor(gfx_W, 0x66, 0x66, 0x66, 0xFF); // grey
 			for (int m = 0; m < numWeights - 1; ++m)
 				// for each weight including bias, but minus one because # line segments
 				// is 1 less than # of weights
@@ -837,14 +867,37 @@ int delay_vis(int delay)
 
 	// 'P' --- pause
 	if (keys[SDL_SCANCODE_P])
-		while (!keys[SDL_SCANCODE_R])		// 'R' to resume
+		while (!keys[SDL_SCANCODE_R]) // 'R' to resume
 			SDL_PumpEvents();
 
+	// 'W' --- turn W visualization ON/OFF
+	if (keys[SDL_SCANCODE_W])
+		{
+		display_W = !display_W;
+		if (display_W)
+			SDL_SetWindowTitle(win_W, "Weights (auto gain-adjusted)");
+		else
+			SDL_SetWindowTitle(win_W, "W visualization disabled");
+		}
+
 	// 'Q' --- quit
-	if (keys[SDL_SCANCODE_Q] || keys[SDL_SCANCODE_SPACE])
+	if (keys[SDL_SCANCODE_Q]) // || keys[SDL_SCANCODE_SPACE]
 		return 1;
+	else if (keys[SDL_SCANCODE_V])
+		return 2;
+	else if (keys[SDL_SCANCODE_Z])
+		return 3;
 	else
 		return 0;
+	}
+
+void pause_key() // [R] or [space] key to resume
+	{
+	const Uint8 *keys = SDL_GetKeyboardState(NULL); // keyboard states
+
+	SDL_PumpEvents();
+	while (!(keys[SDL_SCANCODE_R] || keys[SDL_SCANCODE_SPACE]))
+		SDL_PumpEvents();
 	}
 
 void pause_graphics()
@@ -916,7 +969,7 @@ void beep()
 	// SDL_PauseAudio(1);
 	Mix_FreeMusic(music);
 	Mix_CloseAudio();
-	*/
+	 */
 	}
 
 void quit_graphics()

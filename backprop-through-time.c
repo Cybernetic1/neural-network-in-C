@@ -92,15 +92,14 @@ void forward_BPTT(RNN *net, int dim_V, double V[], int nfold)
 				(t == 0 ?
 				V[k] :
 				// feed output of last layer back to input
-				lastLayer.neurons[k].output[t - 1]
-				);
+				lastLayer.neurons[k].output[t - 1]);
 
 		//calculate output from hidden layers to output layer
 		for (int l = 1; l < numLayers; l++)
 			{
 			for (int n = 0; n < net->layers[l].numNeurons; n++)
 				{
-				double v = 0; //induced local field for neurons
+				double v = 0.0; //induced local field for neurons
 				//calculate v, which is the sum of the product of input and weights
 				for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 					{
@@ -113,7 +112,7 @@ void forward_BPTT(RNN *net, int dim_V, double V[], int nfold)
 
 				extern double rectifier(double);
 				net->layers[l].neurons[n].output[t] = rectifier(v);
-				
+
 				// This is to prepare for back-prop
 				#define Leakage 0.0
 				if (v < -1.0)
@@ -141,7 +140,7 @@ void backprop_through_time(RNN *net, double *errors, int nfold)
 			for (int n = 0; n < lastLayer.numNeurons; ++n)
 				{
 				// double output = lastLayer.neurons[n].output[t];
-				//for output layer, ∇ = y∙(1-y)∙error
+				//for output layer, ∇ = σ'(x)∙error
 				lastLayer.neurons[n].grad[t] *= errors[n];
 				}
 		else
@@ -159,7 +158,7 @@ void backprop_through_time(RNN *net, double *errors, int nfold)
 				}
 
 		// calculate ∇ for hidden layers
-		for (int l = numLayers - 2; l > 0; --l) // for each hidden layer
+		for (int l = numLayers - 2; l > 0; --l) // for each hidden layer (except layer 0 has no weights)
 			{
 			for (int n = 0; n < net->layers[l].numNeurons; n++) // for each neuron in layer
 				{

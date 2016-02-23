@@ -329,6 +329,9 @@ void sine_wave_test2()
 // To test convergence, we record the sum of squared errors for the last M and last M..2M
 // trials, then compare their ratio.
 
+// Success: time 5:58, topology = {2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1} (13 layers)
+//			ReLU units, learning rate 0.05, leakage 0.0
+
 void classic_BP_test()
 	{
 	#define ForwardPropMethod	forward_prop_ReLU

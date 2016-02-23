@@ -30,23 +30,25 @@ double sigmoid(double v)
 // Gradient is constant so it never vanishes!
 double rectifier(double v)
 	{
-	#define Leakage 0.0
-	if (v < -1.0)
-		return -Leakage * v;
+	#define Leakage 0.1
+	if (v < 0.0)
+		return Leakage * v;
 	// else if (v > 1.0)
 	//	return 1.0 + Leakage * v;
 	else
 		return v;
 	}
 
+#define slope 1.0
+
 double softplus(double v)
 	{
-	return log(1.0 + exp(v));
+	return log(1.0 + exp(slope * v));
 	}
 
 double d_softplus(double v)
 	{
-	return 1.0 / (1.0 + exp(-v));
+	return slope * 1.0 / (1.0 + exp(slope * -v));
 	}
 
 //****************************create neural network*********************//
@@ -64,15 +66,15 @@ void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 	net->layers[0].neurons = (NEURON *) malloc(neuronsOfLayer[0] * sizeof (NEURON));
 
 	//construct hidden layers
-	for (int l = 1; l < numLayers; l++) //construct layers
+	for (int l = 1; l < numLayers; ++l) //construct layers
 		{
 		net->layers[l].neurons = (NEURON *) malloc(neuronsOfLayer[l] * sizeof (NEURON));
 		net->layers[l].numNeurons = neuronsOfLayer[l];
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
+		for (int n = 0; n < neuronsOfLayer[l]; ++n) // construct each neuron in the layer
 			{
 			net->layers[l].neurons[n].weights =
 					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)
 				{
 				//construct weights of neuron from previous layer neurons
 				//when k = 0, it's bias weight
@@ -81,6 +83,16 @@ void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 				}
 			}
 		}
+	}
+
+void re_randomize(NNET *net, int numLayers, int *neuronsOfLayer)
+	{
+	srand(time(NULL));
+
+	for (int l = 1; l < numLayers; ++l)							// for each layer
+		for (int n = 0; n < neuronsOfLayer[l]; ++n)				// for each neuron
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)	// for each weight
+				net->layers[l].neurons[n].weights[i] = randomWeight();
 	}
 
 void free_NN(NNET *net, int *neuronsOfLayer)
@@ -101,7 +113,7 @@ void free_NN(NNET *net, int *neuronsOfLayer)
 
 	// free all layers
 	free(net->layers);
-	
+
 	// free the whole net
 	free(net);
 	}
@@ -195,10 +207,10 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 				}
 
 			net->layers[l].neurons[n].output = rectifier(v);
-			
+
 			// This is to prepare for back-prop
-			if (v < -1.0)
-				net->layers[l].neurons[n].grad = -Leakage;
+			if (v < 0.0)
+				net->layers[l].neurons[n].grad = Leakage;
 			// if (v > 1.0)
 			//	net->layers[l].neurons[n].grad = Leakage;
 			else
@@ -272,10 +284,10 @@ void back_prop(NNET *net, double *errors)
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
-			net->layers[l].neurons[n].weights[0] += Eta * 
+			net->layers[l].neurons[n].weights[0] += Eta *
 					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{	
+				{
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
 				net->layers[l].neurons[n].weights[i + 1] += Eta *
 						net->layers[l].neurons[n].grad * inputForThisNeuron;
@@ -323,16 +335,21 @@ void back_prop_ReLU(NNET *net, double *errors)
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
-			net->layers[l].neurons[n].weights[0] += Eta * 
+			net->layers[l].neurons[n].weights[0] += Eta *
 					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{	
+				{
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
 				net->layers[l].neurons[n].weights[i + 1] += Eta *
 						net->layers[l].neurons[n].grad * inputForThisNeuron;
 				}
 			}
 		}
+	}
+
+void back_prop_SP(NNET *net, double *errors)
+	{
+	back_prop_ReLU(net, errors);
 	}
 
 // Calculate error between output of forward-prop and a given answer Y

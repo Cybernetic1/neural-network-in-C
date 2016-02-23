@@ -37,14 +37,14 @@
 #define CrossRate		0.98
 #define MutationRate	(1.0 / N)
 
-// Sorry, I use the following global variables to simplify code
+// Sorry I have to use global variables to simplify code
 // =============================================================
 // A question is how to store the current network as well as the entire population.
 // Perhaps the data structure should store all the "population rows".
 double population[L][M][N];		// each element is a connection weight
 double output[L][M];			// output of each neuron
 double grad[L][M];				// local gradient for each neuron
-double fitness[L][M];			// fitness of each neuron
+double score[L][M];				// fitness of each neuron
 
 double best[L][N][N];			// best candidate
 double selected[L][M][N];		// selected from binary tournament
@@ -68,7 +68,11 @@ extern void backprop_gNN(double []);
 // single connection (ie, weight).
 // Armed with this fitness measure, we can continue with the strategy of maintain M
 // neurons per layer and selecting N out of M to build the actual network.
-void calc_fitness()
+
+// For each layer, the fitness of individual neurons can be calculated by choosing that
+// neuron together with the N-1 top-ranking neurons in that layer.  Can this be simplified?
+// 
+double fitness(int layer, int index)
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
 	// initialize network
@@ -252,7 +256,7 @@ void evolve()
 
 		strncpy(population, children, sizeof(population));
 
-		if (fitness(best) >= N)
+		if (fitness(best, 0) >= N)
 			{
 			printf("Success!!!\n");
 			break;
@@ -313,38 +317,39 @@ void backprop_gNN(double *errors)
 		{
 		double out = output[L - 1][n];
 		//for output layer, ∇ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = steepness * output * (1.0 - output) * errors[n];
+		#define steepness 1.0
+		grad[L - 1][n] = steepness * out * (1.0 - out) * errors[n];
 		}
 
 	// calculate gradient for hidden layers
-	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
+	for (int l = L - 2; l > 0; --l)		// for each hidden layer
 		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
+		for (int n = 0; n < N; n++)		// for each neuron in layer
 			{
-			double output = net->layers[l].neurons[n].output;
+			double out = output[l][n];
 			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+			// nextLayer = l + 1;
+			for (int i = 0; i < N; i++)		// for each weight
 				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
+				sum += population[l + 1][i][n + 1]		// ignore weights[0] = bias
+						* grad[l + 1][i];
 				}
-			net->layers[l].neurons[n].grad = steepness * output * (1.0 - output) * sum;
+			grad[l][n] = steepness * out * (1.0 - out) * sum;
 			}
 		}
 
 	// update all weights
-	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
+	for (int l = 1; l < L; ++l)		// except for 0th layer which has no weights
 		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
+		for (int n = 0; n < N; n++)		// for each neuron
 			{
-			net->layers[l].neurons[n].weights[0] += Eta * 
-					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
+			population[l][n][0] += Eta * 
+					grad[l][n] * 1.0;		// 1.0f = bias input
+			for (int i = 0; i < N; i++)		// for each weight
 				{	
-				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].grad * inputForThisNeuron;
+				double inputForThisNeuron = output[l - 1][i];
+				population[l][n][i + 1] += Eta *
+						grad[l][n] * inputForThisNeuron;
 				}
 			}
 		}
