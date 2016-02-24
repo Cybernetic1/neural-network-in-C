@@ -76,7 +76,7 @@ void read_trainers()
 //************************** get rewards ***************************//
 
 // Check if "output" bit of K is set;  If yes, the "output word" inside K is printed.
-// Users may reward Genifer's response but there is the problem of *delays*.  At this 
+// Users may reward Genifer's response but there is the problem of *delays*.  At this
 // stage, to simplify things, we pause processing for users to give *immediate* response.
 // If no output word is printed, reward would be 0 (which defaults to a discount cost).
 
@@ -219,6 +219,7 @@ int main(int argc, char** argv)
 	extern void arithmetic_testA();
 	extern void arithmetic_testB();
 	extern void arithmetic_testC();
+	extern void arithmetic_testD();
 	extern void RNN_sine_test();
 	extern void BPTT_arithmetic_test();
 	extern void evolve();
@@ -238,10 +239,12 @@ int main(int argc, char** argv)
 		printf("[7] arthmetic test: test operator\n");
 		printf("[8] arithmetic test: learn operator\n");
 		printf("[9] arithmetic test: test learned operator\n");
-		printf("[a] rectifier BP test (XOR)\n");
-		printf("[b] RNN sine-wave test\n");
+		printf("[a] arithmetic test: learn 1-step operator\n");
+		printf("[b] arithmetic test: test learned 1-step operator\n");
 		printf("[c] BPTT arithmetic test\n");
 		printf("[d] genetic NN test\n");
+		printf("[e] rectifier BP test (XOR)\n");
+		printf("[f] RNN sine-wave test\n");
 		printf("[q] quit\n");
 
 		do
@@ -278,16 +281,22 @@ int main(int argc, char** argv)
 				arithmetic_testC(); // primary-school subtraction arithmetic
 				break; // check transition operator that was learned
 			case 'a':
-				// classic_BP_test_ReLU(); // learn XOR function
-				break;
+				arithmetic_testD(); // primary-school subtraction arithmetic
+				break; // learn 1-step transition operator
 			case 'b':
-				RNN_sine_test(); // train RNN to produce sine wave
-				break;
+				arithmetic_testE(); // primary-school subtraction arithmetic
+				break; // check 1-step transition operator that was learned
 			case 'c':
 				BPTT_arithmetic_test(); // learn arithmetic operator using BPTT
 				break;
 			case 'd':
 				evolve(); // learn arithmetic operator using BPTT
+				break;
+			case 'e':
+				// classic_BP_test_ReLU(); // learn XOR function
+				break;
+			case 'f':
+				RNN_sine_test(); // train RNN to produce sine wave
 				break;
 			case 'q':
 				quit = true;

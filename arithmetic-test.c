@@ -245,255 +245,6 @@ void arithmetic_testA()
 		}
 	}
 
-void BPTT_arithmetic_test()
-	{
-	// create BPTT_NN
-	RNN *Net = (RNN *) malloc(sizeof (RNN));
-	int neuronsOfLayer[4] = {8, 13, 10, 8}; // first = input layer, last = output layer
-	// (first- and last-layer dimensions must match because network needs to be recurrent)
-	int dimK = 8;		// dim K = 8 (dimension of input-layer vector)
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	create_BPTT_NN(Net, numLayers, neuronsOfLayer);
-	rLAYER lastLayer = Net->layers[numLayers - 1];
-	double errors[dimK];
-
-	bool quit = false;
-	#define M	50			// how many errors to record for averaging
-	double errors1[M], errors2[M]; // two arrays for recording errors
-	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
-	int tail = 0; // index for cyclic arrays (last-in, first-out)
-
-	for (int i = 0; i < M; ++i) // clear errors to 0.0
-		errors1[i] = errors2[i] = 0.0;
-
-	// start_NN_plot();
-	start_W_plot();
-	start_LogErr_plot();
-	// start_K_plot();
-	// start_output_plot();
-	// plot_ideal();
-	start_timer();
-	printf("[P] to pause, [R] to resume, [Q] to quit\n\n");
-
-	int t = 0;		// t is the final time step
-
-	char status[512], *s;
-	for (int i = 0; true; ++i)
-		{
-		s = status + sprintf(status, "iteration: %05d: ", i);
-
-		// Create random K vector (4 + 2 + 2 elements)
-		for (int k = 0; k < 4; ++k)
-			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
-		for (int k = 4; k < 6; ++k)
-			K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
-		// K[5] = 0.0;			// force current digit = 0
-		for (int k = 6; k < 8; ++k)
-			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
-		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
-
-		forward_BPTT(Net, dimK, K, 1);			// unfold 1 time
-		// Note that only 6 of 8 dimensions of the output is significant
-		// ...the last 2 dimensions are ignored
-		// printf("successfully forward propagated\n");
-
-		// Desired value = K_star
-		double K_star[10];
-		transition(K, K_star);
-
-		// Difference between actual outcome and desired value:
-		double training_err = 0.0;
-		for (int k = 4; k < 10; ++k)		// 6 components
-			{
-			double error = K_star[k] - lastLayer.neurons[k - 4].output[t];
-			errors[k - 4] = error; // record this for back-prop
-
-			training_err += fabs(error); // record sum of errors
-			}
-		for (int k = 6; k < 8; ++k)			// last 2 errors are always 0
-			errors[k] = 0.0;
-
-		// printf("sum of squared error = %lf  ", training_err);
-
-		// Update error arrays cyclically
-		// (This is easier to understand by referring to the next block of code)
-		sum_err2 -= errors2[tail];
-		sum_err2 += errors1[tail];
-		sum_err1 -= errors1[tail];
-		sum_err1 += training_err;
-		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
-
-		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
-		s += sprintf(s, "mean abs error = %lf  ", mean_err);
-
-		if (training_err < 0.0008)
-			break;
-
-		// record new error in cyclic arrays
-		errors2[tail] = errors1[tail];
-		errors1[tail] = training_err;
-		++tail;
-		if (tail == M) // loop back in cycle
-			tail = 0;
-
-		backprop_through_time(Net, errors, 1); // train the network, n-fold = 1
-
-		// Testing set
-		if ((i % 5000) == 0)
-			{
-			double test_err = 0.0;
-			for (int j = 0; j < 10; ++j)
-				{
-				// Create random K vector (4 + 2 + 2 elements)
-				for (int k = 0; k < 4; ++k)
-					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
-				for (int k = 4; k < 6; ++k)
-					K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
-				for (int k = 6; k < 8; ++k)
-					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
-				// plot_tester(K[0], K[1]);
-
-				forward_BPTT(Net, dimK, K, 1);		// 1-fold backprop
-
-				// Desired value = K_star
-				double K_star[10];
-				transition(K, K_star);
-
-				double single_err = 0.0;
-				for (int k = 4; k < 10; ++k)
-					{
-					double error = K_star[k] - lastLayer.neurons[k - 4].output[t];
-					single_err += fabs(error); // record sum of errors
-					}
-				test_err += single_err;
-				}
-			test_err /= 10.0;
-			s += sprintf(s, "random test error = %1.06lf  ", test_err);
-
-			double ratio = (sum_err2 - sum_err1) / sum_err1;
-			if (ratio > 0)
-				s += sprintf(s, "error ratio = %f", ratio);
-			else
-				s += sprintf(s, "error ratio = \x1b[31m%f\x1b[39;49m", ratio);
-
-			if (isnan(ratio))
-				break;
-			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
-			// if (test_err < 0.01)
-			if (test_err < 0.0008)
-				break;
-			}
-
-		if (i % 5000 == 0) printf("%s\n", status);
-
-		if ((i % 5000) == 0) // display status periodically
-			{
-			// plot_output(Net);
-			// flush_output();
-			plot_W_BPTT(Net);
-			plot_LogErr(training_err, 0.0008);
-			// plot_NN(Net);
-			// plot_trainer(0);		// required to clear the window
-			// plot_K();
-			if (quit = delay_vis(0))
-				break;
-			}
-		}
-
-	printf("%s", status);
-	end_timer();
-	beep();
-	// plot_output(Net);
-	// flush_output();
-	plot_W_BPTT(Net);
-
-	/****
-	printf("\n\nTest with: 73 - 37 = 36.\n");
-	K[0] = 0.7;		// A1
-	K[1] = 0.3;		// A0
-	K[2] = 0.3;		// B1
-	K[3] = 0.7;		// B0
-	K[4] = 0.0;		// carry
-	K[5] = 0.0;		// current digit
-	K[6] = 0.0;		// C1
-	K[7] = 0.0;		// C0
-	K[8] = 0.0;		// ready
-	K[9] = 0.0;		// overflow
-	forward_prop(Net, 8, K);
-	printf("carry [1.0] = %f\n", lastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
-	printf("C1 [0.0] = %f\n", lastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
-	printf("ready [0.0] = %f\n", lastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
-
-	// copy output back to K;  second iteration
-	for (int k = 0; k < 6; ++k)
-		K[k + 4] = lastLayer.neurons[k].output;
-	forward_prop(Net, 8, K);
-	printf("\ncarry [0.0] = %f\n", lastLayer.neurons[0].output);
-	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
-	printf("C1 [0.3] = %f\n", lastLayer.neurons[2].output);
-	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
-	printf("ready [1.0] = %f\n", lastLayer.neurons[4].output);
-	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
-	 ****/
-
-	if (!quit)
-		pause_graphics();
-	else
-		quit_graphics();
-
-	extern void save_RNN(RNN *, int, int *);
-	save_RNN(Net, numLayers, neuronsOfLayer);
-	free_BPTT_NN(Net, neuronsOfLayer);
-	}
-
-void save_RNN(RNN *net, int numLayers, int *neuronsOfLayer)
-	{
-	FILE *fp = fopen("arithmetic-operator.rnn", "w");
-
-	for (int l = 0; l < numLayers; ++l)
-		fprintf(fp, "%d ", neuronsOfLayer[l]);
-	fprintf(fp, "\n");
-
-	for (int l = 1; l < numLayers; ++l) // for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
-			{
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
-				fprintf(fp, "%f ", (float) net->layers[l].neurons[n].weights[i]);
-			fprintf(fp, "\n");
-			}
-	fclose(fp);
-	}
-
-RNN *load_RNN(int numLayers, int *neuronsOfLayer)
-	{
-	FILE *fp = fopen("arithmetic-operator.rnn", "r");
-
-	for (int l = 0; l < numLayers; ++l)
-		fscanf(fp, "%d ", &neuronsOfLayer[l]);
-	fscanf(fp, "\n");
-
-	RNN *net = (RNN *) malloc(sizeof (NNET));
-	create_BPTT_NN(net, numLayers, neuronsOfLayer);
-
-	for (int l = 1; l < numLayers; ++l) // for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
-			{
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
-				{
-				float x;
-				fscanf(fp, "%f ", &x);
-				// printf("%f ", x);
-				net->layers[l].neurons[n].weights[i] = (double) x;
-				}
-			fscanf(fp, "\n");
-			}
-	fclose(fp);
-	return net;
-	}
-
 // At this point we are able to generate training examples for the transition operator.
 // Perhaps now get to the main code to see if R can approximate this operator well?
 // The learning algorithm would be to learn the transition operator as one single step.
@@ -1057,5 +808,652 @@ void arithmetic_testC()
 	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
 
 	free_NN(Net, neuronsOfLayer);
+	}
+
+// Now we combine the 2 arithmetic steps into 1 step, as a single operator.
+// This operator is supposedly very hard to learn.
+#define ForwardPropMethod	forward_prop
+#define BackPropMethod		back_prop
+#define ErrorThreshold		0.001
+
+void arithmetic_testD()
+	{
+	// first = input layer, last = output layer
+	int neuronsOfLayer[] = {8, 19, 19, 19, 19, 6};
+	int dimK = 8;
+	NNET *Net = (NNET *) malloc(sizeof (NNET));
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_NN(Net, numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
+	double errors[dimK];
+
+	#define M	50			// how many errors to record for averaging
+	double errors1[M], errors2[M]; // two arrays for recording errors
+
+	int userKey = 0;
+	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
+	int tail = 0; // index for cyclic arrays (last-in, first-out)
+	for (int i = 0; i < M; ++i) // clear errors to 0.0
+		errors1[i] = errors2[i] = 0.0;
+
+	// start_NN_plot();
+	start_W_plot();
+	start_LogErr_plot();
+	// start_K_plot();
+	// start_output_plot();
+	// plot_ideal();
+	start_timer();
+	printf("[Q] quit\n\n");
+
+	char status[1000], *s;
+	for (int i = 1; true; ++i)
+		{
+		s = status + sprintf(status, "[%05d] ", i);
+
+		// Create random K vector (4 + 2 + 2 elements)
+		for (int k = 0; k < 4; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+		for (int k = 4; k < 6; ++k)
+			K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
+		for (int k = 6; k < 8; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
+
+		ForwardPropMethod(Net, dimK, K); // dim K = 8 (dimension of input-layer vector)
+
+		// Desired value = K_star
+		double K_star[10];
+		transition(K, K_star);
+		memcpy(K, K_star, sizeof(K_star));		// order = (target, source) !
+		transition(K, K_star);					// transition again!
+
+		// Difference between actual outcome and desired value:
+		double training_err = 0.0;
+		for (int k = 4; k < 10; ++k)
+			{
+			double error = K_star[k] - lastLayer.neurons[k - 4].output;
+			errors[k - 4] = error; // record this for back-prop
+
+			training_err += fabs(error); // record sum of errors
+			}
+		s += sprintf(s, "∑e²=%lf, ", training_err);
+
+		// Update error arrays cyclically
+		// (This is easier to understand by referring to the next block of code)
+		sum_err2 -= errors2[tail];
+		sum_err2 += errors1[tail];
+		sum_err1 -= errors1[tail];
+		sum_err1 += training_err;
+		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
+
+		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
+		s += sprintf(s, "mean |e|=%lf, ", mean_err);
+
+		if (mean_err < ErrorThreshold)
+			break;
+		if (mean_err > 1e10 || mean_err < 0.0 || (i > 5000 && isnan(mean_err)))
+			{
+			printf("%s\n", status);
+			printf("Error overflow.\n");
+			beep();
+			pause_key();
+			userKey = 3;
+			}
+
+		// record new error in cyclic arrays
+		errors2[tail] = errors1[tail];
+		errors1[tail] = training_err;
+		++tail;
+		if (tail == M) // loop back in cycle
+			tail = 0;
+
+		BackPropMethod(Net, errors); // train the network!
+
+		// Testing set
+		if ((i % 5000) == 0)
+			{
+			#define NumTrials 20
+			double test_err = 0.0;
+			for (int j = 0; j < NumTrials; ++j)
+				{
+				// Create random K vector (4 + 2 + 2 elements)
+				for (int k = 0; k < 4; ++k)
+					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+				for (int k = 4; k < 6; ++k)
+					K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
+				for (int k = 6; k < 8; ++k)
+					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+				// plot_tester(K[0], K[1]);
+
+				ForwardPropMethod(Net, dimK, K); // input vector dimension = 8
+
+				// Desired value = K_star
+				double K_star[10];
+				transition(K, K_star);
+
+				double single_err = 0.0;
+				for (int k = 4; k < 10; ++k)
+					{
+					double error = K_star[k] - lastLayer.neurons[k - 4].output;
+					single_err += fabs(error); // record sum of errors
+					}
+				test_err += single_err;
+				}
+			test_err /= (float) NumTrials;
+			s += sprintf(s, "random test e=%1.06lf, ", test_err);
+
+			double ratio = (sum_err2 - sum_err1) / sum_err1;
+			if (ratio > 0)
+				s += sprintf(s, "e ratio=%f", ratio);
+			else
+				s += sprintf(s, "e ratio=\x1b[31m%f\x1b[39;49m", ratio);
+
+			// if (isnan(ratio))
+			//	break;
+			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
+			// if (test_err < 0.01)
+			if (test_err < ErrorThreshold)
+				break;
+			}
+
+		if ((i % 50) == 0) // display status periodically
+			{
+			printf("%s\r", status);
+			// plot_output(Net);
+			// flush_output();
+			plot_W(Net);
+			plot_LogErr(mean_err, ErrorThreshold);
+			// plot_NN(Net);
+			// plot_trainer(0);		// required to clear the window
+			// plot_K();
+			userKey = delay_vis(0);
+			}
+
+		if (userKey == 1)
+			break;
+		else if (userKey == 3)			// Re-start with new random weights
+			{
+			re_randomize(Net, numLayers, neuronsOfLayer);
+			userKey = 0;
+			sum_err1 = 0.0; sum_err2 = 0.0;
+			tail = 0;
+			for (int j = 0; j < M; ++j) // clear errors to 0.0
+				errors1[j] = errors2[j] = 0.0;
+			i = 1;
+
+			restart_LogErr_plot();
+			start_timer();
+			printf("\n****** Network re-randomized.\n");
+			userKey = 0;
+			beep();
+			// pause_key();
+			}
+		else if (userKey == 2)
+			// Test learned operator
+			{
+			printf("\n");
+
+			int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
+			#define P 100
+			for (int i = 0; i < P; ++i)
+				{
+				printf("(%d) ", i);
+				switch (arithmetic_testE_1(Net, lastLayer))
+					{
+					case 1:
+						++ans_correct;
+						break;
+					case 2:
+						++ans_negative;
+						break;
+					case 3:
+						++ans_wrong;
+						break;
+					case 4:
+						++ans_non_term;
+						break;
+					default:
+						printf("Answer error!\n");
+						break;
+					}
+				}
+
+			printf("\n=======================\n");
+			printf("Answers correct  = %d (%.1f%%)\n", ans_correct, ans_correct * 100 / (float) P);
+			printf("Answers negative = %d (%.1f%%)\n", ans_negative, ans_negative * 100 / (float) P);
+			printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
+			printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
+			printf("\n");
+			userKey = 0;
+			pause_key();
+			}
+		else if (userKey == 4)			// load weights file
+			{
+			// TO-DO...
+
+			}
+		}
+
+	printf("Terminated....\n");
+	printf("%s\n", status);
+	end_timer(NULL);
+	if (userKey == 0)		// terminated successfully? (not 'quit' key)
+		beep();
+	// plot_output(Net);
+	// flush_output();
+	plot_W(Net);
+
+	if (userKey == 0)
+		pause_graphics();
+	else
+		quit_graphics();
+
+	extern void saveNet();
+	printf("Saving network data....\n");
+	saveNet(Net, numLayers, neuronsOfLayer);
+	free_NN(Net, neuronsOfLayer);
+	}
+
+int arithmetic_testE_1(NNET *Net, LAYER lastLayer)
+	{
+	double K1[10], K2[10];
+	double a1, a0, b1, b0;
+	int ans = 0;
+
+	// generate A,B randomly
+	a1 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[0] = a1;
+	a0 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[1] = a0;
+	b1 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[2] = b1;
+	b0 = floor((rand() / (float) RAND_MAX) * 10.0) / 10.0;
+	K1[3] = b0;
+
+	#define digit(d)	((int)(d * 10.0 + 0.001) + '0')
+	printf("%c%c, %c%c: ", digit(a1), digit(a0), digit(b1), digit(b0));
+
+	// correct answer
+	int a = floor(a1 * 10) * 10 + a0 * 10;
+	int b = floor(b1 * 10) * 10 + b0 * 10;
+	printf("%d - ", a);
+	printf("%d = ", b);
+
+	int c = a - b;
+	printf("%d\n", c);
+	double c1 = (double) (c / 10) / 10.0;
+	double c0 = (double) (c % 10) / 10.0;
+
+	//	double carryFlag = rand() / (double) RAND_MAX;
+	//	K1[4] = carryFlag;
+	//	double currentDigit = rand() / (double) RAND_MAX;
+	//	K1[5] = currentDigit;
+
+	K1[4] = 0.0; // carry flag
+	K1[5] = 0.0; // current digit (0 or 1)
+	K1[6] = 0.0; // C1
+	K1[7] = 0.0; // C0
+	K1[8] = 0.0; // result ready flag
+	K1[9] = 0.0; // underflow flag
+
+	// call the transition operator twice
+	ForwardPropMethod(Net, 8, K1); // input vector dimension = 8
+	for (int k = 4; k < 10; ++k) // 4..10 = output vector
+		K1[k] = lastLayer.neurons[k - 4].output;
+	ForwardPropMethod(Net, 8, K1); // input vector dimension = 8
+
+	for (int k = 4; k < 10; ++k) // 4..10 = output vector
+		K2[k] = lastLayer.neurons[k - 4].output;
+
+	// get result
+	if (K2[8] > 0.5) // result ready?
+		{
+		double err1 = 0.0, err2 = 0.0;
+		bool correct = true;
+		if (c < 0) // answer is negative
+			{
+			if (K2[9] < 0.5) // underflow is clear but should be set
+				correct = false;
+			}
+		else
+			{
+			if (K2[9] >= 0.5) // underflow is set but should be clear
+				correct = false;
+
+			err1 = fabs(K2[6] - c1);
+			err2 = fabs(K2[7] - c0);
+			printf(" err1, err2 = %f, %f\n", err1, err2);
+			if (err1 > 0.099999)
+				correct = false;
+			if (err2 > 0.099999)
+				correct = false;
+			}
+
+		printf(" answer = %c%c    ", digit(c1), digit(c0));
+		printf(" genifer = %c%c\n", digit(K2[6]), digit(K2[7]));
+		// printf(" C1*,C0* = %f, %f   ", c1, c0);
+		// printf(" C1,C0 = %f, %f\n", K2[6], K2[7]);
+
+		if (correct && c > 0)
+			{
+			ans = 1;
+			printf("\x1b[32m***************** Yes!!!! ****************\x1b[39;49m\n");
+			}
+		else if (correct)
+			{
+			ans = 2;
+			printf("\x1b[34mNegative YES \x1b[39;49m\n");
+			}
+		else
+			{
+			ans = 3;
+			printf("\x1b[31mWrong!!!! ");
+			if (c < 0)
+				printf(" underflow = %f \x1b[39;49m\n", K2[9]);
+			else
+				printf("\x1b[35m err1, err2 = %f, %f \x1b[39;49m\n", err1, err2);
+
+			// beep();
+			}
+		}
+	else
+		{
+		ans = 4;
+		printf("\x1b[31mNon-termination: ");
+		printf("result ready = %f \x1b[39;49m\n", K2[8]);
+		// beep();
+		}
+	return ans;
+	}
+
+void arithmetic_testE()
+	{
+	int neuronsOfLayer[6];
+	NNET *Net;
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	Net = loadNet(numLayers, neuronsOfLayer);
+	LAYER lastLayer = Net->layers[numLayers - 1];
+
+	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
+	#define P 100
+	for (int i = 0; i < P; ++i)
+		{
+		printf("(%d) ", i);
+		switch (arithmetic_testE_1(Net, lastLayer))
+			{
+			case 1:
+				++ans_correct;
+				break;
+			case 2:
+				++ans_negative;
+				break;
+			case 3:
+				++ans_wrong;
+				break;
+			case 4:
+				++ans_non_term;
+				break;
+			default:
+				printf("Answer error!\n");
+				break;
+			}
+		}
+
+	printf("\n=======================\n");
+	printf("Answers correct  = %d (%.1f%%)\n", ans_correct, ans_correct * 100 / (float) P);
+	printf("Answers negative = %d (%.1f%%)\n", ans_negative, ans_negative * 100 / (float) P);
+	printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
+	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
+
+	free_NN(Net, neuronsOfLayer);
+	}
+
+void save_RNN(RNN *net, int numLayers, int *neuronsOfLayer)
+	{
+	FILE *fp = fopen("arithmetic-operator.rnn", "w");
+
+	for (int l = 0; l < numLayers; ++l)
+		fprintf(fp, "%d ", neuronsOfLayer[l]);
+	fprintf(fp, "\n");
+
+	for (int l = 1; l < numLayers; ++l) // for each layer
+		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
+			{
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
+				fprintf(fp, "%f ", (float) net->layers[l].neurons[n].weights[i]);
+			fprintf(fp, "\n");
+			}
+	fclose(fp);
+	}
+
+RNN *load_RNN(int numLayers, int *neuronsOfLayer)
+	{
+	FILE *fp = fopen("arithmetic-operator.rnn", "r");
+
+	for (int l = 0; l < numLayers; ++l)
+		fscanf(fp, "%d ", &neuronsOfLayer[l]);
+	fscanf(fp, "\n");
+
+	RNN *net = (RNN *) malloc(sizeof (NNET));
+	create_BPTT_NN(net, numLayers, neuronsOfLayer);
+
+	for (int l = 1; l < numLayers; ++l) // for each layer
+		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
+			{
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
+				{
+				float x;
+				fscanf(fp, "%f ", &x);
+				// printf("%f ", x);
+				net->layers[l].neurons[n].weights[i] = (double) x;
+				}
+			fscanf(fp, "\n");
+			}
+	fclose(fp);
+	return net;
+	}
+
+void BPTT_arithmetic_test()
+	{
+	// create BPTT_NN
+	RNN *Net = (RNN *) malloc(sizeof (RNN));
+	int neuronsOfLayer[4] = {8, 13, 10, 8}; // first = input layer, last = output layer
+	// (first- and last-layer dimensions must match because network needs to be recurrent)
+	int dimK = 8;		// dim K = 8 (dimension of input-layer vector)
+	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	create_BPTT_NN(Net, numLayers, neuronsOfLayer);
+	rLAYER lastLayer = Net->layers[numLayers - 1];
+	double errors[dimK];
+
+	bool quit = false;
+	#define M	50			// how many errors to record for averaging
+	double errors1[M], errors2[M]; // two arrays for recording errors
+	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
+	int tail = 0; // index for cyclic arrays (last-in, first-out)
+
+	for (int i = 0; i < M; ++i) // clear errors to 0.0
+		errors1[i] = errors2[i] = 0.0;
+
+	// start_NN_plot();
+	start_W_plot();
+	start_LogErr_plot();
+	// start_K_plot();
+	// start_output_plot();
+	// plot_ideal();
+	start_timer();
+	printf("[P] to pause, [R] to resume, [Q] to quit\n\n");
+
+	int t = 0;		// t is the final time step
+
+	char status[512], *s;
+	for (int i = 0; true; ++i)
+		{
+		s = status + sprintf(status, "iteration: %05d: ", i);
+
+		// Create random K vector (4 + 2 + 2 elements)
+		for (int k = 0; k < 4; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+		for (int k = 4; k < 6; ++k)
+			K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
+		// K[5] = 0.0;			// force current digit = 0
+		for (int k = 6; k < 8; ++k)
+			K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
+
+		forward_BPTT(Net, dimK, K, 1);			// unfold 1 time
+		// Note that only 6 of 8 dimensions of the output is significant
+		// ...the last 2 dimensions are ignored
+		// printf("successfully forward propagated\n");
+
+		// Desired value = K_star
+		double K_star[10];
+		transition(K, K_star);
+
+		// Difference between actual outcome and desired value:
+		double training_err = 0.0;
+		for (int k = 4; k < 10; ++k)		// 6 components
+			{
+			double error = K_star[k] - lastLayer.neurons[k - 4].output[t];
+			errors[k - 4] = error; // record this for back-prop
+
+			training_err += fabs(error); // record sum of errors
+			}
+		for (int k = 6; k < 8; ++k)			// last 2 errors are always 0
+			errors[k] = 0.0;
+
+		// printf("sum of squared error = %lf  ", training_err);
+
+		// Update error arrays cyclically
+		// (This is easier to understand by referring to the next block of code)
+		sum_err2 -= errors2[tail];
+		sum_err2 += errors1[tail];
+		sum_err1 -= errors1[tail];
+		sum_err1 += training_err;
+		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
+
+		double mean_err = (i < M) ? (sum_err1 / i) : (sum_err1 / M);
+		s += sprintf(s, "mean abs error = %lf  ", mean_err);
+
+		if (training_err < 0.0008)
+			break;
+
+		// record new error in cyclic arrays
+		errors2[tail] = errors1[tail];
+		errors1[tail] = training_err;
+		++tail;
+		if (tail == M) // loop back in cycle
+			tail = 0;
+
+		backprop_through_time(Net, errors, 1); // train the network, n-fold = 1
+
+		// Testing set
+		if ((i % 5000) == 0)
+			{
+			double test_err = 0.0;
+			for (int j = 0; j < 10; ++j)
+				{
+				// Create random K vector (4 + 2 + 2 elements)
+				for (int k = 0; k < 4; ++k)
+					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+				for (int k = 4; k < 6; ++k)
+					K[k] = (rand() / (double) RAND_MAX) > 0.5 ? 1.0 : 0.0;
+				for (int k = 6; k < 8; ++k)
+					K[k] = floor((rand() / (double) RAND_MAX) * 10.0) / 10.0;
+				// plot_tester(K[0], K[1]);
+
+				forward_BPTT(Net, dimK, K, 1);		// 1-fold backprop
+
+				// Desired value = K_star
+				double K_star[10];
+				transition(K, K_star);
+
+				double single_err = 0.0;
+				for (int k = 4; k < 10; ++k)
+					{
+					double error = K_star[k] - lastLayer.neurons[k - 4].output[t];
+					single_err += fabs(error); // record sum of errors
+					}
+				test_err += single_err;
+				}
+			test_err /= 10.0;
+			s += sprintf(s, "random test error = %1.06lf  ", test_err);
+
+			double ratio = (sum_err2 - sum_err1) / sum_err1;
+			if (ratio > 0)
+				s += sprintf(s, "error ratio = %f", ratio);
+			else
+				s += sprintf(s, "error ratio = \x1b[31m%f\x1b[39;49m", ratio);
+
+			if (isnan(ratio))
+				break;
+			// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
+			// if (test_err < 0.01)
+			if (test_err < 0.0008)
+				break;
+			}
+
+		if (i % 5000 == 0) printf("%s\n", status);
+
+		if ((i % 5000) == 0) // display status periodically
+			{
+			// plot_output(Net);
+			// flush_output();
+			plot_W_BPTT(Net);
+			plot_LogErr(training_err, 0.0008);
+			// plot_NN(Net);
+			// plot_trainer(0);		// required to clear the window
+			// plot_K();
+			if (quit = delay_vis(0))
+				break;
+			}
+		}
+
+	printf("%s", status);
+	end_timer();
+	beep();
+	// plot_output(Net);
+	// flush_output();
+	plot_W_BPTT(Net);
+
+	/****
+	printf("\n\nTest with: 73 - 37 = 36.\n");
+	K[0] = 0.7;		// A1
+	K[1] = 0.3;		// A0
+	K[2] = 0.3;		// B1
+	K[3] = 0.7;		// B0
+	K[4] = 0.0;		// carry
+	K[5] = 0.0;		// current digit
+	K[6] = 0.0;		// C1
+	K[7] = 0.0;		// C0
+	K[8] = 0.0;		// ready
+	K[9] = 0.0;		// overflow
+	forward_prop(Net, 8, K);
+	printf("carry [1.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.0] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [0.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
+
+	// copy output back to K;  second iteration
+	for (int k = 0; k < 6; ++k)
+		K[k + 4] = lastLayer.neurons[k].output;
+	forward_prop(Net, 8, K);
+	printf("\ncarry [0.0] = %f\n", lastLayer.neurons[0].output);
+	printf("current-digit [1.0] = %f\n", lastLayer.neurons[1].output);
+	printf("C1 [0.3] = %f\n", lastLayer.neurons[2].output);
+	printf("C0 [0.6] = %f\n", lastLayer.neurons[3].output);
+	printf("ready [1.0] = %f\n", lastLayer.neurons[4].output);
+	printf("overflow [0.0] = %f\n", lastLayer.neurons[5].output);
+	 ****/
+
+	if (!quit)
+		pause_graphics();
+	else
+		quit_graphics();
+
+	extern void save_RNN(RNN *, int, int *);
+	save_RNN(Net, numLayers, neuronsOfLayer);
+	free_BPTT_NN(Net, neuronsOfLayer);
 	}
 

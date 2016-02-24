@@ -883,10 +883,12 @@ int delay_vis(int delay)
 	// 'Q' --- quit
 	if (keys[SDL_SCANCODE_Q]) // || keys[SDL_SCANCODE_SPACE]
 		return 1;
-	else if (keys[SDL_SCANCODE_V])
+	else if (keys[SDL_SCANCODE_V])			// verify (test operator)
 		return 2;
-	else if (keys[SDL_SCANCODE_Z])
+	else if (keys[SDL_SCANCODE_Z])			// restart
 		return 3;
+	else if (keys[SDL_SCANCODE_L])			// load weights
+		return 4;
 	else
 		return 0;
 	}
