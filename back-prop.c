@@ -53,8 +53,9 @@ double d_softplus(double v)
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
-void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
+NNET *create_NN(int numLayers, int *neuronsOfLayer)
 	{
+	NNET *net = (NNET *) malloc(sizeof (NNET));
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
@@ -83,6 +84,7 @@ void create_NN(NNET *net, int numLayers, int *neuronsOfLayer)
 				}
 			}
 		}
+	return net;
 	}
 
 void re_randomize(NNET *net, int numLayers, int *neuronsOfLayer)

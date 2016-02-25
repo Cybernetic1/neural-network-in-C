@@ -501,29 +501,49 @@ void plot_W_BPTT(RNN *net)
 	double Gain = Y_step / 1.0;
 	for (int l = 1; l < numLayers; l++) // Note: layer 0 has no weights
 		{
-		double gain = 1.0f;
-		// increase amplitude for hidden layers
-		if (l > 0 && l < numLayers - 1)
-			gain = 5.0f;
-		else
-			gain = 1.0f;
-
-		// set color
-		float r = ((float) l) / (numLayers - 1);
-		float b = 1.0f - ((float) l) / (numLayers - 1);
-		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF); // blue
-
 		int nn = net->layers[l].numNeurons;
-
 		int neuronWidth = (W_box_width - 20) / nn;
 
-		// draw baseline
+		// ***** Automatic gain-adjust
+		// find min and max weights
+		double gain = 1.0f;
+		double min_W, max_W;
+		min_W = max_W = net->layers[l].neurons[0].weights[0];
+		for (int n = 0; n < nn; n++) // for all neurons
+			{
+			int numWeights = net->layers[l - 1].numNeurons + 1; // always >= 2
 
+			for (int m = 0; m < numWeights; ++m)
+				{
+				double weight = net->layers[l].neurons[n].weights[m];
+				if (weight > max_W) max_W = weight;
+				if (weight < min_W) min_W = weight;
+				}
+			}
+		double peak = fmax(fabs(max_W), fabs(min_W));
+		gain = ((double) Y_step) / peak;
+
+		// draw baseline
+		SDL_SetRenderDrawColor(gfx_W, 0x00, 0x00, 0xFF, 0xFF); // blue
 		int baseline_y = l * Y_step;
 		SDL_RenderDrawLine(gfx_W, 10, baseline_y, \
 			W_box_width - 10, baseline_y);
 
-		SDL_SetRenderDrawColor(gfx_W, 0xFF, 0x00, 0x00, 0xFF); // red
+		// **** set color
+		// The weights for each layer is scaled to fit in the horizontal strip (Y_step)
+		// But if the weights are large, their line color will move towards red-purple
+		// Otherwise they are green.
+		// float c1 = ((float) l) / (numLayers - 1);
+		// float c2 = 1.0f - ((float) l) / (numLayers - 1);
+		float c1 = peak / 2.0f; // peak starts from ~1.0 and may increase indefinitely
+		float c3 = 0.0f;
+		if (c1 > 1.0f)
+			{
+			c3 = c1 / 10.0f;
+			c1 = 1.0f;
+			}
+		float c2 = 1.0f - c1;
+		SDL_SetRenderDrawColor(gfx_W, f2i(c1), f2i(c2), f2i(c3), 0xFF);
 
 		for (int n = 0; n < nn; n++) // for each neuron on layer l
 			{
@@ -531,12 +551,25 @@ void plot_W_BPTT(RNN *net)
 			int basepoint_x = 10 + neuronWidth * n;
 			int gap = (neuronWidth - 10) / (numWeights - 1);
 
+			SDL_SetRenderDrawColor(gfx_W, f2i(c1), f2i(c2), f2i(c3), 0xFF);
+			for (int m = 0; m < numWeights; ++m)
+				// for each weight including bias, but minus one because # line segments
+				// is 1 less than # of weights
+				{
+				int weight0 = gain * net->layers[l].neurons[n].weights[m];
+				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * m,
+								baseline_y,
+								basepoint_x + 5 + gap * m,
+								baseline_y - weight0);
+				}
+
+			SDL_SetRenderDrawColor(gfx_W, 0x66, 0x66, 0x66, 0xFF); // grey
 			for (int m = 0; m < numWeights - 1; ++m)
 				// for each weight including bias, but minus one because # line segments
 				// is 1 less than # of weights
 				{
-				double weight0 = Gain * net->layers[l].neurons[n].weights[m];
-				double weight1 = Gain * net->layers[l].neurons[n].weights[m + 1];
+				int weight0 = gain * net->layers[l].neurons[n].weights[m];
+				int weight1 = gain * net->layers[l].neurons[n].weights[m + 1];
 				SDL_RenderDrawLine(gfx_W, basepoint_x + 5 + gap * m,
 								baseline_y - weight0,
 								basepoint_x + 5 + gap * (m + 1),

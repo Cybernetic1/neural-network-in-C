@@ -19,8 +19,10 @@ extern double rectifier(double);
 //************************ create neural network *********************//
 // GIVEN: how many layers, and how many neurons in each layer
 
-void create_BPTT_NN(RNN *net, int numLayers, int *neuronsOfLayer)
+RNN *create_BPTT_NN(int numLayers, int *neuronsOfLayer)
 	{
+	RNN *net = (RNN *) malloc(sizeof(RNN));
+
 	srand(time(NULL));
 	net->numLayers = numLayers;
 
@@ -34,10 +36,12 @@ void create_BPTT_NN(RNN *net, int numLayers, int *neuronsOfLayer)
 	//construct hidden layers
 	for (int l = 1; l < numLayers; l++) //construct layers
 		{
+		// This takes cares of n-folds of outputs and gradients:
 		net->layers[l].neurons = (rNEURON *) malloc(neuronsOfLayer[l] * sizeof (rNEURON));
 		net->layers[l].numNeurons = neuronsOfLayer[l];
 		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
 			{
+			// Only 1 array of weights per neuron, because weights are shared across folds
 			net->layers[l].neurons[n].weights =
 					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
 			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
@@ -50,6 +54,20 @@ void create_BPTT_NN(RNN *net, int numLayers, int *neuronsOfLayer)
 				}
 			}
 		}
+	return net;
+	}
+
+void BPTT_re_randomize(RNN *net, int numLayers, int *neuronsOfLayer)
+	{
+	srand(time(NULL));
+
+	for (int l = 1; l < numLayers; ++l)							// for each layer
+		for (int n = 0; n < neuronsOfLayer[l]; ++n)				// for each neuron
+			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)	// for each weight
+				{
+				extern double randomWeight();
+				net->layers[l].neurons[n].weights[i] = randomWeight();
+				}
 	}
 
 void free_BPTT_NN(RNN *net, int *neuronsOfLayer)
@@ -114,9 +132,9 @@ void forward_BPTT(RNN *net, int dim_V, double V[], int nfold)
 				net->layers[l].neurons[n].output[t] = rectifier(v);
 
 				// This is to prepare for back-prop
-				#define Leakage 0.0
-				if (v < -1.0)
-					net->layers[l].neurons[n].grad[t] = -Leakage;
+				#define Leakage 0.1
+				if (v < 0.0)
+					net->layers[l].neurons[n].grad[t] = Leakage;
 				// if (v > 1.0)
 				//	net->layers[l].neurons[n].grad[t] = Leakage;
 				else

@@ -222,13 +222,14 @@ int main(int argc, char** argv)
 	extern void arithmetic_testD();
 	extern void RNN_sine_test();
 	extern void BPTT_arithmetic_test();
+	extern void BPTT_arithmetic_testB();
 	extern void evolve();
 
 	bool quit = false;
 	char whichTest = '\n';
 	while (!quit)
 		{
-		printf("*** Welcome to Genifer 5.3 ***\n\n");
+		printf("\n\n*** Welcome to Genifer 5.3 ***\n\n");
 
 		printf("[1] forward test\n");
 		printf("[2] classic BP test (XOR)\n");
@@ -242,10 +243,11 @@ int main(int argc, char** argv)
 		printf("[a] arithmetic test: learn 1-step operator\n");
 		printf("[b] arithmetic test: test learned 1-step operator\n");
 		printf("[c] BPTT arithmetic test\n");
-		printf("[d] genetic NN test\n");
+		printf("[d] BPTT test learned operator\n");
 		printf("[e] rectifier BP test (XOR)\n");
 		printf("[f] RNN sine-wave test\n");
-		printf("[q] quit\n");
+		printf("[g] genetic NN test\n");
+		printf("[x] exit\n");
 
 		do
 			whichTest = getchar();
@@ -279,26 +281,29 @@ int main(int argc, char** argv)
 				break; // learn transition operator via back-prop
 			case '9':
 				arithmetic_testC(); // primary-school subtraction arithmetic
-				break; // check transition operator that was learned
+				break; // test transition operator that was learned
 			case 'a':
 				arithmetic_testD(); // primary-school subtraction arithmetic
 				break; // learn 1-step transition operator
 			case 'b':
 				arithmetic_testE(); // primary-school subtraction arithmetic
-				break; // check 1-step transition operator that was learned
+				break; // test 1-step transition operator that was learned
 			case 'c':
 				BPTT_arithmetic_test(); // learn arithmetic operator using BPTT
 				break;
 			case 'd':
-				evolve(); // learn arithmetic operator using BPTT
-				break;
+				BPTT_arithmetic_testB(); // learn arithmetic operator using BPTT
+				break; // test BPTT learned operator
 			case 'e':
 				// classic_BP_test_ReLU(); // learn XOR function
 				break;
 			case 'f':
 				RNN_sine_test(); // train RNN to produce sine wave
 				break;
-			case 'q':
+			case 'g':
+				evolve(); // learn arithmetic operator using BPTT
+				break;
+			case 'x':
 				quit = true;
 				break;
 			}
