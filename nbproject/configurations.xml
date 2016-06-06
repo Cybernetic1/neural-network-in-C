@@ -5,6 +5,7 @@
                    displayName="Header Files"
                    projectFiles="true">
       <itemPath>BPTT-RNN.h</itemPath>
+      <itemPath>Jacobian-NN.h</itemPath>
       <itemPath>RNN.h</itemPath>
       <itemPath>feedforward-NN.h</itemPath>
     </logicalFolder>
@@ -16,6 +17,7 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>Chinese-test.c</itemPath>
+      <itemPath>Jacobian-NN.c</itemPath>
       <itemPath>Q-learning.c</itemPath>
       <itemPath>arithmetic-test.c</itemPath>
       <itemPath>back-prop.c</itemPath>
@@ -24,8 +26,11 @@
       <itemPath>experiments.c</itemPath>
       <itemPath>genetic-NN.c</itemPath>
       <itemPath>main.c</itemPath>
+      <itemPath>maze.cpp</itemPath>
       <itemPath>real-time-recurrent-learning.c</itemPath>
       <itemPath>stochastic-forward-backward.c</itemPath>
+      <itemPath>tic-tac-toe.cpp</itemPath>
+      <itemPath>tic-tac-toe2.cpp</itemPath>
       <itemPath>visualization.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -60,6 +65,10 @@
       </item>
       <item path="Chinese-test.c" ex="false" tool="0" flavor2="0">
       </item>
+      <item path="Jacobian-NN.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="Jacobian-NN.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Q-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
@@ -80,9 +89,15 @@
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
+      <item path="maze.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="stochastic-forward-backward.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="tic-tac-toe.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tic-tac-toe2.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -96,9 +111,11 @@
       <compileType>
         <cTool>
           <developmentMode>5</developmentMode>
+          <standard>3</standard>
         </cTool>
         <ccTool>
           <developmentMode>5</developmentMode>
+          <standard>8</standard>
         </ccTool>
         <fortranCompilerTool>
           <developmentMode>5</developmentMode>
@@ -106,10 +123,15 @@
         <asmTool>
           <developmentMode>5</developmentMode>
         </asmTool>
+        <linkerTool>
+          <commandLine>-lm -lSDL2 -lgsl -lgslcblas -lsfml-graphics -lsfml-system -lsfml-window</commandLine>
+        </linkerTool>
       </compileType>
       <item path="BPTT-RNN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Chinese-test.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="Jacobian-NN.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="Q-learning.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -131,9 +153,13 @@
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
+      <item path="maze.cpp" ex="false" tool="1" flavor2="8">
+      </item>
       <item path="real-time-recurrent-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="stochastic-forward-backward.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="tic-tac-toe2.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>

@@ -251,7 +251,6 @@ void arithmetic_testA()
 // The learning algorithm would be to learn the transition operator as one single step.
 // This should be very simple and back-prop would do.
 #define ForwardPropMethod	forward_prop_ReLU
-#define BackPropMethod		back_prop_ReLU
 #define ErrorThreshold		0.001
 
 // ************************* EXPERIMENT RESULTS ************************
@@ -376,7 +375,7 @@ void arithmetic_testB()
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		BackPropMethod(Net, errors); // train the network!
+		back_prop(Net, errors); // train the network!
 
 		// Testing set
 		if ((i % 5000) == 0)
@@ -829,7 +828,6 @@ LOOP:
 // Now we combine the 2 arithmetic steps into 1 step, as a single operator.
 // This operator is supposedly very hard to learn.
 #define ForwardPropMethod	forward_prop_ReLU
-#define BackPropMethod		back_prop_ReLU
 #define ErrorThreshold		0.001
 
 void arithmetic_testD()		// same as testB, except learns entire operator in 1 step
@@ -922,7 +920,7 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		BackPropMethod(Net, errors); // train the network!
+		back_prop(Net, errors); // train the network!
 
 		// Testing set
 		if ((i % 5000) == 0)
@@ -1318,7 +1316,7 @@ void arithmetic_testF()		// same as testD, except learns entire operator in 2 st
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		BackPropMethod(Net, errors); // train the network!
+		back_prop(Net, errors); // train the network!
 
 		// Testing set
 		if ((i % 5000) == 0)

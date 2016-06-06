@@ -11,7 +11,7 @@ double K[dim_K];
 extern void create_NN(NNET *, int, int *);
 extern void Q_learn(double *, double *, double, double);
 extern void Q_act(double *, double *);
-extern void forward_prop(NNET *, int, double *);
+extern void forward_prop_sigmoid(NNET *, int, double *);
 extern double calc_error(NNET *, double []);
 extern void back_prop(NNET *);
 extern void plot_NN(NNET *net);
@@ -91,7 +91,55 @@ double get_reward(double K[])
 	return R;
 	}
 
-//************************** main algorithm ***********************//
+double state[9] = {		// state of Tic-Tac-Toe
+	0.0, 0.0, 0.0,
+	0.0, 0.0, 0.0,
+	0.0, 0.0, 0.0
+	};
+
+bool won(double who)		// check if player has won
+	{
+	// total of 8 cases:
+	// 0 1 2
+	// 3 4 5
+	// 6 7 8
+
+	#define TAKEN(x)		((x - who) < 0.01)
+
+	if (TAKEN(state[0]) && TAKEN(state[1]) && TAKEN(state[2]))
+		return true;
+	if (TAKEN(state[3]) && TAKEN(state[4]) && TAKEN(state[5]))
+		return true;
+	if (TAKEN(state[6]) && TAKEN(state[7]) && TAKEN(state[8]))
+		return true;
+
+	if (TAKEN(state[0]) && TAKEN(state[3]) && TAKEN(state[6]))
+		return true;
+	if (TAKEN(state[1]) && TAKEN(state[4]) && TAKEN(state[7]))
+		return true;
+	if (TAKEN(state[2]) && TAKEN(state[5]) && TAKEN(state[8]))
+		return true;
+
+	if (TAKEN(state[0]) && TAKEN(state[4]) && TAKEN(state[8]))
+		return true;
+	if (TAKEN(state[2]) && TAKEN(state[4]) && TAKEN(state[6]))
+		return true;
+
+	return false;
+	}
+
+void aliceMove()			// Alice = 1.0, Bob = -1.0
+	{
+	int choice;
+
+	do
+		choice = rand() % 9;
+	while (state[choice] != 0);
+
+	state[choice] = 1.0;
+	}
+
+//************************** main algorithm (old) ***********************//
 // Main loop:
 // 	----- RNN part -----
 //	Input is copied into K.
@@ -104,22 +152,18 @@ double get_reward(double K[])
 //	Invoke Q-learning, using the reward to update Q
 // Repeat
 
-#define LastLayer (Net->layers[numLayers - 1])
+//************************** main algorithm (new) ***********************//
+// Main loop:
+//	1. Use Q value to choose an optimal action, taking K to K'.
+//	2. Play the game until win / lose
+//	3. Invoke Q-learning, using the reward to update Q
+// Repeat
 
 void main_loop()
 	{
-	NNET *Net = (NNET *) malloc(sizeof (NNET));
-	int numLayers = 4;
-	//the first layer -- input layer
-	//the last layer -- output layer
-	// int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
-	int neuronsOfLayer[4] = {10, 14, 13, 10};
-
-	//read training data and testing data from file
-	read_trainers();
-
-	//create neural network for backpropagation
-	create_NN(Net, numLayers, neuronsOfLayer);
+	//create neural network for Q learning
+	extern NNET *Qnet;
+	init_Qlearn();
 
 	//error array to keep track of errors
 	#define MAX_EPOCHS 30
@@ -130,52 +174,49 @@ void main_loop()
 	start_NN_plot();
 	start_K_plot();
 
-	//output data to a file
+	/* output data to a file
 	FILE *fout;
 	if ((fout = fopen("randomtest-1.txt", "w")) == NULL)
 		{
 		fprintf(stderr, "file open failed.\n");
 		exit(1);
 		}
+	*/
 
+	#define dim_K 8
 	double *K2 = (double *) malloc(sizeof (double) * dim_K);
 
 	do // Loop over all epochs
 		{
 		// double squareErrorSum = 0;
+		double oldQ = 0.0; // ? TO-DO
 
-		// ----- RNN part -----
+		aliceMove();
+		if (won(1.0))			// Alice won
+			Q_learn(K, K2, -100.0, oldQ);
 
-		// Loop over all training data
-		for (int i = 0; i < DATASIZE; ++i)
-			{
-			// Write input value to K
-			for (int k = 0; k < dim_K; ++k)
-				K[k] = trainingIN[i][k];
-
-			// Let RNN act on K n times (TO-DO: is this really meaningful?)
-			#define Recurrence 10
-			for (int j = 0; j < Recurrence; j++)
-				{
-				forward_prop(Net, dim_K, K);
-
-				calc_error(Net, trainingOUT[i]);
-				back_prop(Net);
-
-				// copy output to input
-				for (int k = 0; k < dim_K; ++k)
-					K[k] = LastLayer.neurons[k].output;
-				}
-			}
-
-		// ----- RL part -----
+		// copy current state to K
+		for (int k = 0; k < dim_K; ++k)
+			K[k] = state[k];
 
 		// Use Q value to choose an optimal action, taking K to K2.
 		Q_act(K, K2); // this changes K2
 
+		// If K2 is an invalid move... we should give -reward.
+		// There's also the problem of wandering / exploration.
+		//
+
+		// Copy K2 to current state
+		for (int k = 0; k < dim_K; ++k)
+			state[k] = K2[k];
+
+		if (won(-1.0))			// Bob won
+			;
+
 		// Invoke Q-learning, using the reward to update Q
 		double R = get_reward(K2); // reward is gotten from the state transition
-		double oldQ = 0.0; // ? TO-DO
+		// double
+		oldQ = 0.0; // ? TO-DO
 		Q_learn(K, K2, R, oldQ);
 
 		// ------ calculate error -------
@@ -189,21 +230,18 @@ void main_loop()
 		maxlen++;
 		epoch++;
 
-		plot_NN(Net);
+		plot_NN(Qnet);
 		SDL_Delay(1000 /* milliseconds */);
 
 		}
 	while (maxlen < MAX_EPOCHS);
 
-	fclose(fout);
-	free(Net);
-	extern NNET *Qnet;
+	// fclose(fout);
 	free(Qnet);
 	free(K2);
 
 	pause_graphics(); //keep the window open
 	}
-
 
 //************************** Genifer main function ***********************//
 
@@ -224,6 +262,10 @@ int main(int argc, char** argv)
 	extern void BPTT_arithmetic_test();
 	extern void BPTT_arithmetic_testB();
 	extern void evolve();
+	extern void main2();
+	extern void jacobian_test();
+	extern void Q_test();
+	extern void tic_tac_toe_test2();
 
 	bool quit = false;
 	char whichTest = '\n';
@@ -247,6 +289,11 @@ int main(int argc, char** argv)
 		printf("[e] rectifier BP test (XOR)\n");
 		printf("[f] RNN sine-wave test\n");
 		printf("[g] genetic NN test\n");
+		printf("[h] run maze\n");
+		printf("[i] ???? \n");
+		printf("[j] Jacobian NN\n");
+		printf("[q] Q-learning test\n");
+		printf("[t] Tic-Tac-Toe test\n");
 		printf("[x] exit\n");
 
 		do
@@ -302,6 +349,18 @@ int main(int argc, char** argv)
 				break;
 			case 'g':
 				evolve(); // learn arithmetic operator using BPTT
+				break;
+			case 'h':
+				main2(); // run maze
+				break;
+			case 'j':
+				// jacobian_test(); // test Jacobian neural network
+				break;
+			case 'q':
+				// Q_test(); // test Q learning
+				break;
+			case 't':
+				tic_tac_toe_test2();
 				break;
 			case 'x':
 				quit = true;

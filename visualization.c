@@ -81,6 +81,9 @@ void plot_LogErr(double err, double target)
 	static double bin[binSize]; // stores plot data in log-scale
 	static int index = 1; // true index of current datum
 
+	if (err > 2.0) err = 2.0;
+	if (err < -2.0) err = -2.0;
+
 	if (new_LogErr_plot)
 		{
 		index = 1;

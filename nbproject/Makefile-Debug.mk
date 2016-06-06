@@ -36,6 +36,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 # Object Files
 OBJECTFILES= \
 	${OBJECTDIR}/Chinese-test.o \
+	${OBJECTDIR}/Jacobian-NN.o \
 	${OBJECTDIR}/Q-learning.o \
 	${OBJECTDIR}/arithmetic-test.o \
 	${OBJECTDIR}/back-prop.o \
@@ -44,8 +45,11 @@ OBJECTFILES= \
 	${OBJECTDIR}/experiments.o \
 	${OBJECTDIR}/genetic-NN.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/maze.o \
 	${OBJECTDIR}/real-time-recurrent-learning.o \
 	${OBJECTDIR}/stochastic-forward-backward.o \
+	${OBJECTDIR}/tic-tac-toe.o \
+	${OBJECTDIR}/tic-tac-toe2.o \
 	${OBJECTDIR}/visualization.o
 
 
@@ -71,12 +75,17 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lgsl -lgslcblas
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lgsl -lgslcblas
 
 ${OBJECTDIR}/Chinese-test.o: Chinese-test.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Chinese-test.o Chinese-test.c
+
+${OBJECTDIR}/Jacobian-NN.o: Jacobian-NN.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Jacobian-NN.o Jacobian-NN.c
 
 ${OBJECTDIR}/Q-learning.o: Q-learning.c 
 	${MKDIR} -p ${OBJECTDIR}
@@ -118,6 +127,11 @@ ${OBJECTDIR}/main.o: main.c
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
 
+${OBJECTDIR}/maze.o: maze.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/maze.o maze.cpp
+
 ${OBJECTDIR}/real-time-recurrent-learning.o: real-time-recurrent-learning.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -127,6 +141,16 @@ ${OBJECTDIR}/stochastic-forward-backward.o: stochastic-forward-backward.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/stochastic-forward-backward.o stochastic-forward-backward.c
+
+${OBJECTDIR}/tic-tac-toe.o: tic-tac-toe.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tic-tac-toe.o tic-tac-toe.cpp
+
+${OBJECTDIR}/tic-tac-toe2.o: tic-tac-toe2.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tic-tac-toe2.o tic-tac-toe2.cpp
 
 ${OBJECTDIR}/visualization.o: visualization.c 
 	${MKDIR} -p ${OBJECTDIR}

@@ -4,8 +4,8 @@
 // Q-net accepts K and K' as input.  K is the current state of the Reasoner,
 // K' is the "next" state.  Q-net's output is the Q-value, ie, the utility at state
 // K making the transition to K'.
-// In other words, Q-net approximates the function K x K' -> Q.
-// Given K, K', and Q, Q-net learns via tradition back-prop.
+// In other words, Q-net approximates the function K x K' -> ℝ.
+// Given K, K', and Q, Q-net learns via traditional back-prop.
 // The special thing about Q-net is that there is another algorithm that computes,
 // when given K, the K' that achieves maximum Q value.  This is the optimization part.
 
@@ -24,26 +24,27 @@
 extern double sigmoid(double v);
 extern double randomWeight();
 extern void create_NN(NNET *net, int numberOfLayers, int *neuronsOfLayer);
-extern void forward_prop(NNET *, int, double *);
+extern void forward_prop_sigmoid(NNET *, int, double *);
 extern double calc_error(NNET *net, double *Y);
 extern void back_prop(NNET *);
 
 //************************** prepare Q-net ***********************//
 NNET *Qnet;
 
-void init_Qlearn()
+NNET *init_Qlearn()
 	{
-	int numLayers = 3;
+	int numLayers = 5;
 	//the first layer -- input layer
 	//the last layer -- output layer
 	// int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
-	int neuronsOfLayer[3] = {20, 20, 1};
+	int neuronsOfLayer[5] = {18, 18, 15, 10, 1};
 
 	Qnet = (NNET*) malloc(sizeof (NNET));
 	//create neural network for backpropagation
 	create_NN(Qnet, numLayers, neuronsOfLayer);
 
 	// SDL_Renderer *gfx = newWindow();		// create graphics window
+	return Qnet;
 	}
 
 //************************** Q-learning ***********************//
@@ -72,7 +73,7 @@ double Q(double K[], double K2[])
 		K12[k + dim_K] = K2[k];
 		}
 
-	forward_prop(Qnet, dim_K * 2, K12);
+	forward_prop_sigmoid(Qnet, dim_K * 2, K12);
 
 	#define numLayers 3
 	#define LastLayer (Qnet->layers[numLayers - 1])

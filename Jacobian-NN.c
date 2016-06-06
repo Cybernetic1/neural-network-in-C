@@ -1,4 +1,14 @@
+// Jacobian neural network learning algorithm
+// ==========================================
+
+// ***** This idea abandoned because calculations are too complicated and slow
+
 // TO-DO:
+// (1) Calculate forward Jacobian J^-1 = J1
+// (2) Calculate inverse Jacobian J
+// (3) Calculate dJ/dw
+// (4) Sort all J1 and dJ/dw components
+// (5) Calculate local gradient = sum ij
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +16,7 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>			// time as random seed in create_NN()
-#include "feedforward-NN.h"
+#include "Jacobian-NN.h"
 
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
@@ -341,108 +351,3 @@ void back_prop(NNET *net, double *errors)
 			}
 		}
 	}
-
-// Calculate error between output of forward-prop and a given answer Y
-double calc_error(NNET *net, double Y[], double *errors)
-	{
-	// calculate mean square error
-	// desired value = Y = K* = trainingOUT
-	double sumOfSquareError = 0;
-
-	int numLayers = net->numLayers;
-	LAYER lastLayer = net->layers[numLayers - 1];
-	// This means each output neuron corresponds to a classification label --YKY
-	for (int n = 0; n < lastLayer.numNeurons; n++)
-		{
-		//error = desired_value - output
-		double error = Y[n] - lastLayer.neurons[n].output;
-		errors[n] = error;
-		sumOfSquareError += error * error / 2;
-		}
-	double mse = sumOfSquareError / lastLayer.numNeurons;
-	return mse; //return mean square error
-	}
-
-// **************************** Old code, currently not used *****************************
-
-/*
-void back_prop_old(NNET *net, double *errors)
-	{
-	int numLayers = net->numLayers;
-	LAYER lastLayer = net->layers[numLayers - 1];
-
-	// calculate gradient for output layer
-	for (int n = 0; n < lastLayer.numNeurons; ++n)
-		{
-		double output = lastLayer.neurons[n].output;
-		//for output layer, ∇ = y∙(1-y)∙error
-		lastLayer.neurons[n].grad = Steepness * output * (1.0 - output) * errors[n];
-		}
-
-	// calculate gradient for hidden layers
-	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
-			{
-			double output = net->layers[l].neurons[n].output;
-			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
-				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
-				}
-			net->layers[l].neurons[n].grad = Steepness * output * (1.0 - output) * sum;
-			}
-		}
-
-	// update all weights
-	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
-			{
-			net->layers[l].neurons[n].weights[0] += Eta *
-					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{
-				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].grad * inputForThisNeuron;
-				}
-			}
-		}
-	}
-*/
-
-/*
-// *************************calculate error average*************
-// relative error = |average of second 10 errors : average of first 10 errors - 1|
-// It is 0 if the errors stay constant, non-zero if the errors are changing rapidly
-// these errors are from the training set --YKY
-
-double relative_error(double error[], int len)
-	{
-	len = len - 1;
-	if (len < 20)
-		return 1;
-	//keep track of the last 20 Root of Mean Square Errors
-	int start1 = len - 20;
-	int start2 = len - 10;
-
-	double error1, error2 = 0;
-
-	//calculate the average of the first 10 errors
-	for (int i = start1; i < start1 + 10; i++)
-		error1 += error[i];
-	double averageError1 = error1 / 10;
-
-	//calculate the average of the second 10 errors
-	for (int i = start2; i < start2 + 10; i++)
-		error2 += error[i];
-	double averageError2 = error2 / 10;
-
-	double relativeErr = (averageError1 - averageError2) / averageError1;
-	return (relativeErr > 0) ? relativeErr : -relativeErr;
-	}
-
-*/

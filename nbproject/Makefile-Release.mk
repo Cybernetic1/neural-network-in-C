@@ -44,8 +44,10 @@ OBJECTFILES= \
 	${OBJECTDIR}/experiments.o \
 	${OBJECTDIR}/genetic-NN.o \
 	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/maze.o \
 	${OBJECTDIR}/real-time-recurrent-learning.o \
 	${OBJECTDIR}/stochastic-forward-backward.o \
+	${OBJECTDIR}/tic-tac-toe2.o \
 	${OBJECTDIR}/visualization.o
 
 
@@ -71,67 +73,77 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/genifer5c ${OBJECTFILES} ${LDLIBSOPTIONS} -lm -lSDL2 -lgsl -lgslcblas -lsfml-graphics -lsfml-system -lsfml-window
 
 ${OBJECTDIR}/Chinese-test.o: Chinese-test.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Chinese-test.o Chinese-test.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Chinese-test.o Chinese-test.c
 
 ${OBJECTDIR}/Q-learning.o: Q-learning.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Q-learning.o Q-learning.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Q-learning.o Q-learning.c
 
 ${OBJECTDIR}/arithmetic-test.o: arithmetic-test.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/arithmetic-test.o arithmetic-test.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/arithmetic-test.o arithmetic-test.c
 
 ${OBJECTDIR}/back-prop.o: back-prop.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/back-prop.o back-prop.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/back-prop.o back-prop.c
 
 ${OBJECTDIR}/backprop-through-time.o: backprop-through-time.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/backprop-through-time.o backprop-through-time.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/backprop-through-time.o backprop-through-time.c
 
 ${OBJECTDIR}/basic-tests.o: basic-tests.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/basic-tests.o basic-tests.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/basic-tests.o basic-tests.c
 
 ${OBJECTDIR}/experiments.o: experiments.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/experiments.o experiments.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/experiments.o experiments.c
 
 ${OBJECTDIR}/genetic-NN.o: genetic-NN.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/genetic-NN.o genetic-NN.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/genetic-NN.o genetic-NN.c
 
 ${OBJECTDIR}/main.o: main.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
+
+${OBJECTDIR}/maze.o: maze.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/maze.o maze.cpp
 
 ${OBJECTDIR}/real-time-recurrent-learning.o: real-time-recurrent-learning.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/real-time-recurrent-learning.o real-time-recurrent-learning.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/real-time-recurrent-learning.o real-time-recurrent-learning.c
 
 ${OBJECTDIR}/stochastic-forward-backward.o: stochastic-forward-backward.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/stochastic-forward-backward.o stochastic-forward-backward.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/stochastic-forward-backward.o stochastic-forward-backward.c
+
+${OBJECTDIR}/tic-tac-toe2.o: tic-tac-toe2.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -std=c++11 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tic-tac-toe2.o tic-tac-toe2.cpp
 
 ${OBJECTDIR}/visualization.o: visualization.c 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/visualization.o visualization.c
+	$(COMPILE.c) -O2 -std=c99 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/visualization.o visualization.c
 
 # Subprojects
 .build-subprojects:

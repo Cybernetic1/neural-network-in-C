@@ -5,6 +5,12 @@
 // Cantonese is a dialect of Chinese very close to standard Chinese, so only minor
 // transliterations are required to turn Chinese into Cantonese.
 
+// 问题是如何 define states and actions。  从 agent 个体的角度看，当然是字／词的 input-output
+// = states，还有将 focus 在上下文移动。   还有对 reasoning operator 的控制。
+// 那就是 RNN 对不同输入有不同输出，输出正确或错误时都应该有 learning。
+// 当 first impression 失败时就用 forward-backward。  The training errors will have some patterns,
+// as well as the local gradients.
+
 // TO-DO:
 // * structure of K is fixed: K = in-word, in-strength, speak-strength, internal, out-word
 // * need vector representation for individual words
