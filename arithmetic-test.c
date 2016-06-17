@@ -548,19 +548,26 @@ void arithmetic_testB()
 	free_NN(Net, neuronsOfLayer);
 	}
 
-void saveNet(NNET *net, int numLayers, int *neuronsOfLayer, char *comments)
+void saveNet(NNET *net, int numLayers, int *neuronsOfLayer, char *comments, char *defaultName)
 	{
-	char fileName[1024];
-	printf("Enter file name [default = don't save] :");
-	int c;
-	while ( (c = getchar()) != EOF && c != '\n' )
-		;
-	fgets(fileName, sizeof(fileName), stdin);
-	fileName[strlen(fileName) - 1] = '\0';
-	if (strlen(fileName) == 0)
-		return;
-
-	FILE *fp = fopen(fileName, "w");
+	FILE *fp;
+	if (strlen(defaultName) > 0)
+		{
+		fp = fopen(defaultName, "w");
+		}
+	else
+		{
+		char fileName[1024];
+		printf("Enter file name [default = %s] :", defaultName);
+		int c;
+		while ( (c = getchar()) != EOF && c != '\n' )
+			;
+		fgets(fileName, sizeof(fileName), stdin);
+		fileName[strlen(fileName) - 1] = '\0';
+		if (strlen(fileName) == 0)
+			return;
+		fp = fopen(fileName, "w");
+		}
 	fprintf(fp, "%s\n", comments);
 	#define EndOfComments	"**************\n"
 	fprintf(fp, EndOfComments);
@@ -581,19 +588,19 @@ void saveNet(NNET *net, int numLayers, int *neuronsOfLayer, char *comments)
 	printf("File saved.");
 	}
 
-NNET *loadNet(int *pNumLayers, int *pNeuronsOfLayer[])
+NNET *loadNet(int *pNumLayers, int *pNeuronsOfLayer[], char *defaultName)
 	{
 	printf("Existing network files:\n");
 	system("ls *.net");
 	char fileName[1024];
-	printf("\nEnter file name, default = [operator.net] :");
+	printf("\nEnter file name, default = [%s] :", defaultName);
 	int c;
 	while ( (c = getchar()) != EOF && c != '\n' )
 		;
 	fgets(fileName, sizeof(fileName), stdin);
 	fileName[strlen(fileName) - 1] = '\0';
 	if (strlen(fileName) == 0)
-		strcpy(fileName, "operator.net");
+		strcpy(fileName, defaultName);
 	FILE *fp = fopen(fileName, "r");
 
 	// skip comments
@@ -632,7 +639,7 @@ void arithmetic_testC()		// verify results for testB
 	NNET *Net;
 	int numLayers;
 	int *neuronsOfLayer;
-	Net = loadNet(&numLayers, &neuronsOfLayer);
+	Net = loadNet(&numLayers, &neuronsOfLayer, "operator.net");
 	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	/****
@@ -1063,14 +1070,14 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 
 	extern void saveNet();
 	printf("Saving network data....\n");
-	saveNet(Net, numLayers, neuronsOfLayer, "");
+	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
 	free_NN(Net, neuronsOfLayer);
 	}
 
 void arithmetic_testE()		// verify results for testD
 	{
 	int numLayers, *neuronsOfLayer;
-	NNET *Net = loadNet(&numLayers, &neuronsOfLayer);
+	NNET *Net = loadNet(&numLayers, &neuronsOfLayer, "operator.net");
 	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
@@ -1459,7 +1466,7 @@ void arithmetic_testF()		// same as testD, except learns entire operator in 2 st
 
 	extern void saveNet();
 	printf("Saving network data....\n");
-	saveNet(Net, numLayers, neuronsOfLayer, "");
+	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
 	free_NN(Net, neuronsOfLayer);
 	}
 

@@ -50,7 +50,7 @@ double best[L][N][N];			// best candidate
 double selected[L][M][N];		// selected from binary tournament
 double children[L][M][N];		// 2nd generation
 
-int neuronsOfLayer[L] = { N };		// initialize all layers to have N neurons
+int neuronsPerLayer[L] = { N };		// initialize all layers to have N neurons
 int dimK = N;						// dimension of input-layer vector
 
 extern int rand(void);
@@ -71,7 +71,7 @@ extern void backprop_gNN(double []);
 
 // For each layer, the fitness of individual neurons can be calculated by choosing that
 // neuron together with the N-1 top-ranking neurons in that layer.  Can this be simplified?
-// 
+//
 double fitness(int layer, int index)
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
@@ -343,10 +343,10 @@ void backprop_gNN(double *errors)
 		{
 		for (int n = 0; n < N; n++)		// for each neuron
 			{
-			population[l][n][0] += Eta * 
+			population[l][n][0] += Eta *
 					grad[l][n] * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < N; i++)		// for each weight
-				{	
+				{
 				double inputForThisNeuron = output[l - 1][i];
 				population[l][n][i + 1] += Eta *
 						grad[l][n] * inputForThisNeuron;
@@ -356,7 +356,7 @@ void backprop_gNN(double *errors)
 	}
 
 /*
- * 
+ *
 // Same as above, except with soft_plus activation function
 void forward_prop_SP(NNET *net, int dim_V, double V[])
 	{
@@ -412,7 +412,7 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 				}
 
 			net->layers[l].neurons[n].output = rectifier(v);
-			
+
 			// This is to prepare for back-prop
 			if (v < -1.0)
 				net->layers[l].neurons[n].grad = -Leakage;
@@ -463,10 +463,10 @@ void back_prop_ReLU(NNET *net, double *errors)
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
-			net->layers[l].neurons[n].weights[0] += Eta * 
+			net->layers[l].neurons[n].weights[0] += Eta *
 					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{	
+				{
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
 				net->layers[l].neurons[n].weights[i + 1] += Eta *
 						net->layers[l].neurons[n].grad * inputForThisNeuron;
@@ -499,10 +499,10 @@ double calc_error(NNET *net, double Y[], double *errors)
 */
 
 /* No need to create neural network as it is stored in the population
- * 
+ *
 //****************************create neural network*********************
 // GIVEN: how many layers, and how many neurons in each layer
-void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, double dna[][L])
+void create_gNN(NNET *net, int numLayers, int *neuronsPerLayer, double dna[][L])
 	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
@@ -511,19 +511,19 @@ void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, double dna[][L])
 
 	net->layers = (LAYER *) malloc(numLayers * sizeof (LAYER));
 	//construct input layer, no weights
-	net->layers[0].numNeurons = neuronsOfLayer[0];
-	net->layers[0].neurons = (NEURON *) malloc(neuronsOfLayer[0] * sizeof (NEURON));
+	net->layers[0].numNeurons = neuronsPerLayer[0];
+	net->layers[0].neurons = (NEURON *) malloc(neuronsPerLayer[0] * sizeof (NEURON));
 
 	//construct hidden layers
 	for (int l = 1; l < numLayers; l++) //construct layers
 		{
-		net->layers[l].neurons = (NEURON *) malloc(neuronsOfLayer[l] * sizeof (NEURON));
-		net->layers[l].numNeurons = neuronsOfLayer[l];
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
+		net->layers[l].neurons = (NEURON *) malloc(neuronsPerLayer[l] * sizeof (NEURON));
+		net->layers[l].numNeurons = neuronsPerLayer[l];
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // construct each neuron in the layer
 			{
 			net->layers[l].neurons[n].weights =
-					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
+					(double *) malloc((neuronsPerLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; i++)
 				{
 				//construct weights of neuron from previous layer neurons
 				//when k = 0, it's bias weight
@@ -534,7 +534,7 @@ void create_gNN(NNET *net, int numLayers, int *neuronsOfLayer, double dna[][L])
 		}
 	}
 
-void free_gNN(NNET *net, int *neuronsOfLayer)
+void free_gNN(NNET *net, int *neuronsPerLayer)
 	{
 	// for input layer
 	free(net->layers[0].neurons);
@@ -543,7 +543,7 @@ void free_gNN(NNET *net, int *neuronsOfLayer)
 	int numLayers = net->numLayers;
 	for (int l = 1; l < numLayers; l++) // for each layer
 		{
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // for each neuron in the layer
 			{
 			free(net->layers[l].neurons[n].weights);
 			}
@@ -552,7 +552,7 @@ void free_gNN(NNET *net, int *neuronsOfLayer)
 
 	// free all layers
 	free(net->layers);
-	
+
 	// free the whole net
 	free(net);
 	}

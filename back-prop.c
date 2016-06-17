@@ -8,13 +8,13 @@
 #include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
-#define Eta 0.01			// learning rate
+#define Eta 0.05			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 double randomWeight() // generate random weight between [+1.0, -1.0]
 	{
 	// return 0.5 + (rand() / (double) RAND_MAX) * 0.01;
-	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
+	return (rand() / (double) RAND_MAX) * 0.2 - 0.1;
 	}
 
 //******** activation functions and random weight generator ********************//
@@ -22,7 +22,7 @@ double randomWeight() // generate random weight between [+1.0, -1.0]
 
 double sigmoid(double v)
 	{
-	#define Steepness 3.0
+	#define Steepness 1.0
 	return 1.0 / (1.0 + exp(-Steepness * v));
 	}
 
