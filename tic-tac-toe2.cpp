@@ -421,7 +421,7 @@ extern "C" int tic_tac_toe_test2()
 	int totalStates2 = loadStatesFromFile("ttt2.dat", states2, V2);
 	cout << "Total read: " << to_string(totalStates2) << "\n";
 
-#define totalGames 300000
+#define totalGames 500000
 	int playTimes = 0;
 	int numPlayer1Won = 0;
 	int numPlayer_1Won = 0;

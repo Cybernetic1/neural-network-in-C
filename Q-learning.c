@@ -96,7 +96,7 @@ double norm(double grad[])
 	}
 
 int numLayers = 5;
-int neuronsOfLayer[] = {9, 30, 30, 30, 1};
+int neuronsOfLayer[] = {9, 40, 30, 20, 1};
 
 void init_Vnet()
 	{
@@ -135,7 +135,7 @@ void train_V(int s[9], double V)
 	{
 	double S[9];
 
-	for (int j = 0; j < 10; ++j)
+	for (int j = 0; j < 3; ++j)
 		{
 		for (int k = 0; k < 9; ++k)
 			S[k] = (double) s[k];
@@ -160,7 +160,7 @@ void learn_V(int s2[9], int s[9])
 	{
 	double S2[9], S[9];
 
-	for (int j = 0; j < 7; ++j)
+	for (int j = 0; j < 5; ++j)
 		{
 
 		for (int k = 0; k < 9; ++k)

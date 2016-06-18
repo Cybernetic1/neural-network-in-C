@@ -14,7 +14,7 @@
 double randomWeight() // generate random weight between [+1.0, -1.0]
 	{
 	// return 0.5 + (rand() / (double) RAND_MAX) * 0.01;
-	return (rand() / (double) RAND_MAX) * 0.2 - 0.1;
+	return (rand() / (double) RAND_MAX) * 0.4 - 0.2;
 	}
 
 //******** activation functions and random weight generator ********************//
