@@ -8,7 +8,7 @@
 #include <time.h>			// time as random seed in create_NN()
 #include "feedforward-NN.h"
 
-#define Eta 0.05			// learning rate
+#define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
 double randomWeight() // generate random weight between [+1.0, -1.0]

@@ -160,7 +160,7 @@ void learn_V(int s2[9], int s[9])
 	{
 	double S2[9], S[9];
 
-	for (int j = 0; j < 5; ++j)
+	for (int j = 0; j < 4; ++j)
 		{
 
 		for (int k = 0; k < 9; ++k)

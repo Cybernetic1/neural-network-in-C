@@ -363,16 +363,15 @@ extern "C" int tic_tac_toe_test2()
 				int result = hasWinner();
 				double v;
 
-				if (result == 0)
-					v = (rand() / (double) RAND_MAX);
-				else if (result == -2)
+				if (result == -2)
 					v = 0.5;
 				else if (result == -1)
-					v = 1.0;
-				else if (result == -2)
 					v = 0.0;
+				else if (result == 1)
+					v = 1.0;
 
-				train_V(s.x, v);
+				if (result != 0)
+					train_V(s.x, v);
 				}
 
 			double absError = 0.0; // sum of abs(error)
@@ -385,20 +384,21 @@ extern "C" int tic_tac_toe_test2()
 				int result = hasWinner();
 				double v;
 
-				if (result == 0)
-					v = (rand() / (double) RAND_MAX);
-				else if (result == -2)
-					v = 0.5;
-				else if (result == -1)
-					v = 1.0;
-				else if (result == -2)
-					v = 0.0;
-
 				double v2 = get_V(s.x);
 				//cout << "v2 = " << to_string(v2) << "\t";
 
+				if (result == -2)
+					v = 0.5;
+				else if (result == -1)
+					v = 0.0;
+				else if (result == 1)
+					v = 1.0;
+
 				double error = v - v2; // ideal - actual
 				//cout << "err = " << to_string(error) << "\n";
+
+				if (result == 0)
+					error = 0.0;
 
 				absError += fabs(error);
 				}
@@ -456,7 +456,7 @@ extern "C" int tic_tac_toe_test2()
 
 			// ************ Make 1 move
 			int userMove;
-			if (player == -1)
+			if (player == -1) // Old RL learner
 				{
 				if (ex <= exploreRate)
 					{
@@ -483,7 +483,7 @@ extern "C" int tic_tac_toe_test2()
 					prev_s2 = max_s2;
 					}
 				}
-			else // Player 1 (computer)
+			else // Player 1 (our NN learner)
 				{
 				if (ex <= exploreRate)
 					{
@@ -520,7 +520,7 @@ extern "C" int tic_tac_toe_test2()
 
 			if (won != 0)
 				{
-				if (1 == player) // player 1 wins
+				if (1 == player) // our NN learner wins
 					{
 					++numPlayer1Won;
 					max_s2 = board;
@@ -529,7 +529,7 @@ extern "C" int tic_tac_toe_test2()
 					// cout << "V2(s) changed from " << to_string(V2[prev_s2]);
 					// cout << "to " << to_string(V2[prev_s2]);
 					}
-				else // player -1 wins
+				else // old RL player (-1) wins
 					{
 					++numPlayer_1Won;
 					max_s1 = board;
