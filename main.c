@@ -163,7 +163,9 @@ void main_loop()
 	{
 	//create neural network for Q learning
 	extern NNET *Qnet;
-	init_Qlearn();
+	extern void init_Qnet(void);
+	extern NNET *Qnet;
+	init_Qnet();
 
 	//error array to keep track of errors
 	#define MAX_EPOCHS 30
@@ -266,6 +268,7 @@ int main(int argc, char** argv)
 	extern void jacobian_test();
 	extern void Q_test();
 	extern void tic_tac_toe_test2();
+	extern void tic_tac_toe_test3();
 
 	bool quit = false;
 	char whichTest = '\n';
@@ -293,7 +296,8 @@ int main(int argc, char** argv)
 		printf("[i] ???? \n");
 		printf("[j] Jacobian NN\n");
 		printf("[q] Q-learning test\n");
-		printf("[t] Tic-Tac-Toe test\n");
+		printf("[t] Tic-Tac-Toe test #3\n");
+		printf("[u] Tic-Tac-Toe test #2\n");
 		printf("[x] exit\n");
 
 		do
@@ -360,6 +364,9 @@ int main(int argc, char** argv)
 				// Q_test(); // test Q learning
 				break;
 			case 't':
+				tic_tac_toe_test3();
+				break;
+			case 'u':
 				tic_tac_toe_test2();
 				break;
 			case 'x':

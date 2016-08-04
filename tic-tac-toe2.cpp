@@ -4,27 +4,9 @@
 #include <list>
 #include <map>
 #include <math.h>		// floor
+#include "tic-tac-toe.h"
 
 using namespace std;
-
-struct State
-	{
-	int x[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-	};
-
-struct smaller
-	{
-
-	bool operator()(const State s1, const State s2) const
-		{
-		for (int i = 0; i < 9; ++i)
-			if (s1.x[i] > s2.x[i])
-				return true;
-			else if (s1.x[i] < s2.x[i])
-				return false;
-		return false;
-		}
-	};
 
 State board;
 
@@ -220,7 +202,7 @@ void BellmanUpdate(State &s2, State &s, std::map<State, double, smaller> &V)
 	V.at(s) += alpha * (V.at(s2) - V.at(s));
 	}
 
-void saveStatesToFile(string filename, std::list<State> &states, std::map<State, double, smaller> &V)
+void saveVToFile(string filename, std::list<State> &states, std::map<State, double, smaller> &V)
 	{
 	ofstream file2(filename);
 
@@ -251,7 +233,7 @@ void saveStatesToFile(string filename, std::list<State> &states, std::map<State,
 	file2.close();
 	}
 
-int loadStatesFromFile(string filename, std::list<State> &states, std::map<State, double, smaller> &V)
+int loadVFromFile(string filename, std::list<State> &states, std::map<State, double, smaller> &V)
 	{
 	ifstream file1(filename);
 
@@ -288,7 +270,7 @@ extern "C" int tic_tac_toe_test2()
 	// Build states for RL player 1
 	cout << "Loading player 1's V values...\n";
 	states1.clear();
-	int totalStates1 = loadStatesFromFile("ttt1.dat", states1, V1);
+	int totalStates1 = loadVFromFile("ttt1.dat", states1, V1);
 	cout << "Total read: " << to_string(totalStates1) << "\n";
 
 	//*** Train player1's V network
@@ -418,7 +400,7 @@ extern "C" int tic_tac_toe_test2()
 	// Build states for RL player 1
 	cout << "\n\nLoading player -1...\n";
 	states2.clear();
-	int totalStates2 = loadStatesFromFile("ttt2.dat", states2, V2);
+	int totalStates2 = loadVFromFile("ttt2.dat", states2, V2);
 	cout << "Total read: " << to_string(totalStates2) << "\n";
 
 #define totalGames 500000

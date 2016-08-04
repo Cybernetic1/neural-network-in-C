@@ -38,6 +38,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Chinese-test.o \
 	${OBJECTDIR}/Jacobian-NN.o \
 	${OBJECTDIR}/Q-learning.o \
+	${OBJECTDIR}/V-learning.o \
 	${OBJECTDIR}/arithmetic-test.o \
 	${OBJECTDIR}/back-prop.o \
 	${OBJECTDIR}/backprop-through-time.o \
@@ -50,6 +51,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/stochastic-forward-backward.o \
 	${OBJECTDIR}/tic-tac-toe.o \
 	${OBJECTDIR}/tic-tac-toe2.o \
+	${OBJECTDIR}/tic-tac-toe3.o \
 	${OBJECTDIR}/visualization.o
 
 
@@ -91,6 +93,11 @@ ${OBJECTDIR}/Q-learning.o: Q-learning.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/Q-learning.o Q-learning.c
+
+${OBJECTDIR}/V-learning.o: V-learning.c 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/V-learning.o V-learning.c
 
 ${OBJECTDIR}/arithmetic-test.o: arithmetic-test.c 
 	${MKDIR} -p ${OBJECTDIR}
@@ -151,6 +158,11 @@ ${OBJECTDIR}/tic-tac-toe2.o: tic-tac-toe2.cpp
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tic-tac-toe2.o tic-tac-toe2.cpp
+
+${OBJECTDIR}/tic-tac-toe3.o: tic-tac-toe3.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/tic-tac-toe3.o tic-tac-toe3.cpp
 
 ${OBJECTDIR}/visualization.o: visualization.c 
 	${MKDIR} -p ${OBJECTDIR}
