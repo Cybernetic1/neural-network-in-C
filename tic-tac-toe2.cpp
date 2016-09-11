@@ -1,3 +1,4 @@
+#include <cstdlib>		// rand()
 #include <iostream>
 #include <fstream>
 #include <sstream>		// for converting double to string
@@ -7,6 +8,11 @@
 #include "tic-tac-toe.h"
 
 using namespace std;
+
+extern "C"
+	{
+	double get_V(int [9]);
+	}
 
 State board;
 
@@ -155,7 +161,7 @@ extern "C"
 
 int computerMove(int player)
 	{
-	extern double get_V(int x[9]);
+	// extern double get_V(int x[9]);
 	double maxVal = 0.0;
 	int bestMove = -1;
 
@@ -255,6 +261,11 @@ int loadVFromFile(string filename, std::list<State> &states, std::map<State, dou
 		}
 	file1.close();
 	return total;
+	}
+
+extern "C"
+	{
+	double get_V(int x[9]);
 	}
 
 extern "C" int tic_tac_toe_test2()

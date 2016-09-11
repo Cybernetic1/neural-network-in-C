@@ -2,7 +2,7 @@
 #include <SDL2/SDL.h>			// SDL graphics library
 #include <stdlib.h>				// For playing system "beep"
 // #include <SDL2/SDL_mixer.h>	// SDL sound, no longer needed
-#include <sys/timeb.h>		// For timing operations
+#include <sys/timeb.h>			// For timing operations
 
 #include "feedforward-NN.h"
 #include "BPTT-RNN.h"
@@ -1008,6 +1008,11 @@ void beep()
 	Mix_FreeMusic(music);
 	Mix_CloseAudio();
 	 */
+	}
+
+void bip()
+	{
+	system("beep -f 1500 -l 100");
 	}
 
 void quit_graphics()

@@ -260,6 +260,7 @@ int main(int argc, char** argv)
 	extern void arithmetic_testB();
 	extern void arithmetic_testC();
 	extern void arithmetic_testD();
+	extern void arithmetic_testE();
 	extern void RNN_sine_test();
 	extern void BPTT_arithmetic_test();
 	extern void BPTT_arithmetic_testB();
@@ -269,6 +270,7 @@ int main(int argc, char** argv)
 	extern void Q_test();
 	extern void tic_tac_toe_test2();
 	extern void tic_tac_toe_test3();
+	extern void tic_tac_toe_test4();
 
 	bool quit = false;
 	char whichTest = '\n';
@@ -296,8 +298,9 @@ int main(int argc, char** argv)
 		printf("[i] ???? \n");
 		printf("[j] Jacobian NN\n");
 		printf("[q] Q-learning test\n");
-		printf("[t] Tic-Tac-Toe test #3\n");
-		printf("[u] Tic-Tac-Toe test #2\n");
+		printf("[t] Tic-Tac-Toe (Sayaka 2 architecture)\n");
+		printf("[u] Tic-Tac-Toe (Sayaka 1 architecture)\n");
+		printf("[v] Tic-Tac-Toe (V-value architecture)\n");
 		printf("[x] exit\n");
 
 		do
@@ -364,9 +367,12 @@ int main(int argc, char** argv)
 				// Q_test(); // test Q learning
 				break;
 			case 't':
-				tic_tac_toe_test3();
+				tic_tac_toe_test4();
 				break;
 			case 'u':
+				tic_tac_toe_test3();
+				break;
+			case 'v':
 				tic_tac_toe_test2();
 				break;
 			case 'x':

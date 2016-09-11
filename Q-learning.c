@@ -31,13 +31,15 @@ extern NNET *create_NN(int numberOfLayers, int *neuronsOfLayer);
 extern void forward_prop_sigmoid(NNET *, int, double *);
 extern double calc_error(NNET *net, double *Y);
 extern void back_prop(NNET *, double *errors);
+extern void plot_W(NNET *);
+extern void start_W_plot(void);
 
 //************************** prepare Q-net ***********************//
 NNET *Qnet;
 
 #define dimK 9
-int QnumLayers = 5;
-int QneuronsOfLayer[] = {dimK * 2, 40, 30, 20, 1};
+int QnumLayers = 4;
+int QneuronsOfLayer[] = {dimK * 2, 10, 7, 1};
 
 void init_Qnet()
 	{
@@ -52,7 +54,7 @@ void init_Qnet()
 	//create neural network for backpropagation
 	Qnet = create_NN(QnumLayers, QneuronsOfLayer);
 
-	// SDL_Renderer *gfx = newWindow();		// create graphics window
+	start_W_plot();
 	// return Qnet;
 	}
 
@@ -118,20 +120,25 @@ double norm(double grad[dimK])
 	}
 
 // **** Learn a simple Q-value map given specific Q values
-
-void train_Q(int s[dimK * 2], double Q)
+// **** Used in network initialization
+void train_Q(int s[dimK], double Q)
 	{
 	double S[dimK * 2];
+	static int count = 0;
 
-	for (int j = 0; j < 3; ++j)		// iterate 3 times
+	for (int j = 0; j < 1; ++j)		// iterate a few times
 		{
 		for (int k = 0; k < dimK; ++k)
+			{
 			S[k] = (double) s[k];
 
-		forward_prop_sigmoid(Qnet, dimK, S);
+			// 2nd argument should be random
+			S[k + dimK] = (rand() / (float) RAND_MAX) * 2.0 - 1.0; // in [+1,-1]
+			}
 
-		int numLayers = 5;
-		LAYER LastLayer = (Qnet->layers[numLayers - 1]);
+		forward_prop_sigmoid(Qnet, dimK * 2, S);
+
+		LAYER LastLayer = (Qnet->layers[QnumLayers - 1]);
 		// The last layer has only 1 neuron, which outputs the Q value:
 		double Q2 = LastLayer.neurons[0].output;
 
@@ -139,6 +146,12 @@ void train_Q(int s[dimK * 2], double Q)
 		*error = Q - Q2; // desired - actual
 
 		back_prop(Qnet, error);
+		}
+
+	if (++count == 1000)
+		{
+		plot_W(Qnet);
+		count = 0;
 		}
 	}
 
@@ -151,16 +164,25 @@ void train_Q(int s[dimK * 2], double Q)
 // We know old Q(K1,K2), but it is now adjusted to Q += ΔQ, thus the "error" for back-prop
 // is ΔQ.
 
+// Why is Bellman update needed here?  We made a transition.
+
+// K2 needs to be re-interpreted in Sayaka-2 architecture.
+// K2 is now an "action", not a state.
+// We need to calculate the next state X2, but which is now unavailable.
+// If the next state is invalid, then of course it should have -max value.
+// Else we can get maxQ(X2).
+
 void Q_learn(int K1[dimK], int K2[dimK], double R)
 	{
 	double maxQ(int [dimK], double [dimK]);
 	double K_out[dimK];
 
-	#define Gamma	0.5
-	#define Eta		0.5
+	#define Gamma	0.95
+	#define Eta		0.2
 
 	// Calculate ΔQ = η { R + γ max_a Q(K2,a) }
-	double dQ = Eta * (R + Gamma * maxQ(K2, K_out));
+	double dQ[1];
+	dQ[0] = Eta * (R + Gamma * maxQ(K2, K_out));
 
 	// Adjust old Q value
 	// oldQ += dQ;
@@ -173,12 +195,12 @@ void Q_learn(int K1[dimK], int K2[dimK], double R)
 		}
 
 	// Invoke back-prop a few times (perhaps this would make the learning effect stronger?)
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 2; ++i)
 		{
 		// We need to forward_prop Qnet with input (K1,K2)
 		forward_prop_sigmoid(Qnet, dimK * 2, K);
 
-		back_prop(Qnet, &dQ);
+		back_prop(Qnet, dQ);
 		}
 	}
 
@@ -230,7 +252,7 @@ void Q_act(double K[dimK], double K2[dimK])
 		{
 		// Start with a random K2
 		for (int k = 0; k < dimK; ++k)
-			K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0; // in [+2,-2]
+			K2[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0; // in [+1,-1]
 
 		// Find the steepest direction [∂Q/∂K2], using numerical differentiation.
 		#define delta	0.1
@@ -271,14 +293,15 @@ double maxQ(int K[dimK], double K2[dimK])
 	for (int k = 0; k < dimK; ++k)
 		K1[k] = (double) K[k];
 
+	int tries = 0;
 	do // While change is smaller than threshold
 		{
 		// Start with a random K2
 		for (int k = 0; k < dimK; ++k)
-			K2[k] = (rand() / (float) RAND_MAX) * 4.0 - 2.0; // in [+2,-2]
+			K2[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0; // in [+1,-1]
 
 		// Find the steepest direction [∂Q/∂K2], using numerical differentiation.
-		#define delta	0.1
+		#define delta	0.001
 		for (int k = 0; k < dimK; ++k)
 			{
 			// Create 2 copies of K2, whose k-th component is added / subtracted with δ
@@ -299,10 +322,20 @@ double maxQ(int K[dimK], double K2[dimK])
 
 		gradSize = norm(gradQ);
 		// printf("gradient norm = %f\r", gradSize);
+		++tries;
 		}
-		#define Epsilon 0.1
-		while (gradSize > Epsilon);
+	#define Epsilon 0.1
+	#define MaxTries 20000
+	while (gradSize > Epsilon && tries < MaxTries);
+
+	if (tries >= MaxTries)						// need to handle exception here
+		{
+		printf("fail: ");
+		// The result in K2 may still be usable?
+		}
 
 	double result = getQ(K1, K2);
+	printf("%2.3f ", result);
+	plot_W(Qnet);
 	return result; // return Q value
 	}

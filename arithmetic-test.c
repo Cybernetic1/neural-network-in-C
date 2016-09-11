@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>				// strlen()
 #include <math.h>
 #include <gsl/gsl_matrix.h>		// GNU scientific library
 #include <gsl/gsl_eigen.h>		// ...for finding matrix eigen values
@@ -45,7 +46,7 @@ extern void plot_trainer(double);
 extern void plot_ideal(void);
 extern void beep(void);
 extern double sigmoid(double);
-extern void start_timer(), end_timer();
+extern void start_timer(), end_timer(char *);
 
 extern double K[];
 
@@ -465,6 +466,7 @@ void arithmetic_testB()
 			for (int i = 0; i < P; ++i)
 				{
 				printf("(%d) ", i);
+				extern int arithmetic_testC_1(NNET *, LAYER);
 				switch (arithmetic_testC_1(Net, lastLayer))
 					{
 					case 1:
@@ -542,9 +544,9 @@ void arithmetic_testB()
 	else
 		quit_graphics();
 
-	extern void saveNet();
+	extern void saveNet(NNET *, int, int *, char *, char *);
 	printf("Saving network data....\n");
-	saveNet(Net, numLayers, neuronsOfLayer, "");
+	saveNet(Net, numLayers, neuronsOfLayer, "", "");
 	free_NN(Net, neuronsOfLayer);
 	}
 
@@ -679,6 +681,7 @@ void arithmetic_testC()		// verify results for testB
 	for (int i = 0; i < P; ++i)
 		{
 		printf("(%d) ", i);
+		extern int arithmetic_testC_1(NNET *, LAYER);
 		switch (arithmetic_testC_1(Net, lastLayer))
 			{
 			case 1:
@@ -1018,6 +1021,7 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 			for (int i = 0; i < P; ++i)
 				{
 				printf("(%d) ", i);
+				extern int arithmetic_testE_1(NNET *, LAYER);
 				switch (arithmetic_testE_1(Net, lastLayer))
 					{
 					case 1:
@@ -1070,6 +1074,7 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 
 	extern void saveNet();
 	printf("Saving network data....\n");
+	extern void saveNet(NNET *, int, int *, char *, char *);
 	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
 	free_NN(Net, neuronsOfLayer);
 	}
@@ -1085,6 +1090,7 @@ void arithmetic_testE()		// verify results for testD
 	for (int i = 0; i < P; ++i)
 		{
 		printf("(%d) ", i);
+		extern int arithmetic_testE_1(NNET *, LAYER);
 		switch (arithmetic_testE_1(Net, lastLayer))
 			{
 			case 1:
@@ -1466,6 +1472,7 @@ void arithmetic_testF()		// same as testD, except learns entire operator in 2 st
 
 	extern void saveNet();
 	printf("Saving network data....\n");
+	extern void saveNet(NNET *, int, int *, char *, char *);
 	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
 	free_NN(Net, neuronsOfLayer);
 	}
@@ -1737,6 +1744,7 @@ void BPTT_arithmetic_test()
 			for (int i = 0; i < P; ++i)
 				{
 				printf("(%d) ", i);
+				extern int BPTT_arithmetic_testB_1(RNN *, rLAYER);
 				switch (BPTT_arithmetic_testB_1(Net, lastLayer))
 					{
 					case 1:
@@ -1769,7 +1777,7 @@ void BPTT_arithmetic_test()
 		}
 
 	printf("\n%s\n", status);
-	end_timer();
+	end_timer(NULL);
 	beep();
 	// plot_output(Net);
 	// flush_output();
@@ -1828,6 +1836,7 @@ void BPTT_arithmetic_testB()		// verify results for BPTT_test
 	for (int i = 0; i < P; ++i)
 		{
 		printf("(%d) ", i);
+		extern int BPTT_arithmetic_testB_1(RNN *, rLAYER);
 		switch (BPTT_arithmetic_testB_1(Net, lastLayer))
 			{
 			case 1:

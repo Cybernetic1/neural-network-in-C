@@ -1,3 +1,6 @@
+// **************** In Sayaka-2, Q(K1,K2) where K2 is an "action" instead of a state
+
+#include <cstdlib>		// rand()
 #include <iostream>
 #include <fstream>
 #include <sstream>		// for converting double to string
@@ -25,11 +28,15 @@ extern "C" // Functions from Q-learning.c
 	{
 	double getQ(double [dimK], double [dimK]);
 	void init_Qnet(void);
-	void load_Qnet(void);
+	void load_Qnet(char const *);
 	void save_Qnet(char const *);
 	void train_Q(int x[dimK], double v);
 	void Q_learn(int x[dimK], int y[dimK], double R);
 	double maxQ(int [dimK], double [dimK]);
+
+	// functions from visualization.c
+	extern int  delay_vis(int);
+	extern void pause_graphics();
 	}
 
 using namespace std;
@@ -54,44 +61,48 @@ extern void saveVToFile(string filename, std::list<State> &states, std::map<Stat
 // 3. make move according to K2
 // 4. if move is invalid, train Qnet and re-try
 
-int Q_move()
+int Q_moveSayaka2()
 	{
 	int bestMove = -1;
 	int K_out[dimK];
 	double K2[dimK];
 
-	maxQ(board.x, K2); // we don't need the max Q value itself
-
-	// convert K2 to closest integer
-	for (int k = 0; k < dimK; ++k)
-		K_out[k] = (int) nearbyint(K2[k]);
-
-	// Check if it is a valid successor state?
-	// Next state can only differ by 1 square and the difference must be a '0' → '1'
-	for (int i = 0; i < 9; ++i)
+	int tries = 0;
+#   define MaxTries 50
+	while (tries++ < MaxTries)				// Try gradient descent with restart
 		{
-		if (board.x[i] != K_out[i])
+		maxQ(board.x, K2);			// we don't need the max Q value itself
+
+		// Find max element in K2, its index would be the move #
+		double max = -1000000.0;
+		for (int k = 0; k < dimK; ++k)
+			if (K2[k] > max)
+				max = K2[k], bestMove = k;
+
+		// Is the move valid?
+		if (board.x[bestMove] != 0)
+			bestMove = -1;				// square is already occupied
+
+		// cout << "Made greedy move...\n";
+
+		if (bestMove < 0)
 			{
-			if (bestMove != -1)
-				bestMove = -2;
-			else if (board.x[i] != 0)
-				bestMove = -2;
-			else if (K_out[i] != 1)
-				bestMove = -2;
-			else
-				bestMove = i;
+			for (int k = 0; k < dimK; ++k)
+				K_out[k] = ((k == bestMove) ? 1 : 0);
+			Q_learn(board.x, K_out, -0.1);
+			}
+		else
+			{
+			// printf("best move = %d\n", bestMove);
+			break;
 			}
 		}
 
-	// cout << "Made greedy move...\n";
-
-	if (bestMove < 0)
-		Q_learn(board.x, K_out, -0.2);
-
-	return bestMove;
+	printf("(%d tries) ", tries);
+	return bestMove;						// returns -1 if fail to find valid move
 	}
 
-extern "C" int tic_tac_toe_test3()
+extern "C" int tic_tac_toe_test4()
 	{
 	extern void beep();
 
@@ -166,7 +177,7 @@ extern "C" int tic_tac_toe_test3()
 		}
 	else if (key == 't' || key == 'i') // Train with end-state values
 		{
-		for (int t = 0; t < 500; ++t)
+		for (int t = 0; t < 1000; ++t)
 			{
 			// For all states
 			for (std::list<State>::iterator itr = states1.begin(); itr != states1.end(); ++itr)
@@ -198,7 +209,17 @@ extern "C" int tic_tac_toe_test3()
 				int result = hasWinner();
 				double v;
 
-				double v2 = 0.0; // get_Q(s.x);
+				double x1[dimK], x2[dimK];
+
+				for (int k = 0; k < dimK; ++k)
+					{
+					x1[k] = (double) s.x[k];
+
+					// 2nd argument is random
+					x2[k] = (rand() / (float) RAND_MAX) * 2.0 - 1.0; // in [+1,-1]
+					}
+
+				double v2 = getQ(x1, x2);
 				//cout << "v2 = " << to_string(v2) << "\t";
 
 				if (result == -2)
@@ -217,7 +238,7 @@ extern "C" int tic_tac_toe_test3()
 				absError += fabs(error);
 				}
 			printf("(%05d) ", t);
-			printf("∑ abs err = %.1f (avg = %.3f)\r", absError, absError / 8533.0);
+			printf("∑ abs err = %.1f (avg = %.3f)\n", absError, absError / 8533.0);
 
 			if (isnan(absError))
 				{
@@ -235,7 +256,7 @@ extern "C" int tic_tac_toe_test3()
 	int totalStates2 = loadVFromFile("ttt2.dat", states2, V2);
 	cout << "Total read: " << to_string(totalStates2) << "\n";
 
-#    define totalGames 100000
+#   define totalGames 100
 	int playTimes = 0;
 	int numPlayer1Won = 0;
 	int numPlayer_1Won = 0;
@@ -243,6 +264,7 @@ extern "C" int tic_tac_toe_test3()
 	int player = 1;
 	int ourWins1K = 0;				// Number of times per 1000 games
 	int ourMoves1K = 0;
+	int userKey;
 
 	while (true) // Loop over #totalGames trials
 		{
@@ -250,14 +272,14 @@ extern "C" int tic_tac_toe_test3()
 
 		player = ((rand() / (double) RAND_MAX) > 0.5) ? 1 : -1;
 
-		// printf("Game #%d\r", playTimes);
+		printf("Game #%d\n", playTimes);
 		// printState(board);
 
-		State prev_s1 = State(); // initialized as state "0"
-		State max_s1 = State();
+		State prev_s1 = State();		// initialized as state "0"
+		State prev_move1 = State();		// not really a "state", just for storing the move index
 
-		State prev_s2 = State();
-		State max_s2 = State();
+		State prev_s_1 = State();
+		State max_s_1 = State();
 
 		while (true) // Loop over 1 single game
 			{
@@ -284,7 +306,7 @@ extern "C" int tic_tac_toe_test3()
 					userMove = *it;
 					//cout << "Exploring move = " << to_string(userMove) << "\n";
 					updateBoard(player, userMove);
-					prev_s1 = board;
+					prev_s_1 = board;
 					}
 				else
 					{
@@ -292,7 +314,7 @@ extern "C" int tic_tac_toe_test3()
 					//cout << "Greedy move = " << to_string(userMove) << "\n";
 					// max_s2 should be the new state
 					updateBoard(player, userMove);
-					max_s2 = board;
+					max_s_1 = board;
 
 					// cout << "V2(s) changed from " << to_string(V2[prev_s2]);
 
@@ -300,7 +322,7 @@ extern "C" int tic_tac_toe_test3()
 					// Or if we just want it to perform statically...
 					// BellmanUpdate(max_s2, prev_s2, V2);
 					// cout << "to " << to_string(V2[prev_s2]);
-					prev_s2 = max_s2;
+					prev_s_1 = max_s_1;
 					}
 				}
 			else // Player 1 (Genifer)
@@ -310,30 +332,34 @@ extern "C" int tic_tac_toe_test3()
 					ex = (rand() / (double) RAND_MAX); // explore or not?
 					// printf("random # = %f\r", ex);
 
-#                    define exploreRate 0.04
+#                   define exploreRate 0.08
 					if (ex <= exploreRate)
 						{
-						int move = (int) floor((rand() / (double) RAND_MAX) * countNextMoves);
+						int moveIndex = (int) floor((rand() / (double) RAND_MAX) * countNextMoves);
 						//cout << "Exploring move = " << to_string(move) << "\n";
 						std::list<int>::iterator it = nextMoves.begin();
-						std::advance(it, move);
+						std::advance(it, moveIndex);
 						userMove = *it;
+						for (int k = 0; k < 9; ++k)
+							prev_move1.x[k] = (userMove == k) ? 1 : 0;
+						Q_learn(board.x, prev_move1.x, 0.4);
 						updateBoard(player, userMove);
-						Q_learn(board.x, prev_s1.x, 0.4);
-						prev_s1 = board;
+						// prev_s1 = board;
 						break;
 						}
 					else
 						{
-						userMove = Q_move();
+						userMove = Q_moveSayaka2();
 						//cout << "Computer move = " << to_string(userMove) << "\n";
 						if (userMove >= 0)
 							{
 							++ourMoves1K;
+							for (int k = 0; k < 9; ++k)
+								prev_move1.x[k] = (userMove == k) ? 1 : 0;
+							Q_learn(board.x, prev_move1.x, 0.6);
 							updateBoard(player, userMove);
-							max_s1 = board;
-							Q_learn(max_s1.x, prev_s1.x, 0.4);
-							prev_s1 = max_s1;
+							// prev_s1 = board;
+							// prev_move1 = userMove;
 							// printf("move made\n");
 							break;
 							}
@@ -348,37 +374,43 @@ extern "C" int tic_tac_toe_test3()
 			if (won == -2) // draw
 				{
 				numDraws++;
-				train_Q(board.x, 0.0);
-				// printf("-");
+				// train_Q(board.x, 0.0);
+				Q_learn(board.x, prev_move1.x, 0.5);
+				printf("-");
 				break;
 				}
 
 			if (won != 0)
 				{
-				if (1 == player) // our NN learner wins
+				if (1 == player) // Genifer (1) wins
 					{
 					++ourWins1K;
 					++numPlayer1Won;
-					max_s2 = board;
 					// BellmanUpdate(max_s2, prev_s2, V2);
-					train_Q(max_s2.x, 10.0);
+					// Still unsolved - need to train over all prev states:
+					// train_Q(max_s_1.x, 10.0);
+					Q_learn(board.x, prev_move1.x, 0.95);
 					// cout << "V2(s) changed from " << to_string(V2[prev_s2]);
 					// cout << "to " << to_string(V2[prev_s2]);
 					}
 				else // old RL player (-1) wins
 					{
 					++numPlayer_1Won;
-					max_s1 = board;
-					train_Q(max_s1.x, -0.8);
-					Q_learn(max_s1.x, prev_s1.x, -0.6);
+					// Still unsolved - need to train over all prev states:
+					// train_Q(max_s1.x, -0.7);
+					Q_learn(board.x, prev_move1.x, -0.2);
 					}
 
-				// printf(player == 1 ? "█" : " ");
+				printf(player == 1 ? "█" : " ");
 				break;
 				}
 
 			// continue with game....
 			player = switchPlayer(player);
+
+			userKey = delay_vis(0);
+			if (userKey == 1)
+				break;
 			}
 
 		// Next game...
@@ -386,15 +418,15 @@ extern "C" int tic_tac_toe_test3()
 		// fflush(stdout);
 		if ((playTimes % 1000) == 0)
 			{
-			printf("%per 1K wins = d (%2.1f%%)\t", ourWins1K, ((float) ourWins1K) / 1000.0 * 100.0);
-			printf("Genifer moves = %d\n", ourMoves1K);
+			printf("per 1K wins = %d (%2.1f%%)", ourWins1K, ((float) ourWins1K) / 1000.0 * 100.0);
+			printf("    Genifer moves = %d\n", ourMoves1K);
 			ourWins1K = 0;
 			ourMoves1K = 0;
 			}
-		if (playTimes > totalGames)
+		if (playTimes >= totalGames)
 			break;
-		//if (getchar() == 'q')
-		//	break;
+		if (userKey == 1)
+			break;
 		}
 
 	// cout << "\n\nSaving RL values...\n";
@@ -410,6 +442,7 @@ extern "C" int tic_tac_toe_test3()
 	printf("           Draws %d (%2.1f%%)\n", numDraws, ((float) numDraws) / totalGames * 100.0);
 
 	beep();
+	pause_graphics();
 	return 0;
 	}
 

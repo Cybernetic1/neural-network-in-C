@@ -21,6 +21,8 @@
       <itemPath>Chinese-test.c</itemPath>
       <itemPath>Jacobian-NN.c</itemPath>
       <itemPath>Q-learning.c</itemPath>
+      <itemPath>Sayaka-1.cpp</itemPath>
+      <itemPath>Sayaka-2.cpp</itemPath>
       <itemPath>V-learning.c</itemPath>
       <itemPath>arithmetic-test.c</itemPath>
       <itemPath>back-prop.c</itemPath>
@@ -34,7 +36,6 @@
       <itemPath>stochastic-forward-backward.c</itemPath>
       <itemPath>tic-tac-toe.cpp</itemPath>
       <itemPath>tic-tac-toe2.cpp</itemPath>
-      <itemPath>tic-tac-toe3.cpp</itemPath>
       <itemPath>visualization.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -77,6 +78,10 @@
       </item>
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Sayaka-1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Sayaka-2.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="V-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="arithmetic-test.c" ex="false" tool="0" flavor2="0">
@@ -108,8 +113,6 @@
       <item path="tic-tac-toe.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="tic-tac-toe2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="tic-tac-toe3.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -149,6 +152,10 @@
       </item>
       <item path="RNN.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="Sayaka-1.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Sayaka-2.cpp" ex="false" tool="1" flavor2="0">
+      </item>
       <item path="V-learning.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="arithmetic-test.c" ex="false" tool="0" flavor2="0">
@@ -178,8 +185,6 @@
       <item path="tic-tac-toe.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="tic-tac-toe2.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="tic-tac-toe3.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="visualization.c" ex="false" tool="0" flavor2="0">
       </item>

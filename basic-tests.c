@@ -28,6 +28,8 @@ extern void start_W_plot(void);
 extern void start_K_plot(void);
 extern void start_output_plot(void);
 extern void start_LogErr_plot(void);
+extern void restart_LogErr_plot(void);
+extern void re_randomize(NNET *, int, int *);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
@@ -41,7 +43,7 @@ extern void plot_trainer(double);
 extern void plot_ideal(void);
 extern void beep(void);
 extern double sigmoid(double);
-extern void start_timer(), end_timer();
+extern void start_timer(), end_timer(char *);
 
 extern double K[];
 

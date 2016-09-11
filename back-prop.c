@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
+#include <stdbool.h>		// constants "true" and "false"
 #include <math.h>
 #include <assert.h>
 #include <time.h>			// time as random seed in create_NN()
@@ -11,10 +11,12 @@
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
+#define LastAct	false		// If false, activation function DISABLED on output layer
+
 double randomWeight() // generate random weight between [+1.0, -1.0]
 	{
 	// return 0.5 + (rand() / (double) RAND_MAX) * 0.01;
-	return (rand() / (double) RAND_MAX) * 0.4 - 0.2;
+	return (rand() / (double) RAND_MAX) * 2.0 - 1.0;
 	}
 
 //******** activation functions and random weight generator ********************//
@@ -156,18 +158,24 @@ void forward_prop_sigmoid(NNET *net, int dim_V, double V[])
 
 			// For the last layer, skip the sigmoid function
 			// Note: this idea seems to destroy back-prop convergence
-			// if (i == net->numLayers - 1)
-			//	net->layers[i].neurons[j].output = v;
-			// else
-			double output = sigmoid(v);
-			net->layers[l].neurons[n].output = output;
+
+			if (!LastAct && l == net->numLayers - 1)
+				{
+				net->layers[l].neurons[n].output = v;
+				net->layers[l].neurons[n].grad = 1.0;
+				}
+			else
+				{
+				double output = sigmoid(v);
+				net->layers[l].neurons[n].output = output;
 
 // There is a neat trick for the calculation of σ':  σ'(x) = σ(x) (1−σ(x))
 // For its simple derivation you can see this post:
 // http://math.stackexchange.com/questions/78575/derivative-of-sigmoid-function-sigma-x-frac11e-x
 // Therefore in the code, we use "output * (1 - output)" for the value of "σ'(summed input)",
 // because output = σ(summed input), where summed_input_i = Σ_j W_ji input_j.
-			net->layers[l].neurons[n].grad = Steepness * output * (1.0 - output);
+				net->layers[l].neurons[n].grad = Steepness * output * (1.0 - output);
+				}
 			}
 		}
 	}
