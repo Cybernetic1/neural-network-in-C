@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstring>				// strlen()
+// #include <cstring>				// strlen()
 #include <math.h>
 #include <gsl/gsl_matrix.h>		// GNU scientific library
 #include <gsl/gsl_eigen.h>		// ...for finding matrix eigen values
