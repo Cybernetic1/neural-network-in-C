@@ -12,7 +12,7 @@ To install the SDL2 library you may try something like:
 
 You may use the NetBeans IDE, with C/C++ extensions.  Or compile from command line:
 
-    gcc main.c back-prop.c graphics.c Q-learning.c -std=c99 -lm -lSDL2 -o genifer
+	g++ -o genifer main.o back-prop.o visualization.o Q-learning.o arithmetic-test.o basic-tests.o tic-tac-toe2.o backprop-through-time.o maze.o genetic-NN.o Sayaka-1.o Sayaka-2.o real-time-recurrent-learning.o V-learning.o -lSDL2 -L/usr/lib64 -lgsl -lgslcblas -lm -lsfml-window -lsfml-graphics -lsfml-system
 
 Below are some images of the cognitive state vector K moving about chaotically when acted on by a random-weight recurrent NN.
 
