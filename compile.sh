@@ -1,1 +1,0 @@
-g++ -o genifer main.o back-prop.o visualization.o Q-learning.o arithmetic-test.o basic-tests.o tic-tac-toe2.o backprop-through-time.o maze.o genetic-NN.o Sayaka-1.o Sayaka-2.o real-time-recurrent-learning.o V-learning.o -lm -lSDL2 -L/usr/lib64 -lgsl -lgslcblas -lm -lsfml-window -lsfml-graphics -lsfml-system

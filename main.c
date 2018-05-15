@@ -195,7 +195,8 @@ void main_loop()
 
 		aliceMove();
 		if (won(1.0))			// Alice won
-			Q_learn(K, K2, -100.0, oldQ);
+			;
+			// Q_learn(K, K2, -100.0, oldQ);
 
 		// copy current state to K
 		for (int k = 0; k < dim_K; ++k)
@@ -219,7 +220,7 @@ void main_loop()
 		double R = get_reward(K2); // reward is gotten from the state transition
 		// double
 		oldQ = 0.0; // ? TO-DO
-		Q_learn(K, K2, R, oldQ);
+		// Q_learn(K, K2, R, oldQ);
 
 		// ------ calculate error -------
 
@@ -245,33 +246,34 @@ void main_loop()
 	pause_graphics(); //keep the window open
 	}
 
+
 //************************** Genifer main function ***********************//
+
+extern void K_wandering_test();
+extern void sine_wave_test();
+extern void sine_wave_test2();
+extern void classic_BP_test();
+extern void classic_BP_test_ReLU();
+extern void forward_test();
+extern void loop_dance_test();
+extern void arithmetic_testA();
+extern void arithmetic_testB();
+extern void arithmetic_testC();
+extern void arithmetic_testD();
+extern void arithmetic_testE();
+extern void RNN_sine_test();
+extern void BPTT_arithmetic_test();
+extern void BPTT_arithmetic_testB();
+extern void evolve();
+extern void main2();
+extern void jacobian_test();
+extern void Q_test();
+extern void tic_tac_toe_test2();
+extern void tic_tac_toe_test3();
+extern void tic_tac_toe_test4();
 
 int main(int argc, char** argv)
 	{
-	extern void K_wandering_test();
-	extern void sine_wave_test();
-	extern void sine_wave_test2();
-	extern void classic_BP_test();
-	extern void classic_BP_test_ReLU();
-	extern void forward_test();
-	extern void loop_dance_test();
-	extern void arithmetic_testA();
-	extern void arithmetic_testB();
-	extern void arithmetic_testC();
-	extern void arithmetic_testD();
-	extern void arithmetic_testE();
-	extern void RNN_sine_test();
-	extern void BPTT_arithmetic_test();
-	extern void BPTT_arithmetic_testB();
-	extern void evolve();
-	extern void main2();
-	extern void jacobian_test();
-	extern void Q_test();
-	extern void tic_tac_toe_test2();
-	extern void tic_tac_toe_test3();
-	extern void tic_tac_toe_test4();
-
 	bool quit = false;
 	char whichTest = '\n';
 	while (!quit)

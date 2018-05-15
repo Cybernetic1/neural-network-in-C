@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-// #include <cstring>				// strlen()
+#include <string.h>				// strlen()
 #include <math.h>
 #include <gsl/gsl_matrix.h>		// GNU scientific library
 #include <gsl/gsl_eigen.h>		// ...for finding matrix eigen values
@@ -237,6 +237,7 @@ LOOP:
 	}
 
 // Repeat the test N times
+extern void arithmetic_testA();
 
 void arithmetic_testA()
 	{
