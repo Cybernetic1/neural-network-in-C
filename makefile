@@ -1,64 +1,61 @@
-arithmetic-test.o: arithmetic-test.c BPTT-RNN.h feedforward-NN.h
-	gcc -c $<
+dist/arithmetic-test.o: arithmetic-test.c BPTT-RNN.h feedforward-NN.h
+	gcc -c $< -o $@
 
-experiments.o: experiments.c RNN.h feedforward-NN.h
-	gcc -c $<
+dist/experiments.o: experiments.c RNN.h feedforward-NN.h
+	gcc -c $< -o $@
 
-real-time-recurrent-learning.o: real-time-recurrent-learning.c RNN.h
-	gcc -c $<
+dist/real-time-recurrent-learning.o: real-time-recurrent-learning.c RNN.h
+	gcc -c $< -o $@
 
-back-prop.o: back-prop.c feedforward-NN.h
-	gcc -c $<
+dist/back-prop.o: back-prop.c feedforward-NN.h
+	gcc -c $< -o $@
 
-genetic-NN.o: genetic-NN.c
-	gcc -c $< -std=c99
+dist/genetic-NN.o: genetic-NN.c
+	gcc -c $< -o $@ -std=c99
 
-Sayaka1.o: Sayaka1.c tic-tac-toe.h
-	gcc -c $<
+dist/Sayaka1.o: Sayaka1.c tic-tac-toe.h
+	gcc -c $< -o $@
 
-backprop-through-time.o: backprop-through-time.c BPTT-RNN.h
-	gcc -c $<
+dist/backprop-through-time.o: backprop-through-time.c BPTT-RNN.h
+	gcc -c $< -o $@
 
-Jacobian-NN.o: Jacobian-NN.c Jacobian-NN.h
-	gcc -c $<
+dist/Jacobian-NN.o: Jacobian-NN.c Jacobian-NN.h
+	gcc -c $< -o $@
 
-stochastic-forward-backward.o: stochastic-forward-backward.c BPTT-RNN.h
-	gcc -c $<
+dist/stochastic-forward-backward.o: stochastic-forward-backward.c BPTT-RNN.h
+	gcc -c $< -o $@
 
-basic-tests.o: basic-tests.c RNN.h feedforward-NN.h
-	gcc -c $< -fpermissive
+dist/basic-tests.o: basic-tests.c RNN.h feedforward-NN.h
+	gcc -c $< -o $@ -fpermissive
 
-visualization.o: visualization.c feedforward-NN.h BPTT-RNN.h
-	gcc -c $<
+dist/visualization.o: visualization.c feedforward-NN.h BPTT-RNN.h
+	gcc -c $< -o $@
 
-Chinese-test.o: Chinese-test.c
-	gcc -c $<
+dist/Chinese-test.o: Chinese-test.c
+	gcc -c $< -o $@
 
-Q-learning.o: Q-learning.c feedforward-NN.h
-	gcc -c $<
+dist/Q-learning.o: Q-learning.c feedforward-NN.h
+	gcc -c $< -o $@
 
-V-learning.o: V-learning.c feedforward-NN.h
-	gcc -c $<
+dist/V-learning.o: V-learning.c feedforward-NN.h
+	gcc -c $< -o $@
 
-maze.o: maze.cpp
-	g++ -c $<
+dist/maze.o: maze.cpp
+	g++ -c $< -o $@
 
-Sayaka-1.o: Sayaka-1.cpp
-	g++ -c $<
+dist/Sayaka-1.o: Sayaka-1.cpp
+	g++ -c $< -o $@
 
-Sayaka-2.o: Sayaka-2.cpp
-	g++ -c $<
+dist/Sayaka-2.o: Sayaka-2.cpp
+	g++ -c $< -o $@
 
-tic-tac-toe2.o: tic-tac-toe2.cpp
-	g++ -c $<
+dist/tic-tac-toe.o: tic-tac-toe.cpp
+	g++ -c $< -o $@
 
-tic-tac-toe.o: tic-tac-toe.cpp
-	g++ -c $<
-
-main.o: main.c feedforward-NN.h
-	gcc -c $<
+dist/main.o: main.c feedforward-NN.h
+	gcc -c $< -o $@
 
 CFLAGS=-lSDL2 -L/usr/lib64 -lgsl -lgslcblas -lm -lsfml-window -lsfml-graphics -lsfml-system
 
-genifer: main.o arithmetic-test.o back-prop.o visualization.o Q-learning.o basic-tests.o tic-tac-toe2.o backprop-through-time.o maze.o genetic-NN.o Sayaka-1.o Sayaka-2.o real-time-recurrent-learning.o V-learning.o
+genifer: dist/main.o dist/arithmetic-test.o dist/back-prop.o dist/visualization.o dist/Q-learning.o dist/basic-tests.o dist/tic-tac-toe.o dist/backprop-through-time.o dist/maze.o dist/genetic-NN.o dist/Sayaka-1.o dist/Sayaka-2.o dist/real-time-recurrent-learning.o dist/V-learning.o
 	g++ -o genifer $^ $(CFLAGS)

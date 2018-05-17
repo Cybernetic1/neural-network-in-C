@@ -903,8 +903,11 @@ int delay_vis(int delay)
 
 	// 'P' --- pause
 	if (keys[SDL_SCANCODE_P])
+		{
+		printf("\nPress 'R' to resume\n");
 		while (!keys[SDL_SCANCODE_R]) // 'R' to resume
 			SDL_PumpEvents();
+		}
 
 	// 'W' --- turn W visualization ON/OFF
 	if (keys[SDL_SCANCODE_W])
@@ -931,6 +934,8 @@ int delay_vis(int delay)
 
 void pause_key() // [R] or [space] key to resume
 	{
+	printf("\nPress 'R' to resume\n");
+
 	const Uint8 *keys = SDL_GetKeyboardState(NULL); // keyboard states
 
 	SDL_PumpEvents();

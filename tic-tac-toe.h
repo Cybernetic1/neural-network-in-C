@@ -16,6 +16,7 @@ extern "C" {
 		int x[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	};
 
+	// establish ordering among board states
 	struct smaller {
 
 		bool operator()(const State s1, const State s2) const {

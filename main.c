@@ -299,7 +299,7 @@ int main(int argc, char** argv)
 		printf("[h] run maze\n");
 		printf("[i] ???? \n");
 		printf("[j] Jacobian NN\n");
-		printf("[q] Q-learning test\n");
+		printf("[q] * Q-learning test\n");
 		printf("[t] Tic-Tac-Toe (Sayaka 2 architecture)\n");
 		printf("[u] Tic-Tac-Toe (Sayaka 1 architecture)\n");
 		printf("[v] Tic-Tac-Toe (V-value architecture)\n");
@@ -375,7 +375,7 @@ int main(int argc, char** argv)
 				tic_tac_toe_test3();
 				break;
 			case 'v':
-				tic_tac_toe_test2();
+				tic_tac_toe_test();
 				break;
 			case 'x':
 				quit = true;

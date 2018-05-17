@@ -27,7 +27,7 @@
 
 extern double sigmoid(double v);
 extern double randomWeight();
-extern NNET *create_NN(int numberOfLayers, int *neuronsOfLayer);
+extern NNET *create_NN(int numberOfLayers, int *neuronsPerLayer);
 extern void forward_prop_sigmoid(NNET *, int, double *);
 extern double calc_error(NNET *net, double *Y);
 extern void back_prop(NNET *, double *errors);
@@ -39,20 +39,20 @@ NNET *Qnet;
 
 #define dimK 9
 int QnumLayers = 4;
-int QneuronsOfLayer[] = {dimK * 2, 10, 7, 1};
+int QneuronsPerLayer[] = {dimK * 2, 10, 7, 1};
 
 void init_Qnet()
 	{
 	// int numLayers2 = 5;
 	//the first layer -- input layer
 	//the last layer -- output layer
-	// int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
-	// int neuronsOfLayer[5] = {18, 18, 15, 10, 1};
-	// int neuronsOfLayer2[5] = {18, 40, 30, 20, 1};
+	// int neuronsPerLayer[5] = {2, 3, 4, 4, 4};
+	// int neuronsPerLayer[5] = {18, 18, 15, 10, 1};
+	// int neuronsPerLayer2[5] = {18, 40, 30, 20, 1};
 
 	Qnet = (NNET*) malloc(sizeof (NNET));
 	//create neural network for backpropagation
-	Qnet = create_NN(QnumLayers, QneuronsOfLayer);
+	Qnet = create_NN(QnumLayers, QneuronsPerLayer);
 
 	start_W_plot();
 	// return Qnet;
@@ -61,9 +61,9 @@ void init_Qnet()
 void load_Qnet(char *fname)
 	{
 	int numLayers2;
-	int *neuronsOfLayer2;
+	int *neuronsPerLayer2;
 	extern NNET * loadNet(int *, int *p[], char *);
-	Qnet = loadNet(&numLayers2, &neuronsOfLayer2, fname);
+	Qnet = loadNet(&numLayers2, &neuronsPerLayer2, fname);
 	// LAYER lastLayer = Vnet->layers[numLayers - 1];
 
 	return;
@@ -73,7 +73,7 @@ void save_Qnet(char *fname)
 	{
 	extern void saveNet(NNET *, int, int *, char *, char *);
 
-	saveNet(Qnet, QnumLayers, QneuronsOfLayer, "", fname);
+	saveNet(Qnet, QnumLayers, QneuronsPerLayer, "", fname);
 	}
 
 //************************** Q-learning ***********************//

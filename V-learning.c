@@ -1,4 +1,5 @@
 // V-learner -- simple value learning in reinforcement learning
+// for use with "tic-tac-toe.cpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,7 @@
 
 extern double sigmoid(double v);
 extern double randomWeight();
-extern NNET *create_NN(int numberOfLayers, int *neuronsOfLayer);
+extern NNET *create_NN(int numberOfLayers, int *neuronsPerLayer);
 extern void forward_prop_sigmoid(NNET *, int, double *);
 extern double calc_error(NNET *net, double *Y);
 extern void back_prop(NNET *, double *errors);
@@ -20,17 +21,17 @@ extern void back_prop(NNET *, double *errors);
 NNET *Vnet;
 
 int VnumLayers = 5;
-int VneuronsOfLayer[] = {9, 40, 30, 20, 1};		// success
+int VneuronsPerLayer[] = {9, 40, 30, 20, 1};		// success
 
 void init_Vnet()
 	{
 	//the first layer -- input layer
 	//the last layer -- output layer
-	// int neuronsOfLayer[5] = {2, 3, 4, 4, 4};
-	// int neuronsOfLayer[5] = {18, 18, 15, 10, 1};
+	// int neuronsPerLayer[5] = {2, 3, 4, 4, 4};
+	// int neuronsPerLayer[5] = {18, 18, 15, 10, 1};
 	Vnet = (NNET*) malloc(sizeof (NNET));
 	//create neural network for backpropagation
-	Vnet = create_NN(VnumLayers, VneuronsOfLayer);
+	Vnet = create_NN(VnumLayers, VneuronsPerLayer);
 
 	// return Vnet;
 	}
@@ -38,9 +39,9 @@ void init_Vnet()
 void load_Vnet()
 	{
 	int numLayers2;
-	int *neuronsOfLayer2;
+	int *neuronsPerLayer2;
 	extern NNET * loadNet(int *, int *p[], char *);
-	Vnet = loadNet(&numLayers2, &neuronsOfLayer2, "v.net");
+	Vnet = loadNet(&numLayers2, &neuronsPerLayer2, "v.net");
 	// LAYER lastLayer = Vnet->layers[numLayers - 1];
 
 	return;
@@ -50,7 +51,7 @@ void save_Vnet(char *fname)
 	{
 	extern void saveNet(NNET *, int, int *, char *, char *);
 
-	saveNet(Vnet, VnumLayers, VneuronsOfLayer, "", fname);
+	saveNet(Vnet, VnumLayers, VneuronsPerLayer, "", fname);
 	}
 
 // **** Learn a simple V-value map given specific V values

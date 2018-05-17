@@ -9,7 +9,7 @@
 #include "feedforward-NN.h"
 
 #define Eta 0.01			// learning rate
-#define BIASOUTPUT 1.0		// output for bias. It's always 1.
+#define BIASINPUT 1.0		// input for bias. It's always 1.
 
 #define LastAct	false		// If false, activation function DISABLED on output layer
 
@@ -24,7 +24,7 @@ double randomWeight() // generate random weight between [+1.0, -1.0]
 
 double sigmoid(double v)
 	{
-	#define Steepness 1.0
+	#define Steepness 3.0
 	return 1.0 / (1.0 + exp(-Steepness * v));
 	}
 
@@ -65,7 +65,7 @@ double d_x2(double v)
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
-NNET *create_NN(int numLayers, int *neuronsOfLayer)
+NNET *create_NN(int numLayers, int *neuronsPerLayer)
 	{
 	NNET *net = (NNET *) malloc(sizeof (NNET));
 	srand(time(NULL));
@@ -75,19 +75,19 @@ NNET *create_NN(int numLayers, int *neuronsOfLayer)
 
 	net->layers = (LAYER *) malloc(numLayers * sizeof (LAYER));
 	//construct input layer, no weights
-	net->layers[0].numNeurons = neuronsOfLayer[0];
-	net->layers[0].neurons = (NEURON *) malloc(neuronsOfLayer[0] * sizeof (NEURON));
+	net->layers[0].numNeurons = neuronsPerLayer[0];
+	net->layers[0].neurons = (NEURON *) malloc(neuronsPerLayer[0] * sizeof (NEURON));
 
 	//construct hidden layers
 	for (int l = 1; l < numLayers; ++l) //construct layers
 		{
-		net->layers[l].neurons = (NEURON *) malloc(neuronsOfLayer[l] * sizeof (NEURON));
-		net->layers[l].numNeurons = neuronsOfLayer[l];
-		for (int n = 0; n < neuronsOfLayer[l]; ++n) // construct each neuron in the layer
+		net->layers[l].neurons = (NEURON *) malloc(neuronsPerLayer[l] * sizeof (NEURON));
+		net->layers[l].numNeurons = neuronsPerLayer[l];
+		for (int n = 0; n < neuronsPerLayer[l]; ++n) // construct each neuron in the layer
 			{
 			net->layers[l].neurons[n].weights =
-					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)
+					(double *) malloc((neuronsPerLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i)
 				{
 				//construct weights of neuron from previous layer neurons
 				//when k = 0, it's bias weight
@@ -99,17 +99,17 @@ NNET *create_NN(int numLayers, int *neuronsOfLayer)
 	return net;
 	}
 
-void re_randomize(NNET *net, int numLayers, int *neuronsOfLayer)
+void re_randomize(NNET *net, int numLayers, int *neuronsPerLayer)
 	{
 	srand(time(NULL));
 
 	for (int l = 1; l < numLayers; ++l)							// for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n)				// for each neuron
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)	// for each weight
+		for (int n = 0; n < neuronsPerLayer[l]; ++n)				// for each neuron
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i)	// for each weight
 				net->layers[l].neurons[n].weights[i] = randomWeight();
 	}
 
-void free_NN(NNET *net, int *neuronsOfLayer)
+void free_NN(NNET *net, int *neuronsPerLayer)
 	{
 	// for input layer
 	free(net->layers[0].neurons);
@@ -118,7 +118,7 @@ void free_NN(NNET *net, int *neuronsOfLayer)
 	int numLayers = net->numLayers;
 	for (int l = 1; l < numLayers; l++) // for each layer
 		{
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // for each neuron in the layer
 			{
 			free(net->layers[l].neurons[n].weights);
 			}
@@ -150,7 +150,7 @@ void forward_prop_sigmoid(NNET *net, int dim_V, double V[])
 			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASINPUT;
 				else
 					v += net->layers[l].neurons[n].weights[k] *
 						net->layers[l - 1].neurons[k - 1].output;
@@ -197,7 +197,7 @@ void forward_prop_softplus(NNET *net, int dim_V, double V[])
 			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASINPUT;
 				else
 					v += net->layers[l].neurons[n].weights[k] *
 						net->layers[l - 1].neurons[k - 1].output;
@@ -228,7 +228,7 @@ void forward_prop_ReLU(NNET *net, int dim_V, double V[])
 			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASINPUT;
 				else
 					v += net->layers[l].neurons[n].weights[k] *
 						net->layers[l - 1].neurons[k - 1].output;
@@ -264,7 +264,7 @@ void forward_prop_x2(NNET *net, int dim_V, double V[])
 			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 				{
 				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
+					v += net->layers[l].neurons[n].weights[k] * BIASINPUT;
 				else
 					v += net->layers[l].neurons[n].weights[k] *
 						net->layers[l - 1].neurons[k - 1].output;

@@ -56,9 +56,9 @@ void RTRL_equilibrium_test()
 	{
 	// create RNN
 	RNN *Net = (RNN *) malloc(sizeof (RNN));
-	int neuronsOfLayer[4] = {3, 4, 4, 3}; // first = input layer, last = output layer
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	create_RTRL_NN(Net, numLayers, neuronsOfLayer);
+	int neuronsPerLayer[4] = {3, 4, 4, 3}; // first = input layer, last = output layer
+	int numLayers = sizeof(neuronsPerLayer) / sizeof(int);
+	create_RTRL_NN(Net, numLayers, neuronsPerLayer);
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 
 	int dimK = 3;
@@ -143,5 +143,5 @@ void RTRL_equilibrium_test()
 
 	if (!quit)
 		pause_graphics();
-	free_RTRL_NN(Net, neuronsOfLayer);
+	free_RTRL_NN(Net, neuronsPerLayer);
 	}

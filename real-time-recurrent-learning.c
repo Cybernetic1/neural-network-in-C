@@ -52,7 +52,7 @@
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
-void create_RTRL_NN(RNN *net, int numLayers, int *neuronsOfLayer)
+void create_RTRL_NN(RNN *net, int numLayers, int *neuronsPerLayer)
 	{
 	srand(time(NULL));
 	net->numLayers = numLayers;
@@ -61,19 +61,19 @@ void create_RTRL_NN(RNN *net, int numLayers, int *neuronsOfLayer)
 
 	net->layers = (rLAYER *) malloc(numLayers * sizeof (rLAYER));
 	//construct input layer, no weights
-	net->layers[0].numNeurons = neuronsOfLayer[0];
-	net->layers[0].neurons = (rNEURON *) malloc(neuronsOfLayer[0] * sizeof (rNEURON));
+	net->layers[0].numNeurons = neuronsPerLayer[0];
+	net->layers[0].neurons = (rNEURON *) malloc(neuronsPerLayer[0] * sizeof (rNEURON));
 
 	//construct hidden layers
 	for (int l = 1; l < numLayers; l++) //construct layers
 		{
-		net->layers[l].neurons = (rNEURON *) malloc(neuronsOfLayer[l] * sizeof (rNEURON));
-		net->layers[l].numNeurons = neuronsOfLayer[l];
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
+		net->layers[l].neurons = (rNEURON *) malloc(neuronsPerLayer[l] * sizeof (rNEURON));
+		net->layers[l].numNeurons = neuronsPerLayer[l];
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // construct each neuron in the layer
 			{
 			net->layers[l].neurons[n].weights =
-					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
+					(double *) malloc((neuronsPerLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; i++)
 				{
 				//construct weights of neuron from previous layer neurons
 				//when k = 0, it's bias weight
@@ -85,7 +85,7 @@ void create_RTRL_NN(RNN *net, int numLayers, int *neuronsOfLayer)
 		}
 	}
 
-void free_RTRL_NN(RNN *net, int *neuronsOfLayer)
+void free_RTRL_NN(RNN *net, int *neuronsPerLayer)
 	{
 	// for input layer
 	free(net->layers[0].neurons);
@@ -94,7 +94,7 @@ void free_RTRL_NN(RNN *net, int *neuronsOfLayer)
 	int numLayers = net->numLayers;
 	for (int l = 1; l < numLayers; l++) // for each layer
 		{
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // for each neuron in the layer
 			{
 			free(net->layers[l].neurons[n].weights);
 			}

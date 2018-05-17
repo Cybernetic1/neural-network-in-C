@@ -41,10 +41,10 @@ void relations_test()
 
 	int dimK = 2;
 	double K[dimK];
-	int neuronsOfLayer[] = {dimK, 5, dimK}; // first = input layer, last = output layer
+	int neuronsPerLayer[] = {dimK, 5, dimK}; // first = input layer, last = output layer
 	RNN *Net = (RNN *) malloc(sizeof (RNN));
-	int numLayers = sizeof (neuronsOfLayer) / sizeof (int);
-	create_BPTT_NN(Net, numLayers, neuronsOfLayer);
+	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
+	create_BPTT_NN(Net, numLayers, neuronsPerLayer);
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
@@ -226,5 +226,5 @@ void relations_test()
 		pause_graphics();
 	else
 		quit_graphics();
-	free_NN(Net, neuronsOfLayer);
+	free_NN(Net, neuronsPerLayer);
 	}

@@ -19,7 +19,7 @@ extern double rectifier(double);
 //************************ create neural network *********************//
 // GIVEN: how many layers, and how many neurons in each layer
 
-RNN *create_BPTT_NN(int numLayers, int *neuronsOfLayer)
+RNN *create_BPTT_NN(int numLayers, int *neuronsPerLayer)
 	{
 	RNN *net = (RNN *) malloc(sizeof(RNN));
 
@@ -30,21 +30,21 @@ RNN *create_BPTT_NN(int numLayers, int *neuronsOfLayer)
 
 	net->layers = (rLAYER *) malloc(numLayers * sizeof (rLAYER));
 	//construct input layer, no weights
-	net->layers[0].numNeurons = neuronsOfLayer[0];
-	net->layers[0].neurons = (rNEURON *) malloc(neuronsOfLayer[0] * sizeof (rNEURON));
+	net->layers[0].numNeurons = neuronsPerLayer[0];
+	net->layers[0].neurons = (rNEURON *) malloc(neuronsPerLayer[0] * sizeof (rNEURON));
 
 	//construct hidden layers
 	for (int l = 1; l < numLayers; l++) //construct layers
 		{
 		// This takes cares of n-folds of outputs and gradients:
-		net->layers[l].neurons = (rNEURON *) malloc(neuronsOfLayer[l] * sizeof (rNEURON));
-		net->layers[l].numNeurons = neuronsOfLayer[l];
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // construct each neuron in the layer
+		net->layers[l].neurons = (rNEURON *) malloc(neuronsPerLayer[l] * sizeof (rNEURON));
+		net->layers[l].numNeurons = neuronsPerLayer[l];
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // construct each neuron in the layer
 			{
 			// Only 1 array of weights per neuron, because weights are shared across folds
 			net->layers[l].neurons[n].weights =
-					(double *) malloc((neuronsOfLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; i++)
+					(double *) malloc((neuronsPerLayer[l - 1] + 1) * sizeof (double));
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; i++)
 				{
 				//construct weights of neuron from previous layer neurons
 				//when k = 0, it's bias weight
@@ -57,20 +57,20 @@ RNN *create_BPTT_NN(int numLayers, int *neuronsOfLayer)
 	return net;
 	}
 
-void BPTT_re_randomize(RNN *net, int numLayers, int *neuronsOfLayer)
+void BPTT_re_randomize(RNN *net, int numLayers, int *neuronsPerLayer)
 	{
 	srand(time(NULL));
 
 	for (int l = 1; l < numLayers; ++l)							// for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n)				// for each neuron
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i)	// for each weight
+		for (int n = 0; n < neuronsPerLayer[l]; ++n)				// for each neuron
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i)	// for each weight
 				{
 				extern double randomWeight();
 				net->layers[l].neurons[n].weights[i] = randomWeight();
 				}
 	}
 
-void free_BPTT_NN(RNN *net, int *neuronsOfLayer)
+void free_BPTT_NN(RNN *net, int *neuronsPerLayer)
 	{
 	// for input layer
 	free(net->layers[0].neurons);
@@ -79,7 +79,7 @@ void free_BPTT_NN(RNN *net, int *neuronsOfLayer)
 	int numLayers = net->numLayers;
 	for (int l = 1; l < numLayers; l++) // for each layer
 		{
-		for (int n = 0; n < neuronsOfLayer[l]; n++) // for each neuron in the layer
+		for (int n = 0; n < neuronsPerLayer[l]; n++) // for each neuron in the layer
 			{
 			free(net->layers[l].neurons[n].weights);
 			}

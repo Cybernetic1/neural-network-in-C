@@ -1,23 +1,11 @@
 // Use genetic programming to evolve neural network
 
 // Explanation:
+// * evole the net given in-out pairs
 // * bunch of genes encode a network
-// * each neuron is encoded by a (full) weight vector (dim = width of network)
-// * layer = array of vectors, networkz= layers of arrays of vectors = N∙L vectors
-// * genome would be a very big array.  But that is even for 1 individual, right?
-// * if the layers do not interbreed, then each layer has its own population
-// * we can select the top-N neurons in each layer's population
-// * in that case, the population size for each layer is M > N
-
-// How to extend to recurrent case?
-// * Perhaps the same idea as stochastic forward-backward?
+// * each gene = DFT of weights, serialized as a long vector
 
 // TO-DO:
-// * that means we can evole the net given in-out pairs.
-// * can it generalize to mutiple-folds?  maybe.
-// * as a 1st step, maybe combine with stochastic forward-backward
-// * but a single-fold of genetic-NN learning may be more destructive than standard
-//   back-prop, so it may be less suited for n-fold?
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,20 +13,24 @@
 #include <assert.h>
 #include <time.h>			// time as random seed in create_NN()
 #include <stdbool.h>
+#include <fftw3.h>			// fastest Fourier Transform in the West
 // #include "feedforward-NN.h"
 
 #define Eta 0.01			// learning rate
 #define BIASOUTPUT 1.0		// output for bias. It's always 1.
 
-#define L				4		// L = number of layers
-#define N				5		// N = number of neurons per layer
-#define M				10		// M = number of "candidate" neurons per layer; M > N
+#define numLayers		4
+#define neuronsPerLayer	[4, 3, 3, 2]
+#define populationSize	100
 #define MaxGens			100
 #define CrossRate		0.98
 #define MutationRate	(1.0 / N)
 
+double fitness[populationSize];
+
 // Sorry I have to use global variables to simplify code
 // =============================================================
+
 // A question is how to store the current network as well as the entire population.
 // Perhaps the data structure should store all the "population rows".
 double population[L][M][N];		// each element is a connection weight
@@ -58,20 +50,6 @@ extern void qsort(void *, size_t, size_t, int (*comparator)(const void *, const 
 extern void forward_gNN(int, double []);		// forward-propagate the gNN
 extern void backprop_gNN(double []);
 
-// Perhaps each neuron is an individual, in the sense that neurons compete with each other.
-// The network should consist of the top-N neurons in each population row.
-// The fitness of a neuron can be defined as:  ∑ (∂E/∂W)²
-// where summation is over the weights belonging to the neuron in question;  E is the
-// error w.r.t. a single input-output pair, so we should do another summation over all
-// data points.
-// The rationale for the above formula is that ∂E/∂W measures the error sensitivity of a
-// single connection (ie, weight).
-// Armed with this fitness measure, we can continue with the strategy of maintain M
-// neurons per layer and selecting N out of M to build the actual network.
-
-// For each layer, the fitness of individual neurons can be calculated by choosing that
-// neuron together with the N-1 top-ranking neurons in that layer.  Can this be simplified?
-//
 double fitness(int layer, int index)
 // Call forward-prop with input-output pairs to evaluate the current network.
 	{
@@ -189,70 +167,76 @@ void printCandidate(double candidate[N])
 	printf("\n");
 	}
 
+void FourierTransform(int n, double *network, fftw_complex *gene)
+	{
+    fftw_plan p;
+
+	p = fftw_plan_dft_r2c_1d(n, network, gene);
+    fftw_execute(p);
+    fftw_destroy_plan(p);
+	}
+
 // Main algorithm for genetic search
 void evolve()
 	{
-	// No need to create neural network as it is stored in the population
-	// initialize population
-	for (int l = 0; l < L; ++l)
-		for (int m = 0; m < M; ++m)
-			for (int n = 0; n < N; ++n)
-				population[l][m][n] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
+	// **** initialize population
 
-	// Compare fitness of 2 neurons
-	// The neurons are addressed by layer and position
-	int qsort_layer;
+	// find total # of neurons per NN
+	int numNeurons = 0;
+	for (int l = 0; l < numLayers; ++l)						// for each layer
+		numNeurons += neuronsPerLayer[l];
+
+	// allocate space for one NN
+	double *candidate = malloc(numNeurons * sizeof(double));
+	// allocate space for entire genome
+	fftw_complex genome[populationSize][] = fftw_malloc(sizeof(fftw_complex) * numNeurons * populationSize);
+
+	// generate population of NNs with random weights
+	for (int m = 0; m < populationSize; ++m)				// for each population candidate
+		{
+		for (int i = 0, l = 0; l < numLayers; ++l)			// for each layer
+			for (int n = 0; n < neuronsPerLayer[l]; ++n)	// for each neuron
+				{
+				++i;
+				candidate[i] = (rand() / (double) RAND_MAX) * 2.0 - 1.0;	// w ∊ [-1,1]
+				}
+		// do Fourier transform
+		FourierTransform(numNeurons, candidate, genome[m]);
+		}
+
+	// Compare fitness of 2 candidates
 	int compareFitness(const void *l, const void *r)
 		{
 		int x_index = *(const int *)l;
 		int y_index = *(const int *)r;
-		return (fitness(qsort_layer, x_index) < fitness(qsort_layer, y_index));
+		return (fitness(x_index) < fitness(y_index));
 		};
 
+	for (int m = 0; m < populationSize; ++m)		// for each candidate
+		fitness[m] = evaluateCandidate(genome[m]);
+
 	// Sort population according to fitness
-	for (int l = 0; l < L; ++l)		// for each layer
-		{
-		qsort_layer = l;		// NB: This is required for the comparison function!
-		// size of population is M, size of individual is N
-		// A question is whether the # of connections should be N or M?
-		// It can be N, if the actual network (of width N) is relatively static.
-		qsort(population[l], M, N, compareFitness);
-		}
+	qsort(genome, populationSize, numNeurons * sizeof(fftw_complex), compareFitness);
+
 	printf("Initial population:\n");
-	for (int l = 0; l < L; ++l)
-		for (int m = 0; m < M; ++m)
-			{
-			printCandidate(population[l][m]);
-			}
+	for (int m = 0; m < populationSize; ++m)
+		printCandidate(genome[m]);
 
 	for (int i = 0; i < MaxGens; ++i)
 		{
 		printf("gen %03d: \n", i);
 
-		for (int l = 0; l < L; ++l)			// for each layer
-			for (int m = 0; m < M; ++m)		// for each candidate in population
-				binaryTournament(l, m);
+		for (int m = 0; m < populationSize; ++m)	// for the size of 1 population
+			binaryTournament();
 
-		for (int l = 0; l < L; ++l)		// for each layer
-			{
-			qsort_layer = l;			// NB: This is required for the comparison function!
-			qsort(selected[l], M, N, compareFitness);
-			}
+		qsort(selected, populationSize, numNeurons * sizeof(fftw_complex), compareFitness);
 
-		for (int l = 0; l < L; ++l)			// for each layer
-			reproduce(l, M, CrossRate, MutationRate);
+		reproduce(l, M, CrossRate, MutationRate);
 
-		for (int l = 0; l < L; ++l)		// for each layer
-			{
-			qsort_layer = l;			// NB: This is required for the comparison function!
-			qsort(children[l], M, N, compareFitness);
-			}
+		qsort(children[l], M, N, compareFitness);
 
-		for (int l = 0; l < L; ++l)
-			for (int m = 0; m < M; ++m)
-				{
-				printCandidate(children[l][m]);
-				}
+		for (int m = 0; m < populationSize; ++m)
+			printCandidate(genome[m]);
 
 		strncpy(population, children, sizeof(population));
 
@@ -356,125 +340,6 @@ void backprop_gNN(double *errors)
 	}
 
 /*
- *
-// Same as above, except with soft_plus activation function
-void forward_prop_SP(NNET *net, int dim_V, double V[])
-	{
-	// set the output of input layer
-	for (int i = 0; i < dim_V; ++i)
-		net->layers[0].neurons[i].output = V[i];
-
-	// calculate output from hidden layers to output layer
-	for (int l = 1; l < net->numLayers; l++)
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)
-			{
-			double v = 0.0; // induced local field for neurons
-			// calculate v, which is the sum of the product of input and weights
-			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
-				{
-				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
-				else
-					v += net->layers[l].neurons[n].weights[k] *
-						net->layers[l - 1].neurons[k - 1].output;
-				}
-
-			net->layers[l].neurons[n].output = softplus(v);
-
-			net->layers[l].neurons[n].grad = d_softplus(v);
-			}
-		}
-	}
-
-// Same as above, except with rectifier activation function
-// ReLU = "rectified linear unit"
-void forward_prop_ReLU(NNET *net, int dim_V, double V[])
-	{
-	// set the output of input layer
-	for (int i = 0; i < dim_V; ++i)
-		net->layers[0].neurons[i].output = V[i];
-
-	// calculate output from hidden layers to output layer
-	for (int l = 1; l < net->numLayers; l++)
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)
-			{
-			double v = 0.0; // induced local field for neurons
-			// calculate v, which is the sum of the product of input and weights
-			for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
-				{
-				if (k == 0)
-					v += net->layers[l].neurons[n].weights[k] * BIASOUTPUT;
-				else
-					v += net->layers[l].neurons[n].weights[k] *
-						net->layers[l - 1].neurons[k - 1].output;
-				}
-
-			net->layers[l].neurons[n].output = rectifier(v);
-
-			// This is to prepare for back-prop
-			if (v < -1.0)
-				net->layers[l].neurons[n].grad = -Leakage;
-			// if (v > 1.0)
-			//	net->layers[l].neurons[n].grad = Leakage;
-			else
-				net->layers[l].neurons[n].grad = 1.0;
-			}
-		}
-	}
-
-// Same as above, except with rectifier activation function
-// In this case:  σ'(x) = sign(x)
-void back_prop_ReLU(NNET *net, double *errors)
-	{
-	int numLayers = net->numLayers;
-	LAYER lastLayer = net->layers[numLayers - 1];
-
-	// calculate gradient for output layer
-	for (int n = 0; n < lastLayer.numNeurons; ++n)
-		{
-		// double output = lastLayer.neurons[n].output;
-		//for output layer, ∇ = sign(y)∙error
-		// .grad has been prepared in forward-prop
-		lastLayer.neurons[n].grad *= errors[n];
-		}
-
-	// calculate gradient for hidden layers
-	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
-			{
-			// double output = net->layers[l].neurons[n].output;
-			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
-				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
-				}
-			// .grad has been prepared in forward-prop
-			net->layers[l].neurons[n].grad *= sum;
-			}
-		}
-
-	// update all weights
-	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
-		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
-			{
-			net->layers[l].neurons[n].weights[0] += Eta *
-					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
-				{
-				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].grad * inputForThisNeuron;
-				}
-			}
-		}
-	}
-
 // Calculate error between output of forward-prop and a given answer Y
 double calc_error(NNET *net, double Y[], double *errors)
 	{

@@ -289,13 +289,13 @@ getB(): return meanY - getA()*meanX
 
 void arithmetic_testB()
 	{
-	// int neuronsOfLayer[] = {8, 13, 10, 6}; // first = input layer, last = output layer
-	// int neuronsOfLayer[] = {8, 13, 10, 13, 10, 6};
-	// int neuronsOfLayer[] = {8, 19, 19, 19, 19, 6};
-	int neuronsOfLayer[] = {8, 13, 10, 6};
+	// int neuronsPerLayer[] = {8, 13, 10, 6}; // first = input layer, last = output layer
+	// int neuronsPerLayer[] = {8, 13, 10, 13, 10, 6};
+	// int neuronsPerLayer[] = {8, 19, 19, 19, 19, 6};
+	int neuronsPerLayer[] = {8, 13, 10, 6};
 	int dimK = 8;
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	NNET *Net = create_NN(numLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsPerLayer) / sizeof(int);
+	NNET *Net = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
@@ -443,7 +443,7 @@ void arithmetic_testB()
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net, numLayers, neuronsOfLayer);
+			re_randomize(Net, numLayers, neuronsPerLayer);
 			userKey = 0;
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
@@ -547,11 +547,11 @@ void arithmetic_testB()
 
 	extern void saveNet(NNET *, int, int *, char *, char *);
 	printf("Saving network data....\n");
-	saveNet(Net, numLayers, neuronsOfLayer, "", "");
-	free_NN(Net, neuronsOfLayer);
+	saveNet(Net, numLayers, neuronsPerLayer, "", "");
+	free_NN(Net, neuronsPerLayer);
 	}
 
-void saveNet(NNET *net, int numLayers, int *neuronsOfLayer, char *comments, char *defaultName)
+void saveNet(NNET *net, int numLayers, int *neuronsPerLayer, char *comments, char *defaultName)
 	{
 	FILE *fp;
 	if (strlen(defaultName) > 0)
@@ -577,13 +577,13 @@ void saveNet(NNET *net, int numLayers, int *neuronsOfLayer, char *comments, char
 	fprintf(fp, "%d\n", numLayers);
 
 	for (int l = 0; l < numLayers; ++l)
-		fprintf(fp, "%d ", neuronsOfLayer[l]);
+		fprintf(fp, "%d ", neuronsPerLayer[l]);
 	fprintf(fp, "\n");
 
 	for (int l = 1; l < numLayers; ++l) // for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
+		for (int n = 0; n < neuronsPerLayer[l]; ++n) // for each neuron
 			{
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i) // for each weight
 				fprintf(fp, "%f ", (float) net->layers[l].neurons[n].weights[i]);
 			fprintf(fp, "\n");
 			}
@@ -641,8 +641,8 @@ void arithmetic_testC()		// verify results for testB
 	{
 	NNET *Net;
 	int numLayers;
-	int *neuronsOfLayer;
-	Net = loadNet(&numLayers, &neuronsOfLayer, "operator.net");
+	int *neuronsPerLayer;
+	Net = loadNet(&numLayers, &neuronsPerLayer, "operator.net");
 	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	/****
@@ -709,8 +709,8 @@ void arithmetic_testC()		// verify results for testB
 	printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
 	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
 
-	free_NN(Net, neuronsOfLayer);
-	free(neuronsOfLayer);
+	free_NN(Net, neuronsPerLayer);
+	free(neuronsPerLayer);
 	}
 
 int arithmetic_testC_1(NNET *Net, LAYER lastLayer)
@@ -844,10 +844,10 @@ LOOP:
 void arithmetic_testD()		// same as testB, except learns entire operator in 1 step
 	{
 	// first = input layer, last = output layer
-	int neuronsOfLayer[] = {8, 19, 19, 19, 19, 6};
+	int neuronsPerLayer[] = {8, 19, 19, 19, 19, 6};
 	int dimK = 8;
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	NNET *Net = create_NN(numLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsPerLayer) / sizeof(int);
+	NNET *Net = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
@@ -997,7 +997,7 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net, numLayers, neuronsOfLayer);
+			re_randomize(Net, numLayers, neuronsPerLayer);
 			userKey = 0;
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
@@ -1076,14 +1076,14 @@ void arithmetic_testD()		// same as testB, except learns entire operator in 1 st
 	extern void saveNet();
 	printf("Saving network data....\n");
 	extern void saveNet(NNET *, int, int *, char *, char *);
-	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
-	free_NN(Net, neuronsOfLayer);
+	saveNet(Net, numLayers, neuronsPerLayer, "", "operator.net");
+	free_NN(Net, neuronsPerLayer);
 	}
 
 void arithmetic_testE()		// verify results for testD
 	{
-	int numLayers, *neuronsOfLayer;
-	NNET *Net = loadNet(&numLayers, &neuronsOfLayer, "operator.net");
+	int numLayers, *neuronsPerLayer;
+	NNET *Net = loadNet(&numLayers, &neuronsPerLayer, "operator.net");
 	LAYER lastLayer = Net->layers[numLayers - 1];
 
 	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
@@ -1118,8 +1118,8 @@ void arithmetic_testE()		// verify results for testD
 	printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
 	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
 
-	free_NN(Net, neuronsOfLayer);
-	free(neuronsOfLayer);
+	free_NN(Net, neuronsPerLayer);
+	free(neuronsPerLayer);
 	}
 
 int arithmetic_testE_1(NNET *Net, LAYER lastLayer)
@@ -1243,10 +1243,10 @@ int arithmetic_testE_1(NNET *Net, LAYER lastLayer)
 void arithmetic_testF()		// same as testD, except learns entire operator in 2 steps
 	{
 	// first = input layer, last = output layer
-	int neuronsOfLayer[] = {8, 19, 19, 19, 19, 6};
+	int neuronsPerLayer[] = {8, 19, 19, 19, 19, 6};
 	int dimK = 8;
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
-	NNET *Net = create_NN(numLayers, neuronsOfLayer);
+	int numLayers = sizeof(neuronsPerLayer) / sizeof(int);
+	NNET *Net = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
@@ -1396,7 +1396,7 @@ void arithmetic_testF()		// same as testD, except learns entire operator in 2 st
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net, numLayers, neuronsOfLayer);
+			re_randomize(Net, numLayers, neuronsPerLayer);
 			userKey = 0;
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
@@ -1474,11 +1474,11 @@ void arithmetic_testF()		// same as testD, except learns entire operator in 2 st
 	extern void saveNet();
 	printf("Saving network data....\n");
 	extern void saveNet(NNET *, int, int *, char *, char *);
-	saveNet(Net, numLayers, neuronsOfLayer, "", "operator.net");
-	free_NN(Net, neuronsOfLayer);
+	saveNet(Net, numLayers, neuronsPerLayer, "", "operator.net");
+	free_NN(Net, neuronsPerLayer);
 	}
 
-void save_RNN(RNN *net, int numLayers, int *neuronsOfLayer, char *comments)
+void save_RNN(RNN *net, int numLayers, int *neuronsPerLayer, char *comments)
 	{
 	char fileName[1024];
 	printf("Enter file name [default = don't save] :");
@@ -1496,13 +1496,13 @@ void save_RNN(RNN *net, int numLayers, int *neuronsOfLayer, char *comments)
 	fprintf(fp, "%d\n", numLayers);
 
 	for (int l = 0; l < numLayers; ++l)
-		fprintf(fp, "%d ", neuronsOfLayer[l]);
+		fprintf(fp, "%d ", neuronsPerLayer[l]);
 	fprintf(fp, "\n");
 
 	for (int l = 1; l < numLayers; ++l) // for each layer
-		for (int n = 0; n < neuronsOfLayer[l]; ++n) // for each neuron
+		for (int n = 0; n < neuronsPerLayer[l]; ++n) // for each neuron
 			{
-			for (int i = 0; i <= neuronsOfLayer[l - 1]; ++i) // for each weight
+			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i) // for each weight
 				fprintf(fp, "%f ", (float) net->layers[l].neurons[n].weights[i]);
 			fprintf(fp, "\n");
 			}
@@ -1559,12 +1559,12 @@ RNN *load_RNN(int *pNumLayers, int *pNeuronsOfLayer[])
 #define ErrorThreshold		0.001
 void BPTT_arithmetic_test()
 	{
-	int neuronsOfLayer[4] = {8, 13, 10, 8}; // first = input layer, last = output layer
+	int neuronsPerLayer[4] = {8, 13, 10, 8}; // first = input layer, last = output layer
 	// (first- and last-layer dimensions must match because network needs to be recurrent)
 	int dimK = 8;		// dim K = 8 (dimension of input-layer vector)
-	int numLayers = sizeof(neuronsOfLayer) / sizeof(int);
+	int numLayers = sizeof(neuronsPerLayer) / sizeof(int);
 	// create BPTT_NN
-	RNN *Net = create_BPTT_NN(numLayers, neuronsOfLayer);
+	RNN *Net = create_BPTT_NN(numLayers, neuronsPerLayer);
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dimK];
 
@@ -1720,7 +1720,7 @@ void BPTT_arithmetic_test()
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			BPTT_re_randomize(Net, numLayers, neuronsOfLayer);
+			BPTT_re_randomize(Net, numLayers, neuronsPerLayer);
 			userKey = 0;
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
@@ -1822,14 +1822,14 @@ void BPTT_arithmetic_test()
 		quit_graphics();
 
 	extern void save_RNN(RNN *, int, int *, char *);
-	save_RNN(Net, numLayers, neuronsOfLayer, "");
-	free_BPTT_NN(Net, neuronsOfLayer);
+	save_RNN(Net, numLayers, neuronsPerLayer, "");
+	free_BPTT_NN(Net, neuronsPerLayer);
 	}
 
 void BPTT_arithmetic_testB()		// verify results for BPTT_test
 	{
-	int numLayers, *neuronsOfLayer;
-	RNN *Net = load_RNN(&numLayers, &neuronsOfLayer);
+	int numLayers, *neuronsPerLayer;
+	RNN *Net = load_RNN(&numLayers, &neuronsPerLayer);
 	rLAYER lastLayer = Net->layers[numLayers - 1];
 
 	int ans_correct = 0, ans_negative = 0, ans_wrong = 0, ans_non_term = 0;
@@ -1864,8 +1864,8 @@ void BPTT_arithmetic_testB()		// verify results for BPTT_test
 	printf("Answers wrong    = %d (%.1f%%)\n", ans_wrong, ans_wrong * 100 / (float) P);
 	printf("Answers non-term = %d (%.1f%%)\n", ans_non_term, ans_non_term * 100 / (float) P);
 
-	free_BPTT_NN(Net, neuronsOfLayer);
-	free(neuronsOfLayer);
+	free_BPTT_NN(Net, neuronsPerLayer);
+	free(neuronsPerLayer);
 	}
 
 int BPTT_arithmetic_testB_1(RNN *Net, rLAYER lastLayer)
