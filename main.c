@@ -275,10 +275,12 @@ extern void tic_tac_toe_test4();
 int main(int argc, char** argv)
 	{
 	bool quit = false;
+	printf("\n\n*** Welcome to Genifer 5.4 ***\n\n");
+
 	char whichTest = '\n';
 	while (!quit)
 		{
-		printf("\n\n*** Welcome to Genifer 5.3 ***\n\n");
+		printf("\n\x1b[32m——`—,—{\x1b[31;1m@\x1b[0m\n\n");		// Genifer logo
 
 		printf("[1] forward test\n");
 		printf("[2] classic BP test (XOR)\n");
@@ -297,7 +299,7 @@ int main(int argc, char** argv)
 		printf("[f] RNN sine-wave test\n");
 		printf("[g] genetic NN test\n");
 		printf("[h] run maze\n");
-		printf("[i] ???? \n");
+		printf("[i] symmetric NN test \n");
 		printf("[j] Jacobian NN\n");
 		printf("[q] * Q-learning test\n");
 		printf("[t] Tic-Tac-Toe (Sayaka 2 architecture)\n");
@@ -361,6 +363,9 @@ int main(int argc, char** argv)
 				break;
 			case 'h':
 				main2(); // run maze
+				break;
+			case 'i':
+				symmetric_test(); // test symmetric neural network
 				break;
 			case 'j':
 				// jacobian_test(); // test Jacobian neural network

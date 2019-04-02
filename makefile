@@ -28,6 +28,9 @@ dist/stochastic-forward-backward.o: stochastic-forward-backward.c BPTT-RNN.h
 dist/basic-tests.o: basic-tests.c RNN.h feedforward-NN.h
 	gcc -c $< -o $@ -fpermissive
 
+dist/symmetric-test.o: symmetric-test.c RNN.h feedforward-NN.h
+	gcc -c $< -o $@ -fpermissive
+
 dist/visualization.o: visualization.c feedforward-NN.h BPTT-RNN.h
 	gcc -c $< -o $@
 
@@ -57,5 +60,5 @@ dist/main.o: main.c feedforward-NN.h
 
 CFLAGS=-lSDL2 -L/usr/lib64 -lgsl -lgslcblas -lm -lsfml-window -lsfml-graphics -lsfml-system
 
-genifer: dist/main.o dist/arithmetic-test.o dist/back-prop.o dist/visualization.o dist/Q-learning.o dist/basic-tests.o dist/tic-tac-toe.o dist/backprop-through-time.o dist/maze.o dist/genetic-NN.o dist/Sayaka-1.o dist/Sayaka-2.o dist/real-time-recurrent-learning.o dist/V-learning.o
+genifer: dist/main.o dist/arithmetic-test.o dist/back-prop.o dist/visualization.o dist/Q-learning.o dist/basic-tests.o dist/symmetric-test.o dist/tic-tac-toe.o dist/backprop-through-time.o dist/maze.o dist/genetic-NN.o dist/Sayaka-1.o dist/Sayaka-2.o dist/real-time-recurrent-learning.o dist/V-learning.o
 	g++ -o genifer $^ $(CFLAGS)

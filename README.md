@@ -27,6 +27,7 @@ To install SFML library:
 
 To compile:
 
+    mkdir dist
 	make genifer
 
 For development, you may use the NetBeans IDE, with C/C++ extensions, but I have moved away from NetBeans and the config files may be old.

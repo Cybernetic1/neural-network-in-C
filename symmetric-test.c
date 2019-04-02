@@ -5,17 +5,13 @@
 #include "feedforward-NN.h"
 
 extern NNET *create_NN(int, int *);
-extern void create_RTRL_NN(RNN *, int, int *);
 extern void free_NN(NNET *, int *);
-extern void free_RTRL_NN(RNN *, int *);
 extern void forward_prop_sigmoid(NNET *, int, double *);
 extern void forward_prop_ReLU(NNET *, int, double *);
 extern void forward_prop_softplus(NNET *, int, double *);
 extern void forward_prop_x2(NNET *, int, double *);
-extern void forward_RTRL(RNN *, int, double *);
 extern void back_prop(NNET *, double *);
 extern void back_prop_ReLU(NNET *, double *);
-extern void RTRL(RNN *, double *);
 extern void pause_graphics();
 extern void quit_graphics();
 extern void start_NN_plot(void);
@@ -44,6 +40,8 @@ extern void start_timer(), end_timer(char *);
 extern double K[];
 
 // 1. Randomly generate a FFNN, F(x,y)
+//		- then F(x,y) + F(y,x) would be a symmetric function
+//		- this can be used as target
 // 2. Use another FFNN to learn #1, record training time
 // 3. Use symmetric algorithm to learn F(x,y) + F(y,x)
 
@@ -263,7 +261,7 @@ void symmetric_test()
 // Test forward propagation
 
 #define ForwardPropMethod	forward_prop_sigmoid
-void forward_test()
+void forward_test2()
 	{
 	int neuronsPerLayer[4] = {4, 3, 3, 2}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
