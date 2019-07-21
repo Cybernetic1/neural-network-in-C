@@ -39,11 +39,21 @@ extern void start_timer(), end_timer(char *);
 
 extern double K[];
 
-// 1. Randomly generate a FFNN, F(x,y)
-//		- then F(x,y) + F(y,x) would be a symmetric function
-//		- this can be used as target
-// 2. Use another FFNN to learn #1, record training time
-// 3. Use symmetric algorithm to learn F_sym(x,y)
+// * maintain a pool of propositions
+// * for each iteration:
+//		-- take 1 proposition P from pool
+//		-- feed P and H into NN
+//		-- output = P2, H2
+//		-- one proposition from pool has to be forgotten, how?
+
+// Learning
+// ========
+// * for each reward, needs to use RNN back-prop
+
+// Forgetting mechanism
+// ====================
+// * create symmetric NN to learn V
+// * 
 
 // Test classical back-prop
 // To test convergence, we record the sum of squared errors for the last M and last M..2M
