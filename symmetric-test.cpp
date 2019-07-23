@@ -1,42 +1,44 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
+#include <iostream>
 #include <math.h>
 #include <stdbool.h>
 #include <random>
 #include "feedforward-NN.h"
 
-extern NNET *create_NN(int, int *);
-extern void free_NN(NNET *, int *);
-extern void forward_prop_sigmoid(NNET *, int, double *);
-extern void forward_prop_ReLU(NNET *, int, double *);
-extern void forward_prop_softplus(NNET *, int, double *);
-extern void forward_prop_x2(NNET *, int, double *);
-extern void back_prop(NNET *, double *);
-extern void back_prop_ReLU(NNET *, double *);
-extern void pause_graphics();
-extern void quit_graphics();
-extern void start_NN_plot(void);
-extern void start_NN2_plot(void);
-extern void start_W_plot(void);
-extern void start_K_plot(void);
-extern void start_output_plot(void);
-extern void start_LogErr_plot(void);
-extern void restart_LogErr_plot(void);
-extern void re_randomize(NNET *, int, int *);
-extern void plot_NN(NNET *net);
-extern void plot_NN2(NNET *net);
-extern void plot_W(NNET *net);
-extern void plot_output(NNET *net, void ());
-extern void plot_LogErr(double, double);
-extern void flush_output();
-extern void plot_tester(double, double);
-extern void plot_K();
-extern int delay_vis(int);
-extern void plot_trainer(double);
-extern void plot_ideal(void);
-extern void beep(void);
-extern double sigmoid(double);
-extern void start_timer(), end_timer(char *);
+using namespace std;
+
+extern "C" NNET *create_NN(int, int *);
+extern "C" void free_NN(NNET *, int *);
+extern "C" void forward_prop_sigmoid(NNET *, int, double *);
+extern "C" void forward_prop_ReLU(NNET *, int, double *);
+extern "C" void forward_prop_softplus(NNET *, int, double *);
+extern "C" void forward_prop_x2(NNET *, int, double *);
+extern "C" void back_prop(NNET *, double *);
+extern "C" void back_prop_ReLU(NNET *, double *);
+extern "C" void pause_graphics();
+extern "C" void quit_graphics();
+extern "C" void start_NN_plot(void);
+extern "C" void start_NN2_plot(void);
+extern "C" void start_W_plot(void);
+extern "C" void start_K_plot(void);
+extern "C" void start_output_plot(void);
+extern "C" void start_LogErr_plot(void);
+extern "C" void restart_LogErr_plot(void);
+extern "C" void re_randomize(NNET *, int, int *);
+extern "C" void plot_NN(NNET *net);
+extern "C" void plot_NN2(NNET *net);
+extern "C" void plot_W(NNET *net);
+extern "C" void plot_output(NNET *net, void ());
+extern "C" void plot_LogErr(double, double);
+extern "C" void flush_output();
+extern "C" void plot_tester(double, double);
+extern "C" void plot_K();
+extern "C" int delay_vis(int);
+extern "C" void plot_trainer(double);
+extern "C" void plot_ideal(void);
+extern "C" void beep(void);
+extern "C" double sigmoid(double);
+extern "C" void start_timer(), end_timer(char *);
 
 extern double K[];
 
@@ -57,23 +59,30 @@ extern double K[];
 #define ForwardPropMethod	forward_prop_ReLU
 #define ErrorThreshold		0.02
 
-void symmetric_test()
+extern "C" void symmetric_test()
 	{
 	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(0.5,1.0);
+	std::normal_distribution<double> distribution(0.0,0.2);
 
-	int neuronsPerLayer[] = {3, 6, 1}; // first = input layer, last = output layer
+	int neuronsPerLayer[] = {2, 6, 1}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
 	NNET *Net = create_NN(numLayers, neuronsPerLayer);		// our NN for learning
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dim_K];
 
+	int num;
+	cin >> num;
+
 	for (int i = 0; i < 30; ++i)
 		{
 		double x = distribution(generator);
+		x += (num / 10.0);
+		if (x > 1.0)
+			x = 2.0 - x;
+		else if (x < 0.0)
+			x = -x;
 		printf("%.8f\n", x);
 		}
-	return;
 
 	// **** Create network function h(x)
 	NNET *Net_h = create_NN(numLayers, neuronsPerLayer);		// reference NN for tests
@@ -88,10 +97,10 @@ void symmetric_test()
 		errors1[i] = errors2[i] = 0.0;
 
 	// start_NN_plot();
-	start_W_plot();
+	// start_W_plot();
 	// start_K_plot();
-	start_output_plot();
-	start_LogErr_plot();
+	// start_output_plot();
+	// start_LogErr_plot();
 	// plot_ideal();
 	printf("Press 'Q' to quit\n\n");
 	start_timer();
@@ -163,7 +172,7 @@ void symmetric_test()
 		// plot_W(Net);
 		// pause_graphics();
 
-		if ((i % 200) == 0)
+		if ((i % 2000) == 0)
 			{
 			// Testing set
 			double test_err = 0.0;
@@ -215,7 +224,7 @@ void symmetric_test()
 			printf("\n****** Network re-randomized.\n");
 			}
 
-		if ((i % 50) == 0)
+		if ((i % 5000) == 0)
 			{
 			double ratio = (sum_err2 - sum_err1) / sum_err1;
 			if (ratio > 0)
@@ -226,14 +235,14 @@ void symmetric_test()
 			//	break;
 			}
 
-		if ((i % 10) == 0) // display status periodically
+		if ((i % 5000) == 0) // display status periodically
 			{
 			printf("%s\n", status);
 			// plot_NN(Net);
-			plot_W(Net);
-			plot_LogErr(mean_err, ErrorThreshold);
-			plot_output(Net, ForwardPropMethod);
-			flush_output();
+			// plot_W(Net);
+			// plot_LogErr(mean_err, ErrorThreshold);
+			// plot_output(Net, ForwardPropMethod);
+			// flush_output();
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
 			userKey = delay_vis(0);
@@ -265,8 +274,8 @@ void symmetric_test()
 	end_timer(NULL);
 	beep();
 	// plot_output(Net, ForwardPropMethod);
-	flush_output();
-	plot_W(Net);
+	// flush_output();
+	// plot_W(Net);
 
 	if (userKey == 0)
 		pause_graphics();

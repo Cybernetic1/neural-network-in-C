@@ -268,9 +268,10 @@ extern void evolve();
 extern void main2();
 extern void jacobian_test();
 extern void Q_test();
-extern void tic_tac_toe_test2();
+extern void tic_tac_toe_test();
 extern void tic_tac_toe_test3();
 extern void tic_tac_toe_test4();
+extern void symmetric_test();
 
 int main(int argc, char** argv)
 	{
@@ -280,8 +281,6 @@ int main(int argc, char** argv)
 	char whichTest = '\n';
 	while (!quit)
 		{
-		printf("\n\x1b[32m——`—,—{\x1b[31;1m@\x1b[0m\n\n");		// Genifer logo
-
 		printf("[1] forward test\n");
 		printf("[2] classic BP test (XOR)\n");
 		printf("[3] K wandering test\n");
@@ -307,6 +306,7 @@ int main(int argc, char** argv)
 		printf("[v] Tic-Tac-Toe (V-value architecture)\n");
 		printf("[x] exit\n");
 
+		printf("\n\x1b[32m——`—,—{\x1b[31;1m@\x1b[0m ");		// Genifer logo
 		do
 			whichTest = getchar();
 		while (whichTest == '\n');
