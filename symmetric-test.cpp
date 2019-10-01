@@ -40,8 +40,28 @@ extern "C" void beep(void);
 extern "C" double sigmoid(double);
 extern "C" void start_timer(), end_timer(char *);
 
-extern double K[];
+double K[dim_K];
 
+/* BASIC IDEA
+   ==========
+1. Weights are constrained by a number of equations.
+2. Then the NN would be symmetric;  This has already been proven in Python.
+3. What we want to demo here is to train such an NN to approximate some symmetric function.
+4. So we need to test against some random symmetric function.  This can be generated from
+	a bunch of random data points and permuting them.
+5. Then we train the NN with the constraints to see if it can learn the target.
+6. The "colorful" sym-NN seems to have only equality constraints for 1 layer, but we don't
+	know for 2 layers.  This has to be solved by Python algebraically.
+7. "Colorless" / "unordered" version sym-NN contain additive constraints even for 1 layer.
+8. Multiple layers seem to involve *polynomial* constraints, but this has yet to be confirmed.
+
+	How to implement constraints
+	============================
+1. 
+*/
+
+
+// ****** The following is an old idea, now abandoned ******
 // 1. create an FFNN, h(x)
 //		F(x₁, x₂, ..., xₙ) = g(h(x₁), h(x₂), ..., h(xₙ)) would be symmetric if g() is.
 // 2. Test whether F can learn a symmetric target function.  For example, let input size N = 3,
@@ -71,6 +91,7 @@ extern "C" void symmetric_test()
 	double errors[dim_K];
 
 	int num;
+	printf("input a number: ");
 	cin >> num;
 
 	for (int i = 0; i < 30; ++i)
@@ -283,3 +304,8 @@ extern "C" void symmetric_test()
 		quit_graphics();
 	free_NN(Net, neuronsPerLayer);
 	}
+
+int main() {
+	printf("\n\x1b[32m——`—,—{\x1b[31;1m@\x1b[0m\n");	// Genifer logo ——`—,—{@
+	symmetric_test();
+}
