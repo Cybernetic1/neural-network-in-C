@@ -37,10 +37,10 @@ QNET *create_QNN(int numLayers, int *neuronsPerLayer)
 		{
 		net->layers[l].neurons = (NEURON *) malloc(neuronsPerLayer[l] * sizeof (NEURON));
 		net->layers[l].numNeurons = neuronsPerLayer[l];
-		net->layers[l].α = randomWeight();
-		net->layers[l].β = randomWeight();
-		net->layers[l].γ = randomWeight();
-		net->layers[l].δ = randomWeight();
+		net->layers[l].alpha = randomWeight();
+		net->layers[l].beta = randomWeight();
+		net->layers[l].gamma = randomWeight();
+		net->layers[l].delta = randomWeight();
 		}
 	return net;
 	}
@@ -51,10 +51,10 @@ void re_randomize(QNET *net, int numLayers, int *neuronsPerLayer)
 
 	for (int l = 1; l < numLayers; ++l)							// for each layer
 		{
-		net->layers[l].α = randomWeight();
-		net->layers[l].β = randomWeight();
-		net->layers[l].γ = randomWeight();
-		net->layers[l].δ = randomWeight();
+		net->layers[l].alpha = randomWeight();
+		net->layers[l].beta = randomWeight();
+		net->layers[l].gamma = randomWeight();
+		net->layers[l].delta = randomWeight();
 		}
 	}
 
@@ -93,65 +93,74 @@ void forward_prop_quadratic(QNET *net, int dim_V, double V[])
 			for (int j = 0; j <= net->layers[l - 1].numNeurons; j++)
 				for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
 					{
+					double input1, input2;
 					if (j == 0)
 						input1 = BIASINPUT;
 					else
-						input1 = net->layer[l-1].neurons[j-1].output;
+						input1 = net->layers[l-1].neurons[j-1].output;
 
 					if (k == 0)
 						input2 = BIASINPUT;
 					else
-					 	input2 = net->layer[l-1].neurons[k-1].output;
+					 	input2 = net->layers[l-1].neurons[k-1].output;
 
 					double weight;
-					layer = net->layer[l]
+					LAYER layer = net->layers[l];
 					if (j == k)				// W[n,j,k] is on diagonal
 						{
 						if (n == j)			// W[n,j,k] is on super-diagonal
-							weight = layer.α;
+							weight = layer.alpha;
 						else
-							weight = layer.β;
+							weight = layer.beta;
 						}
 					else					// off diagonal
 						{
 						if (n == j || n == k)
-							weight = layer.γ;
+							weight = layer.gamma;
 						else
-							weight = layer.δ;
+							weight = layer.delta;
 						}
 					v += weight * input1 * input2;
 					}
 
 			net->layers[l].neurons[n].output = v;
 			// No need to calculate the traditional "local gradient" because it ≡ 1.0
+			net->layers[l].neurons[n].grad = 1.0;
 			}
 		}
 	}
 
-//****************************** back-propagation ***************************//
-// The error is propagated backwards starting from the output layer, hence the
-// name for this algorithm.
+/* ***************************** back-propagation ***************************
+The error is propagated backwards starting from the output layer, hence the
+name for this algorithm.
 
-// In the update formula, we need to adjust by "η ∙ input ∙ ∇", where η is the learning rate.
-// The value of		∇_j = σ'(summed input) Σ_i W_ji ∇_i
-// where σ is the sigmoid function, σ' is its derivative.  This formula is obtained directly
-// from differentiating the error E with respect to the weights W.
+In the update formula, we need to adjust by "η ∙ input ∙ ∇", where η is the learning rate.
+The value of		∇_j = σ'(summed input) Σ_i W_ji ∇_i
+where σ is the sigmoid function, σ' is its derivative.  This formula is obtained directly
+from differentiating the error E with respect to the weights W.
 
-// The meaning of del (∇) is the "local gradient".  At the output layer, ∇ is equal to
-// the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
-// equal to the derivative times the weighted sum of the ∇'s from the "next" layers.
-// From the algorithmic point of view, ∇ is derivative of the error with respect to the
-// summed inputs (for that particular neuron).  It changes for every input instance because
-// the error is dependent on the NN's raw input.  So, for each raw input instance, the
-// "local gradient" keeps changing.  I have a hypothesis that ∇ will fluctuate wildly
-// when the NN topology is "inadequate" to learn the target function.
+The meaning of del (∇) is the "local gradient".  At the output layer, ∇ is equal to
+the derivative σ'(summed inputs) times the error signal, while on hidden layers it is
+equal to the derivative times the weighted sum of the ∇'s from the "next" layers.
+From the algorithmic point of view, ∇ is derivative of the error with respect to the
+summed inputs (for that particular neuron).  It changes for every input instance because
+the error is dependent on the NN's raw input.  So, for each raw input instance, the
+"local gradient" keeps changing.  I have a hypothesis that ∇ will fluctuate wildly
+when the NN topology is "inadequate" to learn the target function.
 
-// Some history:
-// It was in 1974-1986 that Paul Werbos, David Rumelhart, Geoffrey Hinton and Ronald Williams
-// discovered this algorithm for neural networks, although it has been described by
-// Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
-// optimization problems.  The book "Talking Nets" interviewed some of these people.
+In classic back-prop, the weight update is given by:
+	ΔWᵢⱼ = -η ∂E/∂Wᵢⱼ = -η oᵢδⱼ
+In our new, quadratic back-prop the gradient is given by:
+	∂E/∂Wₖᵢⱼ = δₖoᵢoⱼ
+where
+	δₖ = ∑ₗ(δₗ ∑ⱼ Wₗₖⱼ oⱼ)
 
+Some history:
+It was in 1974-1986 that Paul Werbos, David Rumelhart, Geoffrey Hinton and Ronald Williams
+discovered this algorithm for neural networks, although it has been described by
+Bryson, Denham, and Dreyfus in 1963 and by Bryson and Yu-Chi Ho in 1969 as a solution to
+optimization problems.  The book "Talking Nets" interviewed some of these people.
+*/
 void back_prop_quadratic(QNET *net, double *errors)
 	{
 	int numLayers = net->numLayers;
@@ -176,8 +185,10 @@ void back_prop_quadratic(QNET *net, double *errors)
 			LAYER nextLayer = net->layers[l + 1];
 			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
 				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
+				double weight = 1.0;
+				// sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+				//		* nextLayer.neurons[i].grad;
+				sum += weight * nextLayer.neurons[i].grad;
 				}
 			// .grad has been prepared in forward-prop
 			net->layers[l].neurons[n].grad *= sum;
@@ -189,13 +200,17 @@ void back_prop_quadratic(QNET *net, double *errors)
 		{
 		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
 			{
-			net->layers[l].neurons[n].weights[0] += Eta *
-					net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
+			double weight;
+			weight += Eta * net->layers[l].neurons[n].grad * 1.0;
+			// net->layers[l].neurons[n].weights[0] += Eta *
+			//		net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
 			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
 				{
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				net->layers[l].neurons[n].weights[i + 1] += Eta *
-						net->layers[l].neurons[n].grad * inputForThisNeuron;
+				double weight;
+				weight += Eta * net->layers[l].neurons[n].grad * inputForThisNeuron;
+				// net->layers[l].neurons[n].weights[i + 1] += Eta *
+				//		net->layers[l].neurons[n].grad * inputForThisNeuron;
 				}
 			}
 		}

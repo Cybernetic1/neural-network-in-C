@@ -11,6 +11,7 @@ extern "C" QNET *create_QNN(int, int *);
 extern "C" void free_QNN(QNET *, int *);
 extern "C" void forward_prop_quadratic(QNET *, int, double *);
 extern "C" void back_prop_quadratic(QNET *, double *);
+extern "C" void re_randomize(QNET *, int, int *);
 
 extern "C" void pause_graphics();
 extern "C" void quit_graphics();
@@ -21,11 +22,10 @@ extern "C" void start_K_plot(void);
 extern "C" void start_output_plot(void);
 extern "C" void start_LogErr_plot(void);
 extern "C" void restart_LogErr_plot(void);
-extern "C" void re_randomize(NNET *, int, int *);
-extern "C" void plot_NN(NNET *net);
-extern "C" void plot_NN2(NNET *net);
-extern "C" void plot_W(NNET *net);
-extern "C" void plot_output(NNET *net, void ());
+// extern "C" void plot_NN(NNET *net);
+// extern "C" void plot_NN2(NNET *net);
+// extern "C" void plot_W(NNET *net);
+// extern "C" void plot_output(NNET *net, void ());
 extern "C" void plot_LogErr(double, double);
 extern "C" void flush_output();
 extern "C" void plot_tester(double, double);
@@ -81,29 +81,35 @@ double K[dim_K];
 
 extern "C" void symmetric_test()
 	{
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(0.0,0.2);
+	// std::default_random_engine generator;
+	// std::normal_distribution<double> distribution(0.0,0.2);
 
 	int neuronsPerLayer[] = {4, 4, 4}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
-	QNET *Net = create_NN(numLayers, neuronsPerLayer);		// our NN for learning
+	QNET *Net = create_QNN(numLayers, neuronsPerLayer);		// our NN for learning
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dim_K];
 
-	int num;
-	printf("input a number: ");
-	cin >> num;
-
-	for (int i = 0; i < 30; ++i)
+	printf("test 撚佢个 forward prop...");
+	for (int k = 0; k < 4; ++k)
+		K[k] = (rand() / (float) RAND_MAX);
+	// Permute K
+	int perm[4] = {0, 1, 2, 3};
+	for (int i = 0; i < 4; i++)
+		perm[i] = i;
+	// Random permutation the order
+	for (int i = 0; i < 4; i++)
 		{
-		double x = distribution(generator);
-		x += (num / 10.0);
-		if (x > 1.0)
-			x = 2.0 - x;
-		else if (x < 0.0)
-			x = -x;
-		printf("%.8f\n", x);
+		int j, t;
+		j = rand() % (4-i) + i;
+		t = perm[j]; perm[j] = perm[i]; perm[i] = t; // Swap i and j
 		}
+	// Compare f(σK) == σf(K)?
+	ForwardPropMethod(Net, 4, K); // dim K = 4
+	for (int k = 0; k < 4; ++k)
+		double z = lastLayer.neurons[k].output;
+
+	exit(0);
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
@@ -299,7 +305,7 @@ extern "C" void symmetric_test()
 		pause_graphics();
 	else
 		quit_graphics();
-	free_NN(Net, neuronsPerLayer);
+	free_QNN(Net, neuronsPerLayer);
 	}
 
 int main() {

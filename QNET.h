@@ -3,7 +3,7 @@
 typedef struct NEURON
 	{
     double output;
-    // double grad;			// "local gradient"
+    double grad;			// "local gradient"
 	} NEURON;
 
 //**********************struct for LAYER***********************************//
@@ -11,7 +11,7 @@ typedef struct LAYER
 	{
     int numNeurons;
     NEURON *neurons;
-    double α, β, γ, δ;		// The 4 distinct weights
+    double alpha, beta, gamma, delta;		// The 4 distinct weights
 	} LAYER;
 
 //*********************struct for NNET************************************//
