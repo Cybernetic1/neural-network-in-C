@@ -90,13 +90,18 @@ extern "C" void symmetric_test()
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dim_K];
 
-	printf("test 撚佢个 forward prop...");
+	printf("test 撚佢个 forward prop...\n");
+	printf("K={ ");
 	for (int k = 0; k < 4; ++k)
+		{
 		K[k] = (rand() / (float) RAND_MAX);
+		printf("%f ", K[k]);
+		}
+	printf("}\n");
 	// Permute K
 	int perm[4] = {0, 1, 2, 3};
-	for (int i = 0; i < 4; i++)
-		perm[i] = i;
+	// for (int i = 0; i < 4; i++)
+	//	perm[i] = i;
 	// Random permutation the order
 	for (int i = 0; i < 4; i++)
 		{
@@ -104,11 +109,34 @@ extern "C" void symmetric_test()
 		j = rand() % (4-i) + i;
 		t = perm[j]; perm[j] = perm[i]; perm[i] = t; // Swap i and j
 		}
+	for (int i = 0; i < 4; ++i)
+		printf("%d ", perm[i]);
+	double sigma_K[4];
+	printf("\nσK={ ");
+	for (int i = 0; i < 4; ++i)
+		{
+		sigma_K[i] = K[perm[i]];
+		printf("%f ", sigma_K[i]);
+		}
+	printf("}\n");
+	ForwardPropMethod(Net, 4, sigma_K); // dim K = 4
+	double y2[4];
+	printf("\ny2={ ");
+	for (int i = 0; i < 4; ++i)
+		{
+		y2[i] = lastLayer.neurons[i].output;
+		printf("%f ", y2[i]);
+		}
+	printf("}\n");
 	// Compare f(σK) == σf(K)?
 	ForwardPropMethod(Net, 4, K); // dim K = 4
+	printf("\ny1={ ");
 	for (int k = 0; k < 4; ++k)
-		double z = lastLayer.neurons[k].output;
-
+		{
+		double y1 = lastLayer.neurons[k].output;
+		printf("%f ", y1);
+		}
+	printf("}\n");
 	exit(0);
 
 	int userKey = 0;
