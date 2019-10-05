@@ -3,18 +3,15 @@
 #include <math.h>
 #include <stdbool.h>
 #include <random>
-#include "feedforward-NN.h"
+#include "QNET.h"
 
 using namespace std;
 
-extern "C" NNET *create_NN(int, int *);
-extern "C" void free_NN(NNET *, int *);
-extern "C" void forward_prop_sigmoid(NNET *, int, double *);
-extern "C" void forward_prop_ReLU(NNET *, int, double *);
-extern "C" void forward_prop_softplus(NNET *, int, double *);
-extern "C" void forward_prop_x2(NNET *, int, double *);
-extern "C" void back_prop(NNET *, double *);
-extern "C" void back_prop_ReLU(NNET *, double *);
+extern "C" QNET *create_QNN(int, int *);
+extern "C" void free_QNN(QNET *, int *);
+extern "C" void forward_prop_quadratic(QNET *, int, double *);
+extern "C" void back_prop_quadratic(QNET *, double *);
+
 extern "C" void pause_graphics();
 extern "C" void quit_graphics();
 extern "C" void start_NN_plot(void);
@@ -37,9 +34,9 @@ extern "C" int delay_vis(int);
 extern "C" void plot_trainer(double);
 extern "C" void plot_ideal(void);
 extern "C" void beep(void);
-extern "C" double sigmoid(double);
 extern "C" void start_timer(), end_timer(char *);
 
+#define dim_K	4
 double K[dim_K];
 
 /* BASIC IDEA
@@ -57,7 +54,10 @@ double K[dim_K];
 
 	How to implement constraints
 	============================
-1. 
+1. Good news: all constraints are equality constraints,
+	and there are only 4 distinct weights per layer.
+	Obviously the weights should be represented as a sparse matrix.
+2. Forward propagation:
 */
 
 
@@ -76,7 +76,7 @@ double K[dim_K];
 // 5. Another problem is that when generating the test set, we should make the appearance of
 //		(.3 .1 .4) more frequent.  
 
-#define ForwardPropMethod	forward_prop_ReLU
+#define ForwardPropMethod	forward_prop_quadratic
 #define ErrorThreshold		0.02
 
 extern "C" void symmetric_test()
@@ -84,9 +84,9 @@ extern "C" void symmetric_test()
 	std::default_random_engine generator;
 	std::normal_distribution<double> distribution(0.0,0.2);
 
-	int neuronsPerLayer[] = {2, 6, 1}; // first = input layer, last = output layer
+	int neuronsPerLayer[] = {4, 4, 4}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
-	NNET *Net = create_NN(numLayers, neuronsPerLayer);		// our NN for learning
+	QNET *Net = create_NN(numLayers, neuronsPerLayer);		// our NN for learning
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dim_K];
 
@@ -104,9 +104,6 @@ extern "C" void symmetric_test()
 			x = -x;
 		printf("%.8f\n", x);
 		}
-
-	// **** Create network function h(x)
-	NNET *Net_h = create_NN(numLayers, neuronsPerLayer);		// reference NN for tests
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
@@ -145,7 +142,7 @@ extern "C" void symmetric_test()
 		//		if ((i % 4) == 3)
 		//			K[0] = 1.0, K[1] = 1.0;
 
-		ForwardPropMethod(Net, 2, K); // dim K = 2
+		ForwardPropMethod(Net, 4, K); // dim K = 4
 
 		// Desired value = K_star
 		double training_err = 0.0;
@@ -189,7 +186,7 @@ extern "C" void symmetric_test()
 			tail = 0;
 
 		// plot_W(Net);
-		back_prop(Net, errors);
+		back_prop_quadratic(Net, errors);
 		// plot_W(Net);
 		// pause_graphics();
 
