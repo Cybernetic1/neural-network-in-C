@@ -7,37 +7,34 @@
 
 using namespace std;
 
-extern "C" QNET *create_QNN(int, int *);
-extern "C" void free_QNN(QNET *, int *);
-extern "C" void forward_prop_quadratic(QNET *, int, double *);
-extern "C" void back_prop_quadratic(QNET *, double *);
-extern "C" void re_randomize(QNET *, int, int *);
+extern "C" QNET *create_QNN(int);
+extern "C" void free_QNN(QNET *);
+extern "C" void forward_prop_quadratic(QNET *, double*);
+extern "C" void back_prop_quadratic(QNET *, double*);
+extern "C" void re_randomize(QNET *);
 
-extern "C" void pause_graphics();
-extern "C" void quit_graphics();
-extern "C" void start_NN_plot(void);
-extern "C" void start_NN2_plot(void);
-extern "C" void start_W_plot(void);
-extern "C" void start_K_plot(void);
-extern "C" void start_output_plot(void);
-extern "C" void start_LogErr_plot(void);
-extern "C" void restart_LogErr_plot(void);
+// extern "C" void pause_graphics();
+// extern "C" void quit_graphics();
+// extern "C" void start_NN_plot(void);
+// extern "C" void start_NN2_plot(void);
+// extern "C" void start_W_plot(void);
+// extern "C" void start_K_plot(void);
+// extern "C" void start_output_plot(void);
+// extern "C" void start_LogErr_plot(void);
+// extern "C" void restart_LogErr_plot(void);
 // extern "C" void plot_NN(NNET *net);
 // extern "C" void plot_NN2(NNET *net);
 // extern "C" void plot_W(NNET *net);
 // extern "C" void plot_output(NNET *net, void ());
-extern "C" void plot_LogErr(double, double);
-extern "C" void flush_output();
-extern "C" void plot_tester(double, double);
-extern "C" void plot_K();
-extern "C" int delay_vis(int);
-extern "C" void plot_trainer(double);
-extern "C" void plot_ideal(void);
-extern "C" void beep(void);
-extern "C" void start_timer(), end_timer(char *);
-
-#define dim_K	4
-double K[dim_K];
+// extern "C" void plot_LogErr(double, double);
+// extern "C" void flush_output();
+// extern "C" void plot_tester(double, double);
+// extern "C" void plot_K();
+// extern "C" int delay_vis(int);
+// extern "C" void plot_trainer(double);
+// extern "C" void plot_ideal(void);
+// extern "C" void beep(void);
+// extern "C" void start_timer(), end_timer(char *);
 
 /* BASIC IDEA
    ==========
@@ -84,14 +81,14 @@ extern "C" void symmetric_test()
 	// std::default_random_engine generator;
 	// std::normal_distribution<double> distribution(0.0,0.2);
 
-	int neuronsPerLayer[] = {4, 4, 4}; // first = input layer, last = output layer
-	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
-	QNET *Net = create_QNN(numLayers, neuronsPerLayer);		// our NN for learning
+	int numLayers = 3;						// must be at least 3
+	QNET *Net = create_QNN(numLayers);		// our NN for learning
 	LAYER lastLayer = Net->layers[numLayers - 1];
-	double errors[dim_K];
+	double errors[dim_V];
 
 	printf("test 撚佢个 forward prop...\n");
-	printf("K={ ");
+	double K[dim_V];
+	printf("K ={ ");
 	for (int k = 0; k < 4; ++k)
 		{
 		K[k] = (rand() / (float) RAND_MAX);
@@ -119,25 +116,24 @@ extern "C" void symmetric_test()
 		printf("%f ", sigma_K[i]);
 		}
 	printf("}\n");
-	ForwardPropMethod(Net, 4, sigma_K); // dim K = 4
-	double y2[4];
-	printf("\ny2={ ");
+	ForwardPropMethod(Net, sigma_K); // dim K = 4
+	double f_sigma_K[4];
+	printf("\nf(σK)={ ");
 	for (int i = 0; i < 4; ++i)
 		{
-		y2[i] = lastLayer.neurons[i].output;
-		printf("%f ", y2[i]);
+		f_sigma_K[i] = lastLayer.neurons[i].output;
+		printf("%f ", f_sigma_K[i]);
 		}
 	printf("}\n");
 	// Compare f(σK) == σf(K)?
-	ForwardPropMethod(Net, 4, K); // dim K = 4
-	printf("\ny1={ ");
-	for (int k = 0; k < 4; ++k)
-		{
-		double y1 = lastLayer.neurons[k].output;
-		printf("%f ", y1);
-		}
+	ForwardPropMethod(Net, K); // dim K = 4
+	double f_K[4];
+	for (int i = 0; i < 4; ++i)
+		f_K[i] = lastLayer.neurons[i].output;
+	printf("σf(K)={ ");
+	for (int i = 0; i < 4; ++i)
+		printf("%f ", f_K[perm[i]]);
 	printf("}\n");
-	exit(0);
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
@@ -155,7 +151,7 @@ extern "C" void symmetric_test()
 	// start_LogErr_plot();
 	// plot_ideal();
 	printf("Press 'Q' to quit\n\n");
-	start_timer();
+	// start_timer();
 
 	char status[1024], *s;
 	for (int i = 1; 1; ++i)
@@ -163,7 +159,7 @@ extern "C" void symmetric_test()
 		s = status + sprintf(status, "[%05d] ", i);
 
 		// Create random K vector
-		for (int k = 0; k < 2; ++k)
+		for (int k = 0; k < dim_V; ++k)
 			K[k] = (rand() / (float) RAND_MAX);
 		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
 
@@ -176,11 +172,11 @@ extern "C" void symmetric_test()
 		//		if ((i % 4) == 3)
 		//			K[0] = 1.0, K[1] = 1.0;
 
-		ForwardPropMethod(Net, 4, K); // dim K = 4
+		ForwardPropMethod(Net, K); // dim K = 4
 
 		// Desired value = K_star
 		double training_err = 0.0;
-		for (int k = 0; k < 1; ++k) // output has only 1 component
+		for (int k = 0; k < dim_V; ++k) // output has 4 components
 			{
 			// double ideal = K[k];				/* identity function */
 			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
@@ -232,15 +228,15 @@ extern "C" void symmetric_test()
 			for (int j = 0; j < numTests; ++j)
 				{
 				// Create random K vector
-				for (int k = 0; k < 2; ++k)
+				for (int k = 0; k < dim_V; ++k)
 					K[k] = ((double) rand() / (double) RAND_MAX);
 				// plot_tester(K[0], K[1]);
 
-				ForwardPropMethod(Net, 2, K);
+				ForwardPropMethod(Net, K);	// (?) expect dim = 2
 
 				// Desired value = K_star
 				double single_err = 0.0;
-				for (int k = 0; k < 1; ++k)
+				for (int k = 0; k < dim_V; ++k)
 					{
 					// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
 					double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
@@ -264,15 +260,15 @@ extern "C" void symmetric_test()
 
 		if (i > 50 && (isnan(mean_err) || mean_err > 10.0))
 			{
-			re_randomize(Net, numLayers, neuronsPerLayer);
+			re_randomize(Net);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < M; ++j) // clear errors to 0.0
 				errors1[j] = errors2[j] = 0.0;
 			i = 1;
 
-			restart_LogErr_plot();
-			start_timer();
+			// restart_LogErr_plot();
+			// start_timer();
 			printf("\n****** Network re-randomized.\n");
 			}
 
@@ -297,7 +293,7 @@ extern "C" void symmetric_test()
 			// flush_output();
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
-			userKey = delay_vis(0);
+			// userKey = delay_vis(0);
 			}
 
 		// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
@@ -307,33 +303,33 @@ extern "C" void symmetric_test()
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net, numLayers, neuronsPerLayer);
+			re_randomize(Net);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < M; ++j) // clear errors to 0.0
 				errors1[j] = errors2[j] = 0.0;
 			i = 1;
 
-			restart_LogErr_plot();
-			start_timer();
+			// restart_LogErr_plot();
+			// start_timer();
 			printf("\n****** Network re-randomized.\n");
 			userKey = 0;
-			beep();
+			// beep();
 			// pause_key();
 			}
 		}
 
-	end_timer(NULL);
-	beep();
+	// end_timer(NULL);
+	// beep();
 	// plot_output(Net, ForwardPropMethod);
 	// flush_output();
 	// plot_W(Net);
 
-	if (userKey == 0)
-		pause_graphics();
-	else
-		quit_graphics();
-	free_QNN(Net, neuronsPerLayer);
+	// if (userKey == 0)
+		// pause_graphics();
+	// else
+		// quit_graphics();
+	free_QNN(Net);
 	}
 
 int main() {

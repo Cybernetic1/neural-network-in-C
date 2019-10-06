@@ -5,7 +5,7 @@
 #include <stdbool.h>		// constants "true" and "false"
 #include <math.h>
 #include <assert.h>
-#include <time.h>			// time as random seed in create_NN()
+#include <time.h>			// time as random seed in create_QNN()
 #include "QNET.h"
 
 #define Eta 0.01			// learning rate
@@ -19,7 +19,7 @@ double randomWeight()		// generate random weight between [+1.0, -1.0]
 
 //****************************create neural network*********************//
 // GIVEN: how many layers, and how many neurons in each layer
-QNET *create_QNN(int numLayers, int *neuronsPerLayer)
+QNET *create_QNN(int numLayers)
 	{
 	QNET *net = (QNET *) malloc(sizeof (QNET));
 	srand(time(NULL));
@@ -29,14 +29,12 @@ QNET *create_QNN(int numLayers, int *neuronsPerLayer)
 
 	net->layers = (LAYER *) malloc(numLayers * sizeof (LAYER));
 	//construct input layer, no weights
-	net->layers[0].numNeurons = neuronsPerLayer[0];
-	net->layers[0].neurons = (NEURON *) malloc(neuronsPerLayer[0] * sizeof (NEURON));
+	net->layers[0].neurons = (NEURON *) malloc(dim_V * sizeof (NEURON));
 
 	//construct hidden layers
 	for (int l = 1; l < numLayers; ++l) //construct layers
 		{
-		net->layers[l].neurons = (NEURON *) malloc(neuronsPerLayer[l] * sizeof (NEURON));
-		net->layers[l].numNeurons = neuronsPerLayer[l];
+		net->layers[l].neurons = (NEURON *) malloc(dim_V * sizeof (NEURON));
 		net->layers[l].alpha = randomWeight();
 		net->layers[l].beta = randomWeight();
 		net->layers[l].gamma = randomWeight();
@@ -45,11 +43,11 @@ QNET *create_QNN(int numLayers, int *neuronsPerLayer)
 	return net;
 	}
 
-void re_randomize(QNET *net, int numLayers, int *neuronsPerLayer)
+void re_randomize(QNET *net)
 	{
 	srand(time(NULL));
 
-	for (int l = 1; l < numLayers; ++l)							// for each layer
+	for (int l = 1; l < net->numLayers; ++l)					// for each layer
 		{
 		net->layers[l].alpha = randomWeight();
 		net->layers[l].beta = randomWeight();
@@ -58,14 +56,10 @@ void re_randomize(QNET *net, int numLayers, int *neuronsPerLayer)
 		}
 	}
 
-void free_QNN(QNET *net, int *neuronsPerLayer)
+void free_QNN(QNET *net)
 	{
-	// for input layer
-	free(net->layers[0].neurons);
-
-	// for each hidden layer
-	int numLayers = net->numLayers;
-	for (int l = 1; l < numLayers; l++) // for each layer
+	// for each layer
+	for (int l = 0; l < net->numLayers; l++)
 		free(net->layers[l].neurons);
 
 	// free all layers
@@ -75,9 +69,15 @@ void free_QNN(QNET *net, int *neuronsPerLayer)
 	free(net);
 	}
 
+
 //**************************** forward-propagation ***************************//
 
-void forward_prop_quadratic(QNET *net, int dim_V, double V[])
+// NOTE: This version does not include the bias term.
+// If bias term is included:  If the network "width" is dim_V, the matrix W's width would be
+// (dim_V + 1), with the matrix's index 0 reserved for the constant term (ie, the "bias term"
+// ≡ 1.0).  But the network vector's index 0 would multiply with the matrix index 1.
+
+void forward_prop_quadratic(QNET *net, double V[])
 	{
 	// set the output of input layer
 	for (int i = 0; i < dim_V; ++i)
@@ -86,36 +86,30 @@ void forward_prop_quadratic(QNET *net, int dim_V, double V[])
 	// calculate output from hidden layers to output layer
 	for (int l = 1; l < net->numLayers; l++)
 		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)
+		// the indices n, i, j are for the matrix W
+		for (int n = 0; n < dim_V; n++)
 			{
-			double v = 0.0; //induced local field for neurons
-			// calculate v, which is the sum of the product of input and weights
-			for (int j = 0; j <= net->layers[l - 1].numNeurons; j++)
-				for (int k = 0; k <= net->layers[l - 1].numNeurons; k++)
+			double v = 0.0;	// "induced local field" of neurons (not sure why this terminology)
+			// calculate v, the sum of product of input and weights
+			for (int i = 0; i < dim_V; i++)
+				for (int j = 0; j < dim_V; j++)
 					{
 					double input1, input2;
-					if (j == 0)
-						input1 = BIASINPUT;
-					else
-						input1 = net->layers[l-1].neurons[j-1].output;
-
-					if (k == 0)
-						input2 = BIASINPUT;
-					else
-					 	input2 = net->layers[l-1].neurons[k-1].output;
+					input1 = net->layers[l-1].neurons[i].output;
+				 	input2 = net->layers[l-1].neurons[j].output;
 
 					double weight;
 					LAYER layer = net->layers[l];
-					if (j == k)				// W[n,j,k] is on diagonal
+					if (i == j)				// W[n,i,j] is on diagonal
 						{
-						if (n == j)			// W[n,j,k] is on super-diagonal
+						if (n == i)			// W[n,i,j] is on super-diagonal
 							weight = layer.alpha;
 						else
 							weight = layer.beta;
 						}
 					else					// off diagonal
 						{
-						if (n == j || n == k)
+						if (n == i || n == j)
 							weight = layer.gamma;
 						else
 							weight = layer.delta;
@@ -167,7 +161,7 @@ void back_prop_quadratic(QNET *net, double *errors)
 	LAYER lastLayer = net->layers[numLayers - 1];
 
 	// calculate gradient for output layer
-	for (int n = 0; n < lastLayer.numNeurons; ++n)
+	for (int n = 0; n < dim_V; ++n)
 		{
 		// double output = lastLayer.neurons[n].output;
 		// For output layer, ∇ = sign(y)∙error
@@ -178,12 +172,12 @@ void back_prop_quadratic(QNET *net, double *errors)
 	// calculate gradient for hidden layers
 	for (int l = numLayers - 2; l > 0; --l)		// for each hidden layer
 		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron in layer
+		for (int n = 0; n < dim_V; n++)			// for each neuron in layer
 			{
 			// double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
 			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+			for (int i = 0; i < dim_V; i++)		// for each weight
 				{
 				double weight = 1.0;
 				// sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
@@ -198,13 +192,13 @@ void back_prop_quadratic(QNET *net, double *errors)
 	// update all weights
 	for (int l = 1; l < numLayers; ++l)		// except for 0th layer which has no weights
 		{
-		for (int n = 0; n < net->layers[l].numNeurons; n++)		// for each neuron
+		for (int n = 0; n < dim_V; n++)		// for each neuron
 			{
 			double weight;
 			weight += Eta * net->layers[l].neurons[n].grad * 1.0;
 			// net->layers[l].neurons[n].weights[0] += Eta *
 			//		net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < net->layers[l - 1].numNeurons; i++)	// for each weight
+			for (int i = 0; i < dim_V; i++)						// for each weight
 				{
 				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
 				double weight;
@@ -226,13 +220,13 @@ double calc_error(QNET *net, double Y[], double *errors)
 	int numLayers = net->numLayers;
 	LAYER lastLayer = net->layers[numLayers - 1];
 	// This means each output neuron corresponds to a classification label --YKY
-	for (int n = 0; n < lastLayer.numNeurons; n++)
+	for (int n = 0; n < dim_V; n++)
 		{
 		//error = desired_value - output
 		double error = Y[n] - lastLayer.neurons[n].output;
 		errors[n] = error;
 		sumOfSquareError += error * error / 2;
 		}
-	double mse = sumOfSquareError / lastLayer.numNeurons;
+	double mse = sumOfSquareError / dim_V;
 	return mse; //return mean square error
 	}
