@@ -177,15 +177,16 @@ void back_prop_quadratic(QNET *net, double *errors)
 			// double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
 			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < dim_V; i++)		// for each weight
-				{
-				double weight = 1.0;
-				// sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-				//		* nextLayer.neurons[i].grad;
-				sum += weight * nextLayer.neurons[i].grad;
-				}
+			for (int i = 0; i < dim_V; ++i)		// for each weight
+				for (int j = 0; j < dim_V; ++j)
+					{
+					double weight = 1.0;
+					// sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+					//		* nextLayer.neurons[i].grad;
+					sum += weight * nextLayer.neurons[i].grad;
+					}
 			// .grad has been prepared in forward-prop
-			net->layers[l].neurons[n].grad *= sum;
+			net->layers[l].neurons[n].grad = sum;
 			}
 		}
 
@@ -198,14 +199,16 @@ void back_prop_quadratic(QNET *net, double *errors)
 			weight += Eta * net->layers[l].neurons[n].grad * 1.0;
 			// net->layers[l].neurons[n].weights[0] += Eta *
 			//		net->layers[l].neurons[n].grad * 1.0;		// 1.0f = bias input
-			for (int i = 0; i < dim_V; i++)						// for each weight
-				{
-				double inputForThisNeuron = net->layers[l - 1].neurons[i].output;
-				double weight;
-				weight += Eta * net->layers[l].neurons[n].grad * inputForThisNeuron;
-				// net->layers[l].neurons[n].weights[i + 1] += Eta *
-				//		net->layers[l].neurons[n].grad * inputForThisNeuron;
-				}
+			for (int i = 0; i < dim_V; ++i)						// for each weight
+				for (int j = 0; j < dim_V; ++j)
+					{
+					double o_i = net->layers[l - 1].neurons[i].output;
+					double o_j = net->layers[l - 1].neurons[j].output;
+					double weight;
+					weight += Eta * net->layers[l].neurons[n].grad * o_i * o_j;
+					// net->layers[l].neurons[n].weights[i + 1] += Eta *
+					//		net->layers[l].neurons[n].grad * inputForThisNeuron;
+					}
 			}
 		}
 	}

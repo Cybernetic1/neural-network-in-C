@@ -86,7 +86,7 @@ extern "C" void symmetric_test()
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double errors[dim_V];
 
-	printf("test 撚佢个 forward prop...\n");
+	printf("test forward prop...\n");
 	double K[dim_V];
 	printf("K ={ ");
 	for (int k = 0; k < 4; ++k)
