@@ -25,110 +25,220 @@ extern void beep(void);
 extern double sigmoid(double);
 extern void start_timer(), end_timer(char *);
 
-#define N	2
+int N = 3;
 
 double random01()
 	{
 	return rand() / (float) RAND_MAX;
 	}
 
-double set_distance(double x1[], double x2[])
+// In the current interpretation, each point is a set
+// We want to measure the distance between 2 points as sets and also as lists
+// The distance between 2 lists, where each "coordinate" belongs to one dimension, is the
+// "standard" Euclidean distance:
+//      d(x,y) = sqrt((x1 - y1)^2 + (x2 - y2)^2)
+double distance_Eu(double x[], double y[])
+	{
+	double sum = 0.0;
+
+	for (int i = 0; i < N; ++i)
+		sum += pow(x[i] - y[i], 2);
+
+	return sqrt(sum);
+	}
+
+double distance_abs(double x[], double y[])
+	{
+	double sum = 0.0;
+
+	for (int i = 0; i < N; ++i)
+		sum += abs(x[i] - y[i]);
+
+	return sum / N;
+	}
+
+double set_distance_Eu(double x[], double y[])
+	{
+	double sum, sum1, sum2 = 0.0;
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum += pow(x[i] - y[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum1 += pow(x[i] - x[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum2 += pow(y[i] - y[j], 2);
+
+	return (sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N));
+	}
+
+double set_distance_Eu2(double x[], double y[])
 	{
 	double sum = 0.0;
 
 	for (int i = 0; i < N; ++i)
 		for (int j = 0; j < N; ++j)
-			sum += abs(x1[i] - x2[j]) * 2 \
-				- abs(x1[i] - x1[j]) \
-				- abs(x2[i] - x2[j]);
-	double dx = sum / (N * N);
-	return dx;
+			sum += 2 * pow(x[i] - y[j], 2) \
+				- pow(x[i] - x[j], 2) \
+				- pow(y[i] - y[j], 2);
+
+	return sqrt(sum / N);
 	}
 
-double set_distance2(double x1[], double x2[])
+double set_distance_abs(double x[], double y[])
 	{
 	double sum = 0.0;
 
 	for (int i = 0; i < N; ++i)
 		for (int j = 0; j < N; ++j)
-			sum += 2 * pow(x1[i] - x2[j], 2) \
-				- pow(x1[i] - x1[j], 2) \
-				- pow(x2[i] - x2[j], 2);
-	double dx = sqrt(sum / N) / 2.0;
-	return dx;
+			sum += abs(x[i] - y[j]) * 2 \
+				- abs(x[i] - x[j]) \
+				- abs(y[i] - y[j]);
+
+	return sum / (N * N);
 	}
 
-// ****** The "standard" Euclidean distance between 2 points
-// d(x,y) = sqrt((x1 - y1)^2 + (x2 - y2)^2)
-double distance(double y1[], double y2[])
+void print_x(double x[])
 	{
-	double sum = 0.0;
-
-	for (int i = 0; i < N; ++i)
-		sum += (y1[i] - y2[i]) * (y1[i] - y2[i]);
-	double dy = sqrt(sum);
-	return dy;
+	printf("[");
+	for (int k = 0; k < N; ++k)
+		if (k > 0)
+			printf(",%f", x[k]);
+		else
+			printf("%f", x[k]);
+	printf("]");
 	}
 
-int main()
+int main(int argc, char **argv)
 	{
-	double x1[N], x2[N], dx, dy, dx_dy;
-	double max_dx, max_dy, max_dx_dy = 0.0;
-	bool remarkable;
+	void test_1(), test_2(), test_3();
+
+	if (argc == 2)
+		N = std::stoi(argv[1]);
 
 	srand(time(NULL));				// random seed
 
+	test_3();
+	}
+
+// Test that the set distance is always less than or equal to the Euclidean distance.
+// This ratio approaches the maximum value of 1 as more and more pairs are tested.
+void test_3()
+	{
+	double x[N], y[N], d1, d2, r;
+	double max_d1, max_d2, max_r = 0.0;
+	bool remarkable;
+
 	// Generate and test random pairs of points
-	for (int i = 0; i < 10000; ++i)
+	while (true)
 		{
 		for (int j = 0; j < N; ++j)
 			{
-			x1[j] = random01();
-			x2[j] = random01();
+			x[j] = random01();
+			y[j] = random01();
 			}
 
-		std::random_shuffle(x1, x1 + N);
-
-		dx = set_distance2(x1, x2);
-		dy = distance(x1, x2);
-		dx_dy = dx / dy;
+		d1 = set_distance_Eu(x, y);
+		d2 = distance_Eu(x, y);
+		r = d1 / d2;
 
 		remarkable = false;
 
-		if (dx > max_dx)
+		if (d1 > max_d1)
 			{
-			remarkable = true;
-			max_dx = dx;
+			// remarkable = true;
+			max_d1 = d1;
 			}
-		if (dy > max_dy)
+		if (d2 > max_d2)
 			{
-			remarkable = true;
-			max_dy = dy;
+			// remarkable = true;
+			max_d2 = d2;
 			}
-		if (dx_dy > max_dx_dy)
+		if (r > max_r)
 			{
-			max_dx_dy = dx_dy;
+			max_r = r;
+			printf("d1:d2 = %f\t", max_r);
+			print_x(x); printf("\t");
+			print_x(y); printf("\n");
 			}
 
-		// if (dx > 0.6)
+		// if (d1 > 0.6)
 		//	remarkable = true;
-		if (dx > dy)
-			remarkable = true;
-		if (dy > 0.99)
-			remarkable = true;
-		// if (dx_dy > 0.99999)
+		// if (d1 > d2)
+		//	remarkable = true;
+		// if (d2 > 0.99)
+		//	remarkable = true;
+		// if (d1_d2 > 0.99999)
 		//	remarkable = true;
 
 		if (remarkable)
 			{
-			printf("\ndx=%f%c\t", dx, dx > 1.0 ? 'x' : ' ');
-			printf("dy=%f\t", dy);
-			printf("dx:dy=%f%c\n", dx / dy, dy > dx ? '+' : ' ');
+			printf("\nd1=%f%c\t", d1, d1 > 1.0 ? 'x' : ' ');
+			printf("d2=%f\t", d2);
+			printf("d1:d2=%f%c\n", r, d2 > d1 ? '+' : ' ');
 			}
-		else
-			printf(".");
+		// else
+		//	printf(".");
 		}
-	printf("max dx = %f\n", max_dx);
-	printf("max dy = %f\n", max_dy);
-	printf("max dx:dy = %f\n", max_dx_dy);
+	}
+
+// Randomly permute (x, ..., xn) and check if their set distances are invariant
+void test_2()
+	{
+	double x[N], y[N], d1, d2, delta;
+	double max_delta = 0.0;
+
+	// Generate and test random pairs of points
+	while (true)
+		{
+		for (int j = 0; j < N; ++j)
+			{
+			x[j] = random01();
+			y[j] = random01();
+			}
+		// print_x(x);  printf("\t");
+		// print_x(y);
+
+		d1 = set_distance_Eu(x, y);
+
+		std::random_shuffle(x, x + N);
+
+		// print_x(x);  printf("\t");
+		// print_x(y);
+
+		d2 = set_distance_Eu(x, y);
+
+		delta = d1 - d2;
+		if (delta > max_delta)
+			{
+			max_delta = delta;
+			printf("max ∆ = %f\n", max_delta);
+			}
+		}
+	}
+
+// Test that the maximal Euclidean distance between 2 points in the unit hypercube is √n
+void test_1()
+	{
+	double x[N], y[N], d2;
+	double max_d2 = 0.0;
+
+	while (true)
+		{
+		for (int j = 0; j < N; ++j)
+			{
+			x[j] = random01();
+			y[j] = random01();
+			}
+		d2 = distance_Eu(x, y);
+		if (d2 > max_d2)
+			{
+			max_d2 = d2;
+			printf("max d2 = %f\n", max_d2);	
+			}
+		}
 	}
