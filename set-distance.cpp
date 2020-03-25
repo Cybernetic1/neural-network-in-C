@@ -1,32 +1,9 @@
 #include <iostream>
 #include <cstdio>
-// #include <stdlib.h>
-// #include <math.h>
-// #include <stdbool.h>
 #include <random>
 #include <algorithm>		// random_shuffle
 
 using namespace std;
-
-extern void pause_graphics();
-extern void quit_graphics();
-extern void start_NN_plot(void);
-extern void start_NN2_plot(void);
-extern void start_W_plot(void);
-extern void start_K_plot(void);
-extern void start_output_plot(void);
-extern void start_LogErr_plot(void);
-extern void restart_LogErr_plot(void);
-extern void plot_LogErr(double, double);
-extern void flush_output();
-extern void plot_tester(double, double);
-extern void plot_K();
-extern int delay_vis(int);
-extern void plot_trainer(double);
-extern void plot_ideal(void);
-extern void beep(void);
-extern double sigmoid(double);
-extern void start_timer(), end_timer(char *);
 
 int N = 3;
 
