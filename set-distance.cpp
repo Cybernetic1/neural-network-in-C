@@ -1,9 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdbool.h>
+#include <iostream>
+#include <cstdio>
+// #include <stdlib.h>
+// #include <math.h>
+// #include <stdbool.h>
 #include <random>
 #include <algorithm>		// random_shuffle
+
+using namespace std;
 
 extern void pause_graphics();
 extern void quit_graphics();
@@ -29,7 +32,7 @@ int N = 3;
 
 double random01()
 	{
-	return rand() / (float) RAND_MAX;
+	return rand() * 2.0 / (float) RAND_MAX - 1.0;
 	}
 
 // In the current interpretation, each point is a set
@@ -57,6 +60,10 @@ double distance_abs(double x[], double y[])
 	return sum / N;
 	}
 
+// The set distance must satisfy 2 requirements simultaneously:
+// 1) The distance should be 0 under permutations
+// 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
+//		Euclidean distance between them.
 double set_distance_Eu(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
@@ -73,7 +80,7 @@ double set_distance_Eu(double x[], double y[])
 		for (int j = 0; j < N; ++j)
 			sum2 += pow(y[i] - y[j], 2);
 
-	return (sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N));
+	return (2 * sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N)) / 2;
 	}
 
 double set_distance_Eu2(double x[], double y[])
@@ -116,21 +123,44 @@ void print_x(double x[])
 int main(int argc, char **argv)
 	{
 	void test_1(), test_2(), test_3();
+	int test_num;
 
-	if (argc == 2)
-		N = std::stoi(argv[1]);
+	if (argc != 3)
+		{
+		printf("usage: set_distance <test #> <N>\n");
+		printf("where <test #> = 1, 2, or 3\n");
+		printf("      <N> = dimension of set vectors\n");
+		exit(0);
+		}
+	else
+		{
+		test_num = std::stoi(argv[1]);
+		N = std::stoi(argv[2]);
+		}
 
 	srand(time(NULL));				// random seed
 
-	test_3();
+	switch (test_num)
+		{
+		case 1:
+			test_1();
+			break;
+		case 2:
+			test_2();
+			break;
+		case 3:
+			test_3();
+			break;
+		}
 	}
 
-// Test that the set distance is always less than or equal to the Euclidean distance.
-// This ratio approaches the maximum value of 1 as more and more pairs are tested.
 void test_3()
 	{
+	printf("Test that the set distance is always less than or equal to the Euclidean distance\n");
+	printf("This ratio approaches the maximum value of 1 as more and more pairs are tested\n");
+
 	double x[N], y[N], d1, d2, r;
-	double max_d1, max_d2, max_r = 0.0;
+	double max_d1, min_d1, max_r = 0.0;
 	bool remarkable;
 
 	// Generate and test random pairs of points
@@ -151,12 +181,14 @@ void test_3()
 		if (d1 > max_d1)
 			{
 			// remarkable = true;
+			printf("max d1 = %f\n", max_d1);
 			max_d1 = d1;
 			}
-		if (d2 > max_d2)
+		if (d1 < min_d1)
 			{
 			// remarkable = true;
-			max_d2 = d2;
+			printf("min d1 = %f\n", min_d1);
+			min_d1 = d1;
 			}
 		if (r > max_r)
 			{
@@ -186,44 +218,62 @@ void test_3()
 		}
 	}
 
-// Randomly permute (x, ..., xn) and check if their set distances are invariant
 void test_2()
 	{
-	double x[N], y[N], d1, d2, delta;
-	double max_delta = 0.0;
+	printf("Randomly permute (x, ..., xn) and check if the set distances between the original\n");
+	printf("and permuted sets (points) are 0.\n");
 
-	// Generate and test random pairs of points
+	double x[N], y[N], d;
+	double max_d, min_d = 0.0;
+
+	// Generate a point and duplicate it
 	while (true)
 		{
+		/*
+		cout << "x=? ";
+		for (int j = 0; j < N; ++j)
+			cin >> x[j];
+
+		cout << "y=? ";
+		for (int j = 0; j < N; ++j)
+			cin >> y[j];
+
+		print_x(x);  printf("\t");
+		print_x(y);  printf("\n");
+
+		d = set_distance_Eu(x, y);
+		printf("distance = %f\n", d);
+		continue;
+		*/
+
 		for (int j = 0; j < N; ++j)
 			{
 			x[j] = random01();
-			y[j] = random01();
+			y[j] = x[j];
 			}
+		std::random_shuffle(y, y + N);
 		// print_x(x);  printf("\t");
-		// print_x(y);
+		// print_x(y);  printf("\n");
 
-		d1 = set_distance_Eu(x, y);
+		d = set_distance_Eu(x, y);
 
-		std::random_shuffle(x, x + N);
-
-		// print_x(x);  printf("\t");
-		// print_x(y);
-
-		d2 = set_distance_Eu(x, y);
-
-		delta = d1 - d2;
-		if (delta > max_delta)
+		if (d > max_d)
 			{
-			max_delta = delta;
-			printf("max ∆ = %f\n", max_delta);
+			max_d = d;
+			printf("max distance = %f\n", max_d);
+			}
+		if (d < min_d)
+			{
+			min_d = d;
+			printf("min distance = %f\n", min_d);
 			}
 		}
 	}
 
-// Test that the maximal Euclidean distance between 2 points in the unit hypercube is √n
 void test_1()
 	{
+	printf("Test that the maximal Euclidean distance between 2 points in the unit hypercube is √n\n");
+
 	double x[N], y[N], d2;
 	double max_d2 = 0.0;
 
