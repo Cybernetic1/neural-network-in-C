@@ -7,6 +7,41 @@
 #include "feedforward-NN.h"
 #include "BPTT-RNN.h"
 
+extern "C" {
+	void beep();
+	void bip();
+	int delay_vis(int delay);
+	void end_timer(char *s);
+	void flush_output();
+	void line(int x1, double y1, int x2, double y2);
+	void pause_graphics();
+	void pause_key();
+	void plot_K();
+	void plot_LogErr(double err, double target);
+	void plot_NN(NNET *net);
+	void plot_NN2(NNET *net);
+	void plot_NN_old(NNET *net);
+	void plot_W(NNET *net);
+	void plot_W_BPTT(RNN *net);
+	void plot_ideal(void);
+	void plot_output(NNET *net, void prop(NNET*, int, double []));
+	void plot_tester(double x, double y);
+	void plot_trainer(double val);
+	void quit_graphics();
+	void rect(int x, int y, int w, int h, float r, float g, float b);
+	void rectI(int x, int y, int w, int h, int r, int g, int b);
+	void restart_LogErr_plot(void);
+	void start_K_plot(void);
+	void start_LogErr_plot(void);
+	void start_NN2_plot(void);
+	void start_NN_plot(void);
+	void start_W_plot(void);
+	void start_output_plot(void);
+	void start_timer();
+}
+
+extern double K[];
+
 // ***************** Global variables ****************
 
 SDL_Renderer *gfx_LogErr = NULL; // For log-scale error visualizer
@@ -291,7 +326,7 @@ void plot_output(NNET *net, void prop(NNET*, int, double []))
 	for (int i = 0; i < GridPoints; ++i)
 		for (int j = 0; j < GridPoints; ++j)
 			{
-			extern double K[];
+			// extern double K[];
 			K[0] = ((double) i) / (GridPoints - 1);
 			K[1] = ((double) j) / (GridPoints - 1);
 

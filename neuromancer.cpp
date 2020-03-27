@@ -1,8 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <cstdio>
+#include <random>
+#include <algorithm>		// random_shuffle
 #include <math.h>
-#include <stdbool.h>
 #include "feedforward-NN.h"
+
+using namespace std;
 
 extern NNET *create_NN(int, int *);
 extern void free_NN(NNET *, int *);
@@ -12,6 +15,9 @@ extern void forward_prop_softplus(NNET *, int, double *);
 extern void forward_prop_x2(NNET *, int, double *);
 extern void back_prop(NNET *, double *);
 extern void back_prop_ReLU(NNET *, double *);
+extern void re_randomize(NNET *, int, int *);
+extern double sigmoid(double);
+/*
 extern void pause_graphics();
 extern void quit_graphics();
 extern void start_NN_plot(void);
@@ -21,7 +27,6 @@ extern void start_K_plot(void);
 extern void start_output_plot(void);
 extern void start_LogErr_plot(void);
 extern void restart_LogErr_plot(void);
-extern void re_randomize(NNET *, int, int *);
 extern void plot_NN(NNET *net);
 extern void plot_NN2(NNET *net);
 extern void plot_W(NNET *net);
@@ -33,110 +38,86 @@ extern void plot_K();
 extern int delay_vis(int);
 extern void plot_trainer(double);
 extern void plot_ideal(void);
-extern void beep(void);
-extern double sigmoid(double);
-extern void start_timer(), end_timer(char *);
+*/
+extern "C" void beep(void);
+extern "C" void start_timer(), end_timer(char *);
 
-extern double K[];
+#define N		3
+extern "C" double K[N];
+double K[N];
 
-// **** Randomly generate an RNN, watch it operate on K and see how K moves
-// Observation: chaotic behavior seems to be observed only when the spectral radii of
-// weight matrices are sufficiently > 1 (on average).
-// The RNN operator is NOT contractive because if K1 ↦ K1', K2 ↦ K2',
-// it is not necessary that d(K1',K2') is closer than d(K1,K2).
-
-#define ForwardPropMethod	forward_prop_ReLU
-void K_wandering_test()
+double random01()
 	{
-	int neuronsPerLayer[] = {10, 10, 10}; // first = input layer, last = output layer
-	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
-	NNET *Net = create_NN(numLayers, neuronsPerLayer);
-	LAYER lastLayer = Net->layers[numLayers - 1];
-
-	// **** Calculate spectral radius of weight matrices
-	printf("Eigen values = \n");
-	for (int l = 1; l < numLayers; ++l) // except first layer which has no weights
-		{
-		int N = 10;
-		// assume weight matrix is square, if not, fill with zero rows perhaps (TO-DO)
-		gsl_matrix *A = gsl_matrix_alloc(N, N);
-		for (int n = 0; n < N; ++n)
-			for (int i = 0; i < N; ++i)
-				gsl_matrix_set(A, n, i, Net->layers[l].neurons[n].weights[i]);
-
-		gsl_eigen_nonsymmv_workspace *wrk = gsl_eigen_nonsymmv_alloc(N);
-		gsl_vector_complex *Aval = gsl_vector_complex_alloc(N);
-		gsl_matrix_complex *Avec = gsl_matrix_complex_alloc(N, N);
-
-		gsl_eigen_nonsymmv(A, Aval, Avec, wrk);
-		gsl_eigen_nonsymmv_free(wrk);
-
-		gsl_eigen_nonsymmv_sort(Aval, Avec, GSL_EIGEN_SORT_ABS_DESC);
-
-		printf("[ ");
-		for (int i = 0; i < N; i++)
-			{
-			gsl_complex v = gsl_vector_complex_get(Aval, i);
-			// printf("%.02f %.02f, ", GSL_REAL(v), GSL_IMAG(v));
-			printf("%.02f ", gsl_complex_abs(v));
-			}
-		printf(" ]\n");
-
-		gsl_matrix_free(A);
-		gsl_matrix_complex_free(Avec);
-		gsl_vector_complex_free(Aval);
-		}
-
-	start_K_plot();
-	printf("\nPress 'Q' to quit\n\n");
-
-	// **** Initialize K vector
-	for (int k = 0; k < dim_K; ++k)
-		K[k] = (rand() / (float) RAND_MAX) - 0.5f;
-
-	double K2[dim_K];
-	int quit = 0;
-	for (int j = 0; j < 10000; j++) // max number of iterations
-		{
-		ForwardPropMethod(Net, dim_K, K);
-
-		// printf("%02d", j);
-		double d = 0.0;
-
-		// copy output to input
-		for (int k = 0; k < dim_K; ++k)
-			{
-			K2[k] = K[k];
-			K[k] = lastLayer.neurons[k].output;
-			// printf(", %0.4lf", K[k]);
-			double diff = (K2[k] - K[k]);
-			d += (diff * diff);
-			}
-
-		plot_trainer(0); // required to clear window
-		plot_K();
-		if (quit = delay_vis(60)) // delay in milliseconds
-			break;
-
-		// printf("\n");
-		if (d < 0.000001)
-			{
-			fprintf(stderr, "terminated after %d cycles,\t delta = %lf\n", j, d);
-			break;
-			}
-		}
-
-	beep();
-
-	if (!quit)
-		pause_graphics();
-	else
-		quit_graphics();
-	free_NN(Net, neuronsPerLayer);
+	return rand() * 2.0 / (float) RAND_MAX - 1.0;
 	}
 
+// In the current interpretation, each point is a set
+// We want to measure the distance between 2 points as sets and also as lists
+// The distance between 2 lists, where each "coordinate" belongs to one dimension, is the
+// "standard" Euclidean distance:
+//      d(x,y) = sqrt((x1 - y1)^2 + (x2 - y2)^2)
+double distance_Eu(double x[], double y[])
+	{
+	double sum = 0.0;
 
-// Test classical back-prop
+	for (int i = 0; i < N; ++i)
+		sum += pow(x[i] - y[i], 2);
+
+	return sqrt(sum);
+	}
+
+// The set distance must satisfy 2 requirements simultaneously:
+// 1) The distance should be 0 under permutations
+// 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
+//		Euclidean distance between them.
+double set_distance_Eu(double x[], double y[])
+	{
+	double sum, sum1, sum2 = 0.0;
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum += pow(x[i] - y[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum1 += pow(x[i] - x[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum2 += pow(y[i] - y[j], 2);
+
+	return (2 * sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N)) / 2;
+	}
+
+// ***** This miraculously good-looking function was found by serendipity
+// Here the inputs x and y are the Euclidean and "set" distances
+double joint_penalty(double x, double y)
+	{
+	double k = 30.0			// "Steepness"
+
+	return exp(-k * (x * x + y * y)) - exp(-2.0 * k * x * y);
+	}
+
+// Randomly permute x, return the result in y:
+void perturb(double x[], double y[])
+	{
+	if (random01() > 0.5)
+		{
+		// Copy x to y
+		for (int i = 0; i < N; ++i)
+			y[i] = x[i];
+		// Apply random permutation
+		return std::random_shuffle(y, y + N);
+		}
+	else
+		{
+		// generate new random value
+		return random01() * 2.0 - 1.0;
+		}
+	}
+
+// Learn the "neuromancer" map, ie, a vector-to-vector map that is permutation invariant.
+
 // To test convergence, we record the sum of squared errors for the last M and last M..2M
 // trials, then compare their ratio.
 
@@ -144,13 +125,15 @@ void K_wandering_test()
 //			ReLU units, learning rate 0.05, leakage 0.0
 #define ForwardPropMethod	forward_prop_ReLU
 #define ErrorThreshold		0.02
-void classic_BP_test()
+
+int main(int argc, char **argv)
 	{
-	int neuronsPerLayer[] = {2, 10, 9, 1}; // first = input layer, last = output layer
+	int neuronsPerLayer[] = {N, 10, 10, 8, N}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
 	NNET *Net = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
-	double errors[dim_K];
+	double errors[N];
+	double K2[N];
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
@@ -158,25 +141,42 @@ void classic_BP_test()
 	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
 	int tail = 0; // index for cyclic arrays (last-in, first-out)
 
+	/*
+	if (argc != 2)
+		{
+		printf("Learning Neuromancer map\n");
+		printf("      <N> = dimension of set vectors\n");
+		exit(0);
+		}
+	else
+		{
+		// test_num = std::stoi(argv[1]);
+		N = std::stoi(argv[1]);
+		}
+	*/
+
+	srand(time(NULL));				// random seed
+
 	for (int i = 0; i < M; ++i) // clear errors to 0.0
 		errors1[i] = errors2[i] = 0.0;
 
 	// start_NN_plot();
-	start_W_plot();
+	// start_W_plot();
 	// start_K_plot();
-	start_output_plot();
-	start_LogErr_plot();
+	// start_output_plot();
+	// start_LogErr_plot();
 	// plot_ideal();
 	printf("Press 'Q' to quit\n\n");
 	start_timer();
 
 	char status[1024], *s;
+	double K2[N];
 	for (int i = 1; 1; ++i)
 		{
 		s = status + sprintf(status, "[%05d] ", i);
 
 		// Create random K vector
-		for (int k = 0; k < 2; ++k)
+		for (int k = 0; k < N; ++k)
 			K[k] = (rand() / (float) RAND_MAX);
 		// printf("*** K = <%lf, %lf>\n", K[0], K[1]);
 
@@ -189,26 +189,18 @@ void classic_BP_test()
 		//		if ((i % 4) == 3)
 		//			K[0] = 1.0, K[1] = 1.0;
 
-		ForwardPropMethod(Net, 2, K); // dim K = 2
+		// Calculate the "error" which requires we evaluate the ANN on a point and its
+		// permutation (or perturbation), and the penalty would be given by the joint_penalty
+		// function of the set distance between the original points and the Euclidean distance
+		// between the transformed points.
+		perturb(K, K2);
+		double d1 = set_distance_Eu(K, K2);
+		ForwardPropMethod(Net, N, K);
+		ForwardPropMethod(Net, N, K2);
+		double d2 = distance_Eu(K, K2);
+		double error = joint_penalty(d1, d2);
 
-		// Desired value = K_star
-		double training_err = 0.0;
-		for (int k = 0; k < 1; ++k) // output has only 1 component
-			{
-			// double ideal = K[k];				/* identity function */
-			#define f2b(x) (x > 0.5f ? 1 : 0)	// convert float to binary
-			// ^ = binary XOR
-			double ideal = ((double) (f2b(K[0]) ^ f2b(K[1]))); // ^ f2b(K[2]) ^ f2b(K[3])))
-			// #define Ideal ((double) (f2b(K[k]) ^ f2b(K[2]) ^ f2b(K[3])))
-			// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
-			// printf("*** ideal = %lf\n", ideal);
-
-			// Difference between actual outcome and desired value:
-			double error = ideal - lastLayer.neurons[k].output;
-			errors[k] = error; // record this for back-prop
-
-			training_err += fabs(error); // record sum of errors
-			}
+		training_err += fabs(error); // record sum of errors
 		// printf("sum of squared error = %lf  ", training_err);
 
 		// update error arrays cyclically
@@ -284,7 +276,7 @@ void classic_BP_test()
 				errors1[j] = errors2[j] = 0.0;
 			i = 1;
 
-			restart_LogErr_plot();
+			// restart_LogErr_plot();
 			start_timer();
 			printf("\n****** Network re-randomized.\n");
 			}
@@ -304,13 +296,13 @@ void classic_BP_test()
 			{
 			printf("%s\n", status);
 			// plot_NN(Net);
-			plot_W(Net);
-			plot_LogErr(mean_err, ErrorThreshold);
-			plot_output(Net, ForwardPropMethod);
-			flush_output();
+			// plot_W(Net);
+			// plot_LogErr(mean_err, ErrorThreshold);
+			// plot_output(Net, ForwardPropMethod);
+			// flush_output();
 			// plot_trainer(0);		// required to clear the window
 			// plot_K();
-			userKey = delay_vis(0);
+			// userKey = delay_vis(0);
 			}
 
 		// if (ratio - 0.5f < 0.0000001)	// ratio == 0.5 means stationary
@@ -327,7 +319,7 @@ void classic_BP_test()
 				errors1[j] = errors2[j] = 0.0;
 			i = 1;
 
-			restart_LogErr_plot();
+			// restart_LogErr_plot();
 			start_timer();
 			printf("\n****** Network re-randomized.\n");
 			userKey = 0;
@@ -339,13 +331,13 @@ void classic_BP_test()
 	end_timer(NULL);
 	beep();
 	// plot_output(Net, ForwardPropMethod);
-	flush_output();
-	plot_W(Net);
+	// flush_output();
+	// plot_W(Net);
 
-	if (userKey == 0)
-		pause_graphics();
-	else
-		quit_graphics();
+	// if (userKey == 0)
+	//	pause_graphics();
+	// else
+	//	quit_graphics();
 	free_NN(Net, neuronsPerLayer);
 	}
 
@@ -360,9 +352,9 @@ void forward_test()
 	LAYER lastLayer = Net->layers[numLayers - 1];
 	double sum_error2;
 
-	start_NN_plot();
+	// start_NN_plot();
 	// start_W_plot();
-	start_K_plot();
+	// start_K_plot();
 
 	printf("This test sets all the weights to 1, then compares the output with\n");
 	printf("the test's own calculation, with 100 randomized inputs.\n\n");
@@ -398,79 +390,14 @@ void forward_test()
 			}
 
 		// plot_W(Net);
-		plot_NN(Net);
-		plot_trainer(0);
-		plot_K();
-		delay_vis(50);
+		// plot_NN(Net);
+		// plot_trainer(0);
+		// plot_K();
+		// delay_vis(50);
 
 		printf("iteration: %05d, error: %lf\n", i, sum_error2);
 		}
 
-	pause_graphics();
-	free_NN(Net, neuronsPerLayer);
-	}
-
-// Randomly generate a loop of K vectors;  make the RNN learn to traverse this loop.
-
-void loop_dance_test()
-	{
-	int neuronsPerLayer[4] = {dim_K, 10, 10, dim_K}; // first = input layer, last = output layer
-	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
-	NNET *Net = create_NN(numLayers, neuronsPerLayer);
-	LAYER lastLayer = Net->layers[numLayers - 1];
-	double sum_error2;
-	double errors[dim_K];
-	int quit;
-
-	// start_NN_plot();
-	start_W_plot();
-	start_K_plot();
-
-	printf("Randomly generate a loop of K vectors;\n");
-	printf("Make the RNN learn to traverse this loop.\n\n");
-
-	#define LoopLength 3
-	double Kn[LoopLength][dim_K];
-	for (int i = 0; i < LoopLength; ++i)
-		for (int k = 0; k < dim_K; ++k)
-			Kn[i][k] = (rand() / (float) RAND_MAX); // random in [0,1]
-
-	for (int j = 0; true; ++j) // iterations
-		{
-		sum_error2 = 0.0f;
-
-		for (int i = 0; i < LoopLength; ++i) // do one loop
-			{
-			ForwardPropMethod(Net, dim_K, K);
-
-			// Expected output value = Kn[i][k].
-			// Calculate error:
-			for (int k = 0; k < dim_K; ++k)
-				{
-				// Difference between actual outcome and desired value:
-				double error = lastLayer.neurons[k].output - Kn[i][k];
-				errors[k] = error; // record this for back-prop
-				sum_error2 += (error * error); // record sum of squared errors
-
-				// copy output to input
-				K[k] = lastLayer.neurons[k].output;
-				}
-
-			back_prop(Net, errors);
-
-			plot_W(Net);
-			// plot_NN(Net);
-			plot_trainer(0);
-			plot_K();
-			if (quit = delay_vis(0))
-				break;
-			}
-
-		printf("iteration: %05d, error: %lf\n", j, sum_error2);
-		if (quit)
-			break;
-		}
-
-	pause_graphics();
+	// pause_graphics();
 	free_NN(Net, neuronsPerLayer);
 	}
