@@ -224,6 +224,8 @@ int main(int argc, char **argv)
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
+		// ****** STUCK HERE:  cannot evaluate error of individual components,
+		//		thus traditional back-prop is not applicable
 		// plot_W(Net);
 		back_prop(Net, errors);
 		// plot_W(Net);

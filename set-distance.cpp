@@ -99,7 +99,7 @@ void print_x(double x[])
 
 int main(int argc, char **argv)
 	{
-	void test_1(), test_2(), test_3();
+	void test_1(), test_2(), test_3(), test_4();
 	int test_num;
 
 	if (argc != 3)
@@ -107,6 +107,12 @@ int main(int argc, char **argv)
 		printf("usage: set_distance <test #> <N>\n");
 		printf("where <test #> = 1, 2, or 3\n");
 		printf("      <N> = dimension of set vectors\n");
+		printf("1. Test that the maximal Euclidean distance between 2 points in the unit hypercube is √n\n");
+		printf("2. Randomly permute (x, ..., xn) and check if the set distances between the original\n");
+		printf("\tand permuted sets (points) are 0.\n");
+		printf("3. Test that the set distance is always less than or equal to the Euclidean distance\n");
+		printf("\tThis ratio approaches the maximum value of 1 as more and more pairs are tested\n");
+		printf("4. Manually test set distances\n");
 		exit(0);
 		}
 	else
@@ -127,6 +133,9 @@ int main(int argc, char **argv)
 			break;
 		case 3:
 			test_3();
+			break;
+		case 4:
+			test_4();
 			break;
 		}
 	}
@@ -244,6 +253,31 @@ void test_2()
 			min_d = d;
 			printf("min distance = %f\n", min_d);
 			}
+		}
+	}
+
+void test_4()
+	{
+	printf("Manually test set distances\n");
+
+	double x[N], y[N], d;
+	double max_d, min_d = 0.0;
+
+	while (true)
+		{
+		cout << "x=? ";
+		for (int j = 0; j < N; ++j)
+			cin >> x[j];
+
+		cout << "y=? ";
+		for (int j = 0; j < N; ++j)
+			cin >> y[j];
+
+		print_x(x);  printf("\t");
+		print_x(y);  printf("\n");
+
+		d = set_distance_Eu(x, y);
+		printf("distance = %f\n", d);
 		}
 	}
 
