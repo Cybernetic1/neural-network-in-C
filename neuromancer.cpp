@@ -190,15 +190,29 @@ int main(int argc, char **argv)
 		//			K[0] = 1.0, K[1] = 1.0;
 
 		// Calculate the "error" which requires we evaluate the ANN on a point and its
-		// permutation (or perturbation), and the penalty would be given by the joint_penalty
-		// function of the set distance between the original points and the Euclidean distance
-		// between the transformed points.
-		perturb(K, K2);
+		// permutation (or random perturbation).
+
+		// Initially, I tried to use the idea of the "joint_penalty", ie, calculated from the
+		// set distance between the original points and the Euclidean distance between the
+		// transformed points.  But this penalty cannot be applied to back-prop because it
+		// does not tell the "error" for each output (with respect to an ideal output);  it
+		// merely measures how bad the output is.
+
+		// The new idea is to artificially construct an "error" with respect to an ideal
+		// output.  When the input point is permuted, the output should be invariant, and
+		// this gives an ideal output (specific to that pair of original/permuted inputs).
+		// When the input point is randomly generated, its output can be compared with the
+		// previous output, and there would be a "repulsive force" between the output points
+		// if they are too close.  The magnitude of the repulsion is given by the "joint penalty"
+		// as before, but now it also has a direction which is along the line between the
+		// output points.
+
+		perturb(K, K2);			// result stored in K2
 		double d1 = set_distance_Eu(K, K2);
 		ForwardPropMethod(Net, N, K);
 		ForwardPropMethod(Net, N, K2);
 		double d2 = distance_Eu(K, K2);
-		double error = joint_penalty(d1, d2);
+		double penalty = joint_penalty(d1, d2);
 
 		training_err += fabs(error); // record sum of errors
 		// printf("sum of squared error = %lf  ", training_err);
