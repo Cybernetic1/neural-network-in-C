@@ -98,8 +98,10 @@ double joint_penalty(double x, double y)
 	return exp(-k * (x * x + y * y)) - exp(-2.0 * k * x * y);
 	}
 
-// Randomly permute x, return the result in y:
-void perturb(double x[], double y[])
+// Randomly permute x, store the result in y
+// Or randomly generate a new point y
+// Returns whether a permutation has occurred
+bool perturb(double x[], double y[])
 	{
 	if (random01() > 0.5)
 		{
@@ -107,12 +109,15 @@ void perturb(double x[], double y[])
 		for (int i = 0; i < N; ++i)
 			y[i] = x[i];
 		// Apply random permutation
-		return std::random_shuffle(y, y + N);
+		std::random_shuffle(y, y + N);
+		return true;
 		}
 	else
 		{
 		// generate new random value
-		return random01() * 2.0 - 1.0;
+		for (int i = 0; i < N; ++i)
+			y[i] = random01() * 2.0 - 1.0;
+		return false;
 		}
 	}
 
@@ -132,8 +137,6 @@ int main(int argc, char **argv)
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
 	NNET *Net = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer = Net->layers[numLayers - 1];
-	double errors[N];
-	double K2[N];
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
@@ -170,7 +173,10 @@ int main(int argc, char **argv)
 	start_timer();
 
 	char status[1024], *s;
-	double K2[N];
+
+	double errors1[N], errors2[N];
+	double X1[N], X2[N], Y1[N], Y2[N];
+
 	for (int i = 1; 1; ++i)
 		{
 		s = status + sprintf(status, "[%05d] ", i);
@@ -207,10 +213,16 @@ int main(int argc, char **argv)
 		// as before, but now it also has a direction which is along the line between the
 		// output points.
 
-		perturb(K, K2);			// result stored in K2
+		// We need to keep track of:
+		//		X1, X2 = input vectors (dim N)
+		//		Y1, Y2 = output vectors (dim N)
+		// The neural network maps X1 to Y1, and X2 to Y2, independently.
+		//		errors1 = errors for Y1 (dim N)
+		//		errors2 = errors for Y2 (dim N)
+		bool permuted = perturb(X1, X2);			// result stored in X2
 		double d1 = set_distance_Eu(K, K2);
-		ForwardPropMethod(Net, N, K);
-		ForwardPropMethod(Net, N, K2);
+		ForwardPropMethod(Net, N, X1);			// X1 is now Y1
+		ForwardPropMethod(Net, N, X2);			// X2 is now Y2
 		double d2 = distance_Eu(K, K2);
 		double penalty = joint_penalty(d1, d2);
 
@@ -238,8 +250,19 @@ int main(int argc, char **argv)
 		if (tail == M) // loop back in cycle
 			tail = 0;
 
-		// ****** STUCK HERE:  cannot evaluate error of individual components,
-		//		thus traditional back-prop is not applicable
+		// With only the "joint penalty", we cannot evaluate error of individual components,
+		//		thus traditional back-prop is not applicable.
+		// The array errors[N] contains errors for each component with respect to an ideal output.
+		// 
+
+		if (permuted)
+			{
+			// Error is the difference between the output points K2 and K2'.
+			}
+		else
+			{
+			// Error is K2 and K2' 
+			}
 		// plot_W(Net);
 		back_prop(Net, errors);
 		// plot_W(Net);
