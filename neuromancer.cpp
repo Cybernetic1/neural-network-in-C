@@ -257,11 +257,11 @@ int main(int argc, char **argv)
 
 		if (permuted)
 			{
-			// Error is the difference between the output points K2 and K2'.
+			// Error is the difference between the output points Y1 and Y2.
 			}
 		else
 			{
-			// Error is K2 and K2' 
+			// Error is calculated from 
 			}
 		// plot_W(Net);
 		back_prop(Net, errors);
