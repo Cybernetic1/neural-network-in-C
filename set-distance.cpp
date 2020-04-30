@@ -41,7 +41,7 @@ double distance_abs(double x[], double y[])
 // 1) The distance should be 0 under permutations
 // 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
 //		Euclidean distance between them.
-double set_distance(double x[], double y[])
+double set_distance1(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
 
@@ -60,6 +60,28 @@ double set_distance(double x[], double y[])
 	return (2 * sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N)) / 2;
 	}
 
+// This is an alternative formula for the set distance, similar to the above,
+// but with a quadratic form that seems to be nicer
+double set_distance(double x[], double y[])
+	{
+	double sum, sum1, sum2 = 0.0;
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum += pow(x[i] - y[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum1 += pow(x[i] - x[j], 2);
+
+	for (int i = 0; i < N; ++i)
+		for (int j = 0; j < N; ++j)
+			sum2 += pow(y[i] - y[j], 2);
+
+	return sqrt((2 * sum / N - sum1 / N - sum2 / N)/ 2);
+	}
+
+// This seems to be an altenative form that failed:
 double set_distance2(double x[], double y[])
 	{
 	double sum = 0.0;
@@ -73,6 +95,7 @@ double set_distance2(double x[], double y[])
 	return sqrt(sum / N);
 	}
 
+// Another altenative form that failed:
 double set_distance_abs(double x[], double y[])
 	{
 	double sum = 0.0;
