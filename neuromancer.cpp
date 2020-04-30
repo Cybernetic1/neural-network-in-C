@@ -70,7 +70,7 @@ double distance_Eu(double x[], double y[])
 // 1) The distance should be 0 under permutations
 // 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
 //		Euclidean distance between them.
-double set_distance_Eu(double x[], double y[])
+double set_distance(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
 
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 		//		errors1 = errors for Y1 (dim N)
 		//		errors2 = errors for Y2 (dim N)
 		bool permuted = perturb(X1, X2);			// result stored in X2
-		double d1 = set_distance_Eu(K, K2);
+		double d1 = set_distance(K, K2);
 		ForwardPropMethod(Net, N, X1);			// X1 is now Y1
 		ForwardPropMethod(Net, N, X2);			// X2 is now Y2
 		double d2 = distance_Eu(K, K2);
