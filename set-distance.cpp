@@ -41,7 +41,7 @@ double distance_abs(double x[], double y[])
 // 1) The distance should be 0 under permutations
 // 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
 //		Euclidean distance between them.
-double set_distance_Eu(double x[], double y[])
+double set_distance(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
 
@@ -60,7 +60,7 @@ double set_distance_Eu(double x[], double y[])
 	return (2 * sqrt(sum / N) - sqrt(sum1 / N) - sqrt(sum2 / N)) / 2;
 	}
 
-double set_distance_Eu2(double x[], double y[])
+double set_distance2(double x[], double y[])
 	{
 	double sum = 0.0;
 
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	if (argc != 3)
 		{
 		printf("usage: set_distance <test #> <N>\n");
-		printf("where <test #> = 1, 2, or 3\n");
+		printf("where <test #> = 1, 2, 3 or 4\n");
 		printf("      <N> = dimension of set vectors\n");
 		printf("1. Test that the maximal Euclidean distance between 2 points in the unit hypercube is √n\n");
 		printf("2. Randomly permute (x, ..., xn) and check if the set distances between the original\n");
@@ -158,7 +158,7 @@ void test_3()
 			y[j] = random01();
 			}
 
-		d1 = set_distance_Eu(x, y);
+		d1 = set_distance(x, y);
 		d2 = distance_Eu(x, y);
 		r = d1 / d2;
 
@@ -227,7 +227,7 @@ void test_2()
 		print_x(x);  printf("\t");
 		print_x(y);  printf("\n");
 
-		d = set_distance_Eu(x, y);
+		d = set_distance(x, y);
 		printf("distance = %f\n", d);
 		continue;
 		*/
@@ -241,7 +241,7 @@ void test_2()
 		// print_x(x);  printf("\t");
 		// print_x(y);  printf("\n");
 
-		d = set_distance_Eu(x, y);
+		d = set_distance(x, y);
 
 		if (d > max_d)
 			{
@@ -260,7 +260,7 @@ void test_4()
 	{
 	printf("Manually test set distances\n");
 
-	double x[N], y[N], d;
+	double x[N], y[N], d_set, d_Eu;
 	double max_d, min_d = 0.0;
 
 	while (true)
@@ -276,8 +276,10 @@ void test_4()
 		print_x(x);  printf("\t");
 		print_x(y);  printf("\n");
 
-		d = set_distance_Eu(x, y);
-		printf("distance = %f\n", d);
+		d_set = set_distance(x, y);
+		printf("set distance = %f\n", d_set);
+		d_Eu = distance_Eu(x, y);
+		printf("Euclidean distance = %f\n", d_Eu);
 		}
 	}
 

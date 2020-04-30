@@ -257,7 +257,8 @@ int main(int argc, char **argv)
 
 		if (permuted)
 			{
-			// Error is the difference between the output points Y1 and Y2.
+			// Error is the difference between the output points Y1 and Y2
+			
 			}
 		else
 			{
