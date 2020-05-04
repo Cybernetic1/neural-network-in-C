@@ -41,7 +41,7 @@ double distance_abs(double x[], double y[])
 // 1) The distance should be 0 under permutations
 // 2) The distance attains its maximum when 2 points are most dissimilar, and would equal the
 //		Euclidean distance between them.
-double set_distance1(double x[], double y[])
+double set_distance(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
 
@@ -62,7 +62,7 @@ double set_distance1(double x[], double y[])
 
 // This is an alternative formula for the set distance, similar to the above,
 // but with a quadratic form that seems to be nicer
-double set_distance(double x[], double y[])
+double set_distance1(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
 
@@ -122,7 +122,7 @@ void print_x(double x[])
 
 int main(int argc, char **argv)
 	{
-	void test_1(), test_2(), test_3(), test_4();
+	void test_1(), test_2(), test_3(), test_4(), test_5();
 	int test_num;
 
 	if (argc != 3)
@@ -136,6 +136,7 @@ int main(int argc, char **argv)
 		printf("3. Test that the set distance is always less than or equal to the Euclidean distance\n");
 		printf("\tThis ratio approaches the maximum value of 1 as more and more pairs are tested\n");
 		printf("4. Manually test set distances\n");
+		printf("5. Test triangle inequality\n");
 		exit(0);
 		}
 	else
@@ -159,6 +160,9 @@ int main(int argc, char **argv)
 			break;
 		case 4:
 			test_4();
+			break;
+		case 5:
+			test_5();
 			break;
 		}
 	}
@@ -303,6 +307,40 @@ void test_4()
 		printf("set distance = %f\n", d_set);
 		d_Eu = distance_Eu(x, y);
 		printf("Euclidean distance = %f\n", d_Eu);
+		}
+	}
+
+// Triangle inequality: d(x,y) ≤ d(x,z) + d(z,y)
+void test_5()
+	{
+	printf("Test triangle inequality\n");
+
+	double x[N], y[N], z[N], dxy, dxz, dzy, diff;
+
+	while (true)
+		{
+		for (int j = 0; j < N; ++j)
+			{
+			x[j] = random01();
+			y[j] = random01();
+			z[j] = random01();
+			}
+		
+		dxy = set_distance(x, y);
+		dxz = set_distance(x, z);
+		dzy = set_distance(z, y);
+		diff = dxy - dxz - dzy;
+
+		print_x(x); printf("\t");
+		print_x(y); printf("\t");
+		print_x(z); printf("\n");
+		printf("d(x,y) - d(x,z) - d(z,y) = %f\n", diff);
+
+		if (diff > 0.0)
+			{
+			printf("Triangle inequality violated\n");
+			break;
+			}
 		}
 	}
 
