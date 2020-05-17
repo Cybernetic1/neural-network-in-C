@@ -62,6 +62,7 @@ double set_distance(double x[], double y[])
 
 // This is an alternative formula for the set distance, similar to the above,
 // but with a quadratic form that seems to be nicer
+// Update: This formula is bad because the distance between (½, ½) and (1, 0) would be 0.
 double set_distance1(double x[], double y[])
 	{
 	double sum, sum1, sum2 = 0.0;
