@@ -6,11 +6,9 @@
 // The g-layers form a regular NN.
 // The h-layers form another NN but it is averaged over m inputs, where m is the multiplicity
 
-
 #include <iostream>
 #include <cstdio>
 #include <random>
-#include <algorithm>		// random_shuffle
 #include <math.h>
 #include "feedforward-NN.h"
 
