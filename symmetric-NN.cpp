@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	/*
 	if (argc != 2)
 		{
-		printf("Learning Neuromancer map\n");
+		printf("Train symmetric NN\n");
 		printf("      <N> = dimension of set vectors\n");
 		exit(0);
 		}
@@ -111,10 +111,9 @@ int main(int argc, char **argv)
 
 	char status[1024], *s;
 
-	double errors1[N], errors2[N];
 	double X1[N], X2[N], Y1[N], Y2[N];
 
-	for (int i = 1; 1; ++i)
+	for (int i = 1; 1; ++i)			// main loop
 		{
 		s = status + sprintf(status, "[%05d] ", i);
 

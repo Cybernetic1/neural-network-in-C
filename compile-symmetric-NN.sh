@@ -1,1 +1,1 @@
-g++ neuromancer.cpp back-prop.c visualization.c -lSDL2
+g++ symmetric-NN.cpp back-prop.c visualization.c -lSDL2
