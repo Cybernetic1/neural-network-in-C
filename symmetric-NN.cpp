@@ -2,7 +2,7 @@
 // ie, that any symmetric function f(x,y,...) can be represented in the form g(h(x), h(y), ...)
 // where g and h are non-linear functions (implemented as deep neural networks)
 
-// The entire network is composed of g-layers and h-layers.
+// The entire network is composed of a g-network and an h-network.
 // The g-layers form a regular NN.
 // The h-layers form another NN but it is averaged over m inputs, where m is the multiplicity
 
