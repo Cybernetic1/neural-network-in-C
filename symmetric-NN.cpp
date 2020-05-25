@@ -77,6 +77,7 @@ int main(int argc, char **argv)
 
 	int userKey = 0;
 	#define M	50			// how many errors to record for averaging
+	double errors[N];
 	double errors1[M], errors2[M]; // two arrays for recording errors
 	double sum_err1 = 0.0, sum_err2 = 0.0; // sums of errors
 	int tail = 0; // index for cyclic arrays (last-in, first-out)
@@ -158,6 +159,9 @@ int main(int argc, char **argv)
 		ForwardPropMethod(Net_g, N, X1);			// X1 is now Y1
 		ForwardPropMethod(Net_h, N, X2);			// X2 is now Y2
 
+		double training_err = 0.0;
+		double ideal = 0.0;
+		double error = ideal - lastLayer_g.neurons[0].output;
 		training_err += fabs(error); // record sum of errors
 		// printf("sum of squared error = %lf  ", training_err);
 
@@ -183,7 +187,7 @@ int main(int argc, char **argv)
 			tail = 0;
 
 		// plot_W(Net);
-		back_prop(Net, errors);
+		back_prop(Net_g, errors);
 		// plot_W(Net);
 		// pause_graphics();
 
@@ -206,11 +210,11 @@ int main(int argc, char **argv)
 				for (int k = 0; k < 1; ++k)
 					{
 					// double ideal = 1.0f - (0.5f - K[0]) * (0.5f - K[1]);
-					double ideal = (double) (f2b(K[0]) ^ f2b(K[1]));
+					double ideal = 0.0;
 					// double ideal = K[k];				/* identity function */
 
 					// Difference between actual outcome and desired value:
-					double error = ideal - lastLayer.neurons[k].output;
+					double error = ideal - lastLayer_h.neurons[k].output;
 
 					single_err += fabs(error); // record sum of errors
 					}
@@ -227,7 +231,7 @@ int main(int argc, char **argv)
 
 		if (i > 50 && (isnan(mean_err) || mean_err > 10.0))
 			{
-			re_randomize(Net, numLayers, neuronsPerLayer);
+			re_randomize(Net_h, numLayers, neuronsPerLayer);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < M; ++j) // clear errors to 0.0
@@ -270,7 +274,7 @@ int main(int argc, char **argv)
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net, numLayers, neuronsPerLayer);
+			re_randomize(Net_h, numLayers, neuronsPerLayer);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < M; ++j) // clear errors to 0.0
