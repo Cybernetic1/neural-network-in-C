@@ -77,6 +77,9 @@ double target_func(double x[])
 	{
 	double sum = 0.0;
 
+	// **** Sort input elements
+
+
 	for (int n = 0; n < N; ++n)		// for each Gaussian function; there are N of them
 
 		for (int j = 0; j < N; ++j)
