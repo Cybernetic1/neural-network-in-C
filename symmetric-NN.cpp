@@ -79,7 +79,7 @@ double target_func(double x[M][N], double y[N])		// dim X = M × N, dim Y = N
 	{
 	// **** Sort input elements
 
-	#define k2 100.0				// k² where k = 10.0
+	#define k2 500.0				// k² where k = 10.0
 	for (int i = 0; i < N; ++i)		// calculate each component of y
 		{
 		y[i] = 0.0;
@@ -99,17 +99,24 @@ double target_func(double x[M][N], double y[N])		// dim X = M × N, dim Y = N
 
 // Success: time 5:58, topology = {2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 1} (13 layers)
 //			ReLU units, learning rate 0.05, leakage 0.0
-#define ForwardPropMethod	forward_prop_ReLU
+#define ForwardPropMethod	forward_prop_sigmoid
 #define ErrorThreshold		0.02
 
 int main(int argc, char **argv)
 	{
 	int neuronsPerLayer[] = {N, 10, 10, 8, N}; // first = input layer, last = output layer
 	int numLayers = sizeof (neuronsPerLayer) / sizeof (int);
+
 	NNET *Net_g = create_NN(numLayers, neuronsPerLayer);
-	NNET *Net_h = create_NN(numLayers, neuronsPerLayer);
 	LAYER lastLayer_g = Net_g->layers[numLayers - 1];
-	LAYER lastLayer_h = Net_h->layers[numLayers - 1];
+
+	NNET *Net_h[M];
+	LAYER lastLayer_h[M];
+	for (int m = 0; m < M; ++m)
+		{
+		Net_h[m] = create_NN(numLayers, neuronsPerLayer);
+		lastLayer_h[m] = Net_h[m]->layers[numLayers - 1];
+		}
 
 	int userKey = 0;
 	#define num_errs	50			// how many errors to record for averaging
@@ -195,22 +202,22 @@ int main(int argc, char **argv)
 
 	char status[1024], *s;
 
-	for (int l = 1; 1; ++l)			// main loop
+	for (int l = 1; true; ++l)			// main loop
 		{
 		s = status + sprintf(status, "[%05d] ", l);
 
-		// Create M random X vectors (each of dim N)
+		// ***** Create M random X vectors (each of dim N)
 		for (int m = 0; m < M; ++m)
 			for (int i = 0; i < N; ++i)
 				// X[k] = (rand() / (float) RAND_MAX);
 				X[m][i] = random01();
 
-		// Calculate the error
+		// ***** Forward propagation
 
 		for (int m = 0; m < M; ++m)
-			ForwardPropMethod(Net_h, N, X[m]);			// X[m] is updated
+			ForwardPropMethod(Net_h[m], N, X[m]);			// X[m] is updated
 
-		// add up X[m] to get Y
+		// Bridge layer: add up X[m] to get Y
 		for (int i = 0; i < N; ++i)
 			{
 			Y[i] = 0;
@@ -228,6 +235,8 @@ int main(int argc, char **argv)
 		double ideal[N];
 		target_func(X, ideal);
 
+		// ***** Calculate the error
+
 		double error[N];
 		for (int i = 0; i < N; ++i)
 			error[i] = ideal[i] - lastLayer_g.neurons[i].output;
@@ -244,6 +253,9 @@ int main(int argc, char **argv)
 		// printf("sum1, sum2 = %lf %lf\n", sum_err1, sum_err2);
 
 		double mean_err = 0.0;
+		for (int i = 0; i < N; ++i)
+			mean_err += pow(error[i], 2);
+		mean_err /= N;
 		// double mean_err = (l < num_errs) ? (sum_err1 / l) : (sum_err1 / num_errs);
 		// if (mean_err < 2.0)
 		//	s += sprintf(s, "mean |e|=%1.06lf, ", mean_err);
@@ -257,14 +269,44 @@ int main(int argc, char **argv)
 		// if (tail == num_errs) // loop back in cycle
 		//	tail = 0;
 
+		// ***** Back-propagation
 		back_prop(Net_g, error);
-		back_prop(Net_h, error);
+
+		// ***** Bridge between g_network and h_networks
+		// This emulates the back-prop algorithm for 1 layer (see "g-and-h-networks.png")
+		// and the error is simply copied to each h-network
+		LAYER prevLayer = Net_g->layers[0];
+		for (int n = 0; n < N; n++)		// for error in bridge layer
+			{
+			// local gradient ≡ 1 for the bridge layer, because there's no sigmoid function
+			error[n] = prevLayer.neurons[n].grad;
+			}
+
+		// ***** Back-propagate the h-networks
+		for (int m = 0; m < M; m++)
+			back_prop(Net_h[m], error);
+
+		// Updated weights of the h-networks is now averaged:
+		for (int l = 1; l < numLayers; ++l)		// for all layers except 0th which has no weights
+			for (int n = 0; n < Net_h[0]->layers[l].numNeurons; n++)	// for each neuron
+				for (int i = 0; i < Net_h[0]->layers[l - 1].numNeurons; i++) // for each weight
+					{
+					// Calculate average value
+					double avg = 0.0f;
+					for (int m = 0; m < M; ++m)		// for each multiplicity
+						avg += Net_h[m]->layers[l].neurons[n].weights[i + 1];
+					avg /= M;
+
+					// Overwrite all weights with average value
+					for (int m = 0; m < M; ++m)		// for each multiplicity
+						Net_h[m]->layers[l].neurons[n].weights[i + 1] = avg;
+					}
 
 		// plot_W(Net);
 		// plot_W(Net);
 		// pause_graphics();
 
-		if ((l % 200) == 0)
+		if ((l % 200) == -1)	// 0 = enable this part, -1 = disable
 			{
 			// Testing set
 			double test_err = 0.0;
@@ -288,7 +330,7 @@ int main(int argc, char **argv)
 					// double ideal = K[k];				/* identity function */
 
 					// Difference between actual outcome and desired value:
-					double error = ideal - lastLayer_h.neurons[k].output;
+					double error = 0.0;  // ideal - lastLayer_h.neurons[k].output;
 
 					single_err += fabs(error); // record sum of errors
 					}
@@ -305,7 +347,7 @@ int main(int argc, char **argv)
 
 		if (l > 50 && (isnan(mean_err) || mean_err > 10.0))
 			{
-			re_randomize(Net_h, numLayers, neuronsPerLayer);
+			re_randomize(Net_h[0], numLayers, neuronsPerLayer);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < num_errs; ++j) // clear errors to 0.0
@@ -317,7 +359,7 @@ int main(int argc, char **argv)
 			printf("\n****** Network re-randomized.\n");
 			}
 
-		if ((l % 50) == 0)
+		if ((l % 50) == -1)
 			{
 			double ratio = (sum_err2 - sum_err1) / sum_err1;
 			if (ratio > 0)
@@ -328,8 +370,9 @@ int main(int argc, char **argv)
 			//	break;
 			}
 
-		if ((l % 10) == 0) // display status periodically
+		if ((l % 10000) == 0) // display status periodically
 			{
+			s += sprintf(s, "mean error=%e", mean_err);
 			printf("%s\n", status);
 			// plot_NN(Net);
 			// plot_W(Net);
@@ -348,7 +391,7 @@ int main(int argc, char **argv)
 			break;
 		else if (userKey == 3)			// Re-start with new random weights
 			{
-			re_randomize(Net_h, numLayers, neuronsPerLayer);
+			re_randomize(Net_h[0], numLayers, neuronsPerLayer);
 			sum_err1 = 0.0; sum_err2 = 0.0;
 			tail = 0;
 			for (int j = 0; j < num_errs; ++j) // clear errors to 0.0
@@ -375,5 +418,6 @@ int main(int argc, char **argv)
 	// else
 	//	quit_graphics();
 	free_NN(Net_g, neuronsPerLayer);
-	free_NN(Net_h, neuronsPerLayer);
+	for (int m = 0; m < M; ++m)
+		free_NN(Net_h[m], neuronsPerLayer);
 	}

@@ -11,7 +11,7 @@
 #define Eta 0.01			// learning rate
 #define BIASINPUT 1.0		// input for bias. It's always 1.
 
-#define LastAct	false		// If false, activation function DISABLED on output layer
+#define LastAct	true		// If false, activation function DISABLED on output layer
 
 double randomWeight() // generate random weight between [+1.0, -1.0]
 	{
@@ -87,13 +87,9 @@ NNET *create_NN(int numLayers, int *neuronsPerLayer)
 			{
 			net->layers[l].neurons[n].weights =
 					(double *) malloc((neuronsPerLayer[l - 1] + 1) * sizeof (double));
-			for (int i = 0; i <= neuronsPerLayer[l - 1]; ++i)
-				{
-				//construct weights of neuron from previous layer neurons
-				//when k = 0, it's bias weight
+			for (int i = 1; i <= neuronsPerLayer[l - 1]; ++i)
+				//when i = 0, it's bias weight (this can be ignored)
 				net->layers[l].neurons[n].weights[i] = randomWeight();
-				//net->layers[i].neurons[j].weights[k] = 0.0f;
-				}
 			}
 		}
 	return net;
@@ -322,11 +318,11 @@ void back_prop(NNET *net, double *errors)
 			{
 			// double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+			LAYER prevLayer = net->layers[l + 1];
+			for (int i = 0; i < prevLayer.numNeurons; i++)		// for each weight
 				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
+				sum += prevLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+						* prevLayer.neurons[i].grad;
 				}
 			// .grad has been prepared in forward-prop
 			net->layers[l].neurons[n].grad *= sum;
@@ -394,11 +390,11 @@ void back_prop_old(NNET *net, double *errors)
 			{
 			double output = net->layers[l].neurons[n].output;
 			double sum = 0.0f;
-			LAYER nextLayer = net->layers[l + 1];
-			for (int i = 0; i < nextLayer.numNeurons; i++)		// for each weight
+			LAYER prevLayer = net->layers[l + 1];
+			for (int i = 0; i < prevLayer.numNeurons; i++)		// for each weight
 				{
-				sum += nextLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
-						* nextLayer.neurons[i].grad;
+				sum += prevLayer.neurons[i].weights[n + 1]		// ignore weights[0] = bias
+						* prevLayer.neurons[i].grad;
 				}
 			net->layers[l].neurons[n].grad = Steepness * output * (1.0 - output) * sum;
 			}
