@@ -7,7 +7,9 @@
 #include "feedforward-NN.h"
 #include "BPTT-RNN.h"
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 	void beep();
 	void bip();
 	int delay_vis(int delay);
@@ -38,7 +40,9 @@ extern "C" {
 	void start_W_plot(void);
 	void start_output_plot(void);
 	void start_timer();
+#ifdef __cplusplus
 }
+#endif
 
 extern double K[];
 

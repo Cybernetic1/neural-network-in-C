@@ -41,6 +41,8 @@ NNET *Qnet;
 int QnumLayers = 4;
 int QneuronsPerLayer[] = {dimK * 2, 10, 7, 1};
 
+double K[dimK];
+
 void init_Qnet()
 	{
 	// int numLayers2 = 5;
@@ -63,7 +65,7 @@ void load_Qnet(char *fname)
 	int numLayers2;
 	int *neuronsPerLayer2;
 	extern NNET * loadNet(int *, int *p[], char *);
-	Qnet = loadNet(&numLayers2, &neuronsPerLayer2, fname);
+	// Qnet = loadNet(&numLayers2, &neuronsPerLayer2, fname);
 	// LAYER lastLayer = Vnet->layers[numLayers - 1];
 
 	return;
@@ -73,7 +75,7 @@ void save_Qnet(char *fname)
 	{
 	extern void saveNet(NNET *, int, int *, char *, char *);
 
-	saveNet(Qnet, QnumLayers, QneuronsPerLayer, "", fname);
+	// saveNet(Qnet, QnumLayers, QneuronsPerLayer, "", fname);
 	}
 
 //************************** Q-learning ***********************//
@@ -338,4 +340,12 @@ double maxQ(int K[dimK], double K2[dimK])
 	printf("%2.3f ", result);
 	plot_W(Qnet);
 	return result; // return Q value
+	}
+
+int main() {
+	printf("Find maximum of a trained neural network\n");
+
+	printf("Fix sum of Gaussian and train NN\n");
+
+	printf("Find maximums of NN by random sampling\n");
 	}
