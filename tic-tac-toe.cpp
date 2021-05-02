@@ -11,11 +11,6 @@
 
 using namespace std;
 
-extern "C"
-	{
-	double get_V(int [9]);
-	}
-
 State board;
 
 std::map<State, double, smaller> V1;		// V-value maps: board --> value
@@ -254,8 +249,7 @@ int loadVFromFile(string filename, std::list<State> &states, std::map<State, dou
 	return total;
 	}
 
-
-extern "C" int tic_tac_toe_test()
+int tic_tac_toe_test()
 	{
 	extern void init_Vnet(void);
 	extern void load_Vnet(void);
@@ -401,7 +395,7 @@ extern "C" int tic_tac_toe_test()
 	int totalStates2 = loadVFromFile("ttt2.dat", states2, V2);
 	cout << "Total read: " << to_string(totalStates2) << "\n";
 
-#define totalGames 500000
+	#define totalGames 500000
 	int playTimes = 0;
 	int numPlayer1Won = 0;
 	int numPlayer_1Won = 0;
