@@ -38,6 +38,7 @@ extern void start_W_plot(void);
 NNET *Qnet;
 
 #define dimK 9
+#define N dimK
 int QnumLayers = 4;
 int QneuronsPerLayer[] = {dimK * 2, 10, 7, 1};
 
@@ -123,37 +124,35 @@ double norm(double grad[dimK])
 
 // **** Learn a simple Q-value map given specific Q values
 // **** Used in network initialization
-void train_Q(int s[dimK], double Q)
+void train_Q()
 	{
-	double S[dimK * 2];
+	double S[dimK];
 	static int count = 0;
+	double RBF(double *);
 
-	for (int j = 0; j < 1; ++j)		// iterate a few times
-		{
-		for (int k = 0; k < dimK; ++k)
-			{
-			S[k] = (double) s[k];
+	for (int i = 0; i < 5000; ++i) {		// iterate a few times
 
-			// 2nd argument should be random
-			S[k + dimK] = (rand() / (float) RAND_MAX) * 2.0 - 1.0; // in [+1,-1]
+		for (int k = 0; k < dimK; ++k) {
+			// argument is random in [+10,-10]
+			S[k] = (rand() / (float) RAND_MAX) * 20.0 - 10.0;
 			}
 
-		forward_prop_sigmoid(Qnet, dimK * 2, S);
+		forward_prop_sigmoid(Qnet, dimK, S);
 
 		LAYER LastLayer = (Qnet->layers[QnumLayers - 1]);
 		// The last layer has only 1 neuron, which outputs the Q value:
 		double Q2 = LastLayer.neurons[0].output;
+		double Q = RBF(K);
 
 		double error[1];
 		*error = Q - Q2; // desired - actual
 
 		back_prop(Qnet, error);
-		}
 
-	if (++count == 1000)
-		{
-		plot_W(Qnet);
-		count = 0;
+		if (++count == 10) {
+			plot_W(Qnet);
+			count = 0;
+			}
 		}
 	}
 
@@ -342,10 +341,48 @@ double maxQ(int K[dimK], double K2[dimK])
 	return result; // return Q value
 	}
 
+#define J	3		// number of Gaussians in the sum
+#define epsilon		0.01
+double c[J][N];
+
+// **** Radial Basis Function ****
+// Gaussian:  Φ(r) = exp( -(εr)² )
+// r = Euclidean distance ‖ x - c ‖ where c is the center
+double RBF(double x[]) {
+	double result = 0.0;
+
+	for (int j = 0; j < J; ++j) {
+		double r = 0.0;
+		for (int n = 0; n < N; ++n)
+			r += pow(x[n] - c[j][n], 2);
+
+		result += exp(- pow(epsilon * r, 2));
+		}
+
+	return result;
+	}
+
 int main() {
-	printf("Find maximum of a trained neural network\n");
+	printf("\x1b[37;1mFind maximum of a trained neural network\x1b[0m\n");
 
-	printf("Fix sum of Gaussian and train NN\n");
+	printf("\x1b[32;1m1. Generate random Gaussians\x1b[0m\n");
+	for (int j = 0; j < J; ++j) {
+		for (int n = 0; n < N; ++n) {
+			// in [+10,-10]
+			c[j][n] = (rand() / (float) RAND_MAX) * 20.0 - 10.0;
+			printf("%0.5f ", c[j][n]);
+			}
+		printf("\n");
+		}
 
-	printf("Find maximums of NN by random sampling\n");
+	printf("\x1b[32;1m2. Train NN\x1b[0m\n");
+	for (int n = 0; n < N; ++n)
+		K[n] = 1.0;
+	printf("testing RBF at (1,1,1) = %0.5f\n", RBF(K));
+
+	init_Qnet();
+	train_Q();
+
+	printf("\x1b[32;1m3. Find maximums of NN by random sampling\x1b[0m\n");
+	
 	}
